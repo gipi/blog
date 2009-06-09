@@ -1,7 +1,7 @@
 # http://www.hvergi.net/2008/06/restructuredtext-extensions/comment-page-1/
 import tempfile
 import os
-import hashlib
+import sha
 import shutil
  
 def wrap_formula(formula, font_size, latex_class):
@@ -35,7 +35,7 @@ def wrap_formula(formula, font_size, latex_class):
                \end{document}""" % locals()
 
 def render_formula(formula, folder, font_size=11, latex_class='article'):
-    hash = hashlib.md5(formula).hexdigest()
+    hash = sha.new(formula).hexdigest()
     if os.path.exists(os.path.join(folder, hash + ".png")):
         return hash + ".png"
  
