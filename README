@@ -1,0 +1,4 @@
+# DEPENDENCIES
+  * django <http://djangoproject.com>
+  * pygments <http://pygments.org/>
+  * TeX
