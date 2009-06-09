@@ -1,8 +1,12 @@
+{% load markup %}
+<html>
+	<head>
+		<title>Snippy</title>
 <body>
     <form method="post" action="">
         {{form.as_p}}
         <input type="submit"/>
     </form>
-    {{entry|safe}}
+    {{entry|restructuredtext}}
 </body>
 </html>
