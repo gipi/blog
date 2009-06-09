@@ -1,4 +1,11 @@
 # DEPENDENCIES
   * django <http://djangoproject.com>
   * pygments <http://pygments.org/>
+  * docutils
   * TeX
+
+You need to create a stylesheet for the code embedded in the pages by
+the following commands
+
+  $ pygmentize -S native -f html > <project_root>/media/native.css
+
