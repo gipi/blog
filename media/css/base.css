@@ -1,0 +1,10 @@
+body{
+	margin:0px;
+	padding:0px;
+}
+
+.post{
+	margin:10px;
+	padding:10px;
+	border:1px dashed black;
+}

@@ -2,12 +2,17 @@
 <html>
 	<head>
 		<title>Snippy</title>
+		<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}/css/base.css"/>
 		<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}/css/native.css"/>
 <body>
     <form method="post" action="">
         {{form.as_p}}
         <input type="submit"/>
     </form>
+    {% if entry %}
+    <div class="post">
     {{entry|restructuredtext}}
+    </div>
+    {% endif %}
 </body>
 </html>
