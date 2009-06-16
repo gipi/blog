@@ -5,7 +5,7 @@ import texrender
  
 def get_latex_img(formula):
 	print 'DEBUG of formula: ', formula
-	fname = texrender.render_formula(formula, settings.TEX_MEDIA)
+	fname = texrender.tex_render_formula(formula, settings.TEX_MEDIA)
 	return settings.TEX_MEDIA_URL + fname
 
 def latex_directive(name, arguments, options, content, lineno,

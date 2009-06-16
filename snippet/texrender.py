@@ -4,35 +4,11 @@ import os
 import sha
 import shutil
  
-def wrap_formula(formula, font_size, latex_class):
-    return r"""\documentclass[%(font_size)spt]{%(latex_class)s}
-               \usepackage[latin1]{inputenc}
-               \usepackage{amsmath}
-               \usepackage{amsfonts}
-               \usepackage{amssymb}
-               \pagestyle{empty}
-               \newsavebox{\formulabox}
-               \newlength{\formulawidth}
-               \newlength{\formulaheight}
-               \newlength{\formuladepth}
-               \setlength{\topskip}{0pt}
-               \setlength{\parindent}{0pt}
-               \setlength{\abovedisplayskip}{0pt}
-               \setlength{\belowdisplayskip}{0pt}
-               \begin{lrbox}{\formulabox}
-               $%(formula)s$
-               \end{lrbox}
-               \settowidth {\formulawidth}  {\usebox{\formulabox}}
-               \settoheight{\formulaheight} {\usebox{\formulabox}}
-               \settodepth {\formuladepth}  {\usebox{\formulabox}}
-               \newwrite\foo
-               \immediate\openout\foo=\jobname.depth
-                   \addtolength{\formuladepth} {1pt}
-                   \immediate\write\foo{\the\formuladepth}
-               \closeout\foo
-               \begin{document}
-               \usebox{\formulabox}
-               \end{document}""" % locals()
+def tex_wrap_formula(formula, font_size, latex_class):
+    return r"""
+    \footline={}
+    $$%(formula)s$$
+    \end""" % locals()
 
 def tikz_wrap_formula(formula):
     return r"""
@@ -70,7 +46,7 @@ def tikz_render_formula(formula, folder, font_size=11, latex_class='article'):
  
     return hash+".png"
 
-def render_formula(formula, folder, font_size=11, latex_class='article'):
+def tex_render_formula(formula, folder, font_size=11, latex_class='article'):
     hash = sha.new(formula).hexdigest()
     if os.path.exists(os.path.join(folder, hash + ".png")):
         return hash + ".png"
@@ -80,10 +56,10 @@ def render_formula(formula, folder, font_size=11, latex_class='article'):
     os.chdir(tempdir)
  
     f = file('formula.tex', 'w')
-    f.write(wrap_formula(formula, font_size, latex_class))
+    f.write(tex_wrap_formula(formula, font_size, latex_class))
     f.close()
  
-    status = os.system("latex --interaction=nonstopmode formula.tex")
+    status = os.system("tex --interaction=nonstopmode formula.tex")
     assert 0==status, tempdir
  
     status = os.system("dvips -E formula.dvi -o formula.ps")

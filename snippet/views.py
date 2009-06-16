@@ -7,55 +7,34 @@ from snippet.forms import EntryForm
 
 from snippet import rst_tex, rst_code
 
-example = """C e la costanza del suo valore
-==============================
+example = """
+u
 
-*Per adesso non usare le accentate che il server probably ha qualche problema con l'encoding straniero*
+Twitter per programmatori e scienziati
+======================================
 
-A sentence with links to Wikipedia_ and the `Linux kernel archive`_.
+Ecco un esempio di codice TeX
 
-.. _Wikipedia: http://www.wikipedia.org/
-.. _Linux kernel archive: http://www.kernel.org/
+.. latex::
+ A = \pmatrix{
+   a & b \cr
+   c & d \cr
+  }\quad\det(A - \lambda I) =
+ \left|\matrix{
+ a - \lambda & b \cr
+ c           & d -\lambda \cr
+ }\\right| = \lambda^2 - \hbox{tr}(A)\lambda + \det(A)
 
+ma anche di capacità grafiche senza pari
 
-Si erano presentati vari problemi alla fine del secolo
+.. tikz::
+ [scale=0.5]
+ \draw (0,0) -- (90:1cm) arc (90:360:1cm) arc (0:30:1cm) -- cycle;
+ \draw (60:5pt) -- +(30:1cm) arc (30:90:1cm) -- cycle;
+ \draw (3,0)  +(0:1cm) -- +(72:1cm) -- +(144:1cm) -- +(216:1cm) --
+           +(288:1cm) -- cycle;
 
-* Equazioni di Maxwell non invarianti per trasformazioni di Galileo
-* Catastrofe ultravioletta
-
-Se voi aveste uno specchio in mano e decideste di andare alla velocit della luce, come si comporterebbe la vostra immagine?
-
-.. latex:: \lim_{t\\to0}\\alpha + {1\over 1-\gamma^2}
-
-Questo passava per la testa di Einstein nel 1905 e dintorni.
-
-qui ci va il testo normale
-
-.. code-block:: python 
-
- for item in list:
-    print item
-
-poi chi lo sa
-
-.. code-block:: python
- :linenos:
-
- def pygments_directive(name, arguments, options, content, lineno,
-                       content_offset, block_text, state, state_machine):
-    try:
-        lexer = get_lexer_by_name(arguments[0])
-    except ValueError:
-        print 'Warning: No lexer found!!!'
-        # no lexer found - use the text one instead of an exception
-        lexer = TextLexer()
-
-    # take an arbitrary option if more than one is given
-    formatter = options and VARIANTS[options.keys()[0]] or DEFAULT
-    parsed = highlight(u'\\n'.join(content), lexer, formatter)
-    parsed = '<div class="codeblock">%s</div>' % parsed
-    return [nodes.raw('', parsed, format='html')]
-
+ma mica finisce cosi`, 
 """
 
 def test(request):
