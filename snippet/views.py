@@ -49,6 +49,11 @@ def test(request):
 	    # d41d8cd98f00b204e9800998ecf8427e = la stringa vuota
 	    print 'formula: ', formula
 
+    if request.is_ajax():
+        return render_to_response('restructured_text.html',
+                {'content':formula},
+                context_instance=RequestContext(request))
+
     return render_to_response('homepage.html',
             {'form': form, 'entry':formula},
             context_instance=RequestContext(request))

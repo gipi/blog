@@ -4,15 +4,25 @@
 		<title>Snippy</title>
 		<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}/css/base.css"/>
 		<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}/css/native.css"/>
+		<script type="text/javascript" src="{{MEDIA_URL}}/js/jquery.js"></script>
 <body>
-    <form method="post" action="">
+	<script type="text/javascript">
+		function submitData(){
+			$('#kt').load(
+					'/entry/',
+					{'content': document.getElementById('id_content').value
+					}, 
+					function(){
+					$('#kt').fadeIn(3000)
+					});
+			
+		}
+	</script>
+	<form onsubmit="submitData();return false;" method="post" action="">
         {{form.as_p}}
         <input type="submit"/>
     </form>
-    {% if entry %}
-    <div class="post">
-    {{entry|restructuredtext}}
+    <div id="kt" class="post">
     </div>
-    {% endif %}
 </body>
 </html>
