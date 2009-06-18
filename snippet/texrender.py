@@ -31,7 +31,8 @@ def tikz_render_formula(formula, folder, font_size=11, latex_class='article'):
     f.close()
  
     status = os.system("tex --interaction=nonstopmode formula.tex")
-    assert 0==status, tempdir
+    if status != 0:
+	    return 'error.png'
  
     status = os.system("dvips -E formula.dvi -o formula.ps")
     assert 0==status, tempdir
