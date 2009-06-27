@@ -12,8 +12,11 @@
 					'/entry/',
 					{'content': document.getElementById('id_content').value
 					}, 
-					function(){
-					$('#kt').fadeIn(3000)
+					function(responseText, textStatus, XHR){
+					if(XHR.status == 500){
+						alert(responseText);
+						document.body.innerHTML = responseText;
+						}
 					});
 			
 		}
