@@ -1,11 +1,6 @@
 # Django settings for snippy project.
 import os
 
-try:
-    from local_settings import *
-except ImportError:
-    print '*** Do you have a \'local_settings.py\'?'
-
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
 DATABASE_ENGINE = 'sqlite3'
@@ -63,6 +58,15 @@ MIDDLEWARE_CLASSES = (
 
 ROOT_URLCONF = 'urls'
 
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.core.context_processors.auth',
+    'django.core.context_processors.debug',
+    'django.core.context_processors.i18n',
+    'django.core.context_processors.media',
+    'snippet.context_processors.version',
+)
+
+
 TEMPLATE_DIRS = (
     PROJECT_ROOT + '/templates/',
 )
@@ -75,3 +79,9 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'snippet',
 )
+
+try:
+    from local_settings import *
+    from version import SNIPPY_GIT_VERSION
+except ImportError:
+    print '*** Do you have a \'local_settings.py\' or \'version.py\'?'
