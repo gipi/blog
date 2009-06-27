@@ -1,11 +1,6 @@
+{% extends 'site_base.html' %}
 {% load markup %}
-<html>
-	<head>
-		<title>Snippy - {{version}}</title>
-		<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}/css/base.css"/>
-		<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}/css/native.css"/>
-		<script type="text/javascript" src="{{MEDIA_URL}}/js/jquery.js"></script>
-<body>
+{% block body %}
 	<script type="text/javascript">
 		function submitData(){
 			$('#kt').load(
@@ -27,5 +22,4 @@
     </form>
     <div id="kt" class="post">
     </div>
-</body>
-</html>
+{% endblock body %}
