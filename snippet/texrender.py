@@ -4,7 +4,7 @@ import os
 import sha
 import shutil
  
-def tex_wrap_formula(formula, font_size, latex_class):
+def tex_wrap_formula(formula):
     return r"""
     \footline={}
     $$%(formula)s$$
@@ -17,7 +17,13 @@ def tikz_wrap_formula(formula):
     \tikzpicture %(formula)s \endtikzpicture
     \end""" % locals()
 
-def tikz_render_formula(formula, folder, font_size=11, latex_class='article'):
+def tikz_render_formula(formula, folder):
+	return render_formula(formula, tikz_wrap_formula, folder)
+
+def tex_render_formula(formula, folder):
+	return render_formula(formula, tex_wrap_formula, folder)
+
+def render_formula(formula, fnc, folder, font_size=11, latex_class='article'):
     hash = sha.new(formula).hexdigest()
     if os.path.exists(os.path.join(folder, hash + ".png")):
         return hash + ".png"
@@ -27,53 +33,22 @@ def tikz_render_formula(formula, folder, font_size=11, latex_class='article'):
     os.chdir(tempdir)
  
     f = file('formula.tex', 'w')
-    f.write(tikz_wrap_formula(formula))
+    f.write(fnc(formula))
     f.close()
  
-    status = os.system("tex --interaction=nonstopmode formula.tex")
-    if status != 0:
+    if os.system("tex --interaction=nonstopmode formula.tex") != 0:
+	    return 'error.png'
+	    
+ 
+    if os.system("dvips -E formula.dvi -o formula.ps") != 0:
 	    return 'error.png'
  
-    status = os.system("dvips -E formula.dvi -o formula.ps")
-    assert 0==status, tempdir
- 
-    status = os.system("convert -density 120 -trim -transparent \"#FFFFFF\" formula.ps formula.png")
-    assert 0==status, tempdir
+    if os.system("convert -density 120 -trim -transparent \"#FFFFFF\" formula.ps formula.png") != 0:
+	    return 'error.png'
  
     os.chdir(curpath)
  
     shutil.copyfile(os.path.join(tempdir, "formula.png"), os.path.join(folder, hash + ".png"))
     shutil.rmtree(tempdir)
  
-    return hash+".png"
-
-def tex_render_formula(formula, folder, font_size=11, latex_class='article'):
-    hash = sha.new(formula).hexdigest()
-    if os.path.exists(os.path.join(folder, hash + ".png")):
-        return hash + ".png"
- 
-    tempdir = tempfile.mkdtemp()
-    curpath = os.getcwd()
-    os.chdir(tempdir)
- 
-    f = file('formula.tex', 'w')
-    f.write(tex_wrap_formula(formula, font_size, latex_class))
-    f.close()
- 
-    status = os.system("tex --interaction=nonstopmode formula.tex")
-    assert 0==status, tempdir
- 
-    status = os.system("dvips -E formula.dvi -o formula.ps")
-    assert 0==status, tempdir
- 
-    status = os.system("convert -density 120 -trim -transparent \"#FFFFFF\" formula.ps formula.png")
-    assert 0==status, tempdir
- 
-    os.chdir(curpath)
- 
-    shutil.copyfile(os.path.join(tempdir, "formula.png"), os.path.join(folder, hash + ".png"))
-    shutil.rmtree(tempdir)
- 
-    return hash+".png"
-
-
+    return hash + ".png"

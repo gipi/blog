@@ -3,32 +3,40 @@ from docutils.parsers.rst import directives, roles
 from django.conf import settings
 import texrender
  
+def get_img(formula,render_func):
+	print 'DEBUG of formula: ', formula
+	return render_func(formula, settings.TEX_MEDIA)
+
 def get_latex_img(formula):
-	print 'DEBUG of formula: ', formula
-	fname = texrender.tex_render_formula(formula, settings.TEX_MEDIA)
-	return settings.TEX_MEDIA_URL + fname
+	return get_img(formula, texrender.tex_render_formula)
 
-def latex_directive(name, arguments, options, content, lineno,
-		content_offset, block_text, state, state_machine):
-	url = get_latex_img('\n'.join(content))
-	return [nodes.raw('', '<img class="formula" src="%s" />' % url, format='html')]
-
-latex_directive.content = 1
-directives.register_directive('latex', latex_directive)
- 
 def get_tikz_img(formula):
-	print 'DEBUG of formula: ', formula
-	fname = texrender.tikz_render_formula(formula, settings.TEX_MEDIA)
-	return fname
+	return get_img(formula, texrender.tikz_render_formula)
 
-def tikz_directive(name, arguments, options, content, lineno,
+
+
+def directive(get_img_func, name, arguments, options, content, lineno,
 		content_offset, block_text, state, state_machine):
-	imagename = get_tikz_img('\n'.join(content))
+	imagename = get_img_func('\n'.join(content))
 	if imagename == 'error.png':
 		return [nodes.raw('', '<b>Errore</b>', format='html')]
 
 	url = settings.TEX_MEDIA_URL + imagename
 	return [nodes.raw('', '<img class="tikz" src="%s" />' % url, format='html')]
 
+def latex_directive(name, arguments, options, content, lineno,
+		content_offset, block_text, state, state_machine):
+	return directive(get_latex_img, name, arguments, options, content,
+			lineno, content_offset, block_text, state, state_machine)
+
+def tikz_directive(name, arguments, options, content, lineno,
+		content_offset, block_text, state, state_machine):
+	return directive(get_tikz_img, name, arguments, options, content,
+			lineno, content_offset, block_text, state, state_machine)
+
+
+latex_directive.content = 1
+directives.register_directive('latex', latex_directive)
+ 
 tikz_directive.content = 1
 directives.register_directive('tikz', tikz_directive)
