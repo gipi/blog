@@ -37,13 +37,15 @@ def render_formula(formula, fnc, folder, font_size=11, latex_class='article'):
     f.close()
  
     if os.system("tex --interaction=nonstopmode formula.tex") != 0:
+	    os.chdir(curpath)
 	    return 'error.png'
-	    
  
     if os.system("dvips -E formula.dvi -o formula.ps") != 0:
+	    os.chdir(curpath)
 	    return 'error.png'
  
     if os.system("convert -density 120 -trim -transparent \"#FFFFFF\" formula.ps formula.png") != 0:
+	    os.chdir(curpath)
 	    return 'error.png'
  
     os.chdir(curpath)
