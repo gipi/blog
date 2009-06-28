@@ -25,7 +25,7 @@ Ecco un esempio di codice TeX
  c           & d -\lambda \cr
  }\\right| = \lambda^2 - \hbox{tr}(A)\lambda + \det(A)
 
-ma anche di capacità grafiche senza pari
+ma anche di capacita` grafiche senza pari
 
 .. tikz::
  [scale=0.5]
@@ -34,7 +34,14 @@ ma anche di capacità grafiche senza pari
  \draw (3,0)  +(0:1cm) -- +(72:1cm) -- +(144:1cm) -- +(216:1cm) --
            +(288:1cm) -- cycle;
 
-ma mica finisce cosi`, 
+ma mica finisce cosi`, c'e` anche roba per coder
+
+.. code-block:: python
+
+    if request.is_ajax():
+        return render_to_response('restructured_text.html',
+                {'content':formula},
+                context_instance=RequestContext(request))
 """
 
 def test(request):
