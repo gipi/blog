@@ -5,6 +5,20 @@
 		<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}/css/native.css"/>
 		<script type="text/javascript" src="{{MEDIA_URL}}/js/jquery.js"></script>
 <body>
+	{% block navbar %}
+	<ul class="navbar">
+		{% if user.is_authenticated %}
+		<li>{{user}}</li> |
+		<li>profile</li>
+		<li>help</li>
+		<li>about</li>
+		<li><a href="{% url logout %}">log out</a></li>
+		{% else %}
+		<li><a href="{% url login %}">log in</a></li>
+		{% endif %}
+	</ul>
+	{% block header%}<img id="logo" src="{{MEDIA_URL}}/logo.png"/>{% endblock%}
+	{% endblock %}
 	{% block body %}{% endblock %}
 </body>
 </html>

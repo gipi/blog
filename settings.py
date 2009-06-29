@@ -80,6 +80,8 @@ INSTALLED_APPS = (
     'snippet',
 )
 
+LOGIN_REDIRECT_URL = '/'
+
 try:
     from local_settings import *
     from version import SNIPPY_GIT_VERSION

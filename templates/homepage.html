@@ -1,6 +1,7 @@
 {% extends 'site_base.html' %}
 {% load markup %}
 {% block body %}
+	{% if user.is_authenticated %}
 	<script type="text/javascript">
 		function submitData(){
 			$('#kt').load(
@@ -19,7 +20,9 @@
 	<form onsubmit="submitData();return false;" method="post" action="">
         {{form.as_p}}
         <input type="submit"/>
-    </form>
+	</form>
+	{% endif %}
+
     <div id="kt" class="post">
     </div>
 {% endblock body %}

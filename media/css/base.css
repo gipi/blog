@@ -3,6 +3,24 @@ body{
 	padding:0px;
 }
 
+a{
+	text-decoration:none;
+	color:blue;
+}
+
+ul.navbar{
+	background:#55f;
+}
+
+ul.navbar li{
+	display:inline;
+	font-weight:bold;
+	color:white;
+}
+
+ul.navbar li a{
+	color:white;
+}
 .post{
 	margin:10px;
 	padding:10px;
