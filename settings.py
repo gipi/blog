@@ -82,8 +82,12 @@ INSTALLED_APPS = (
 
 LOGIN_REDIRECT_URL = '/'
 
+DEBUG = True
+TEMPLATEDEBUG = DEBUG
+SNIPPY_GIT_VERSION = '-zer0'
+
 try:
-    from local_settings import *
     from version import SNIPPY_GIT_VERSION
+    from local_settings import *
 except ImportError:
     print '*** Do you have a \'local_settings.py\' or \'version.py\'?'
