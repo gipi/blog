@@ -8,8 +8,15 @@ a{
 	color:blue;
 }
 
+#logo{
+	float:left;
+	height:20px;
+	border:none;
+}
+
 ul.navbar{
 	background:#55f;
+	text-align:right;
 }
 
 ul.navbar li{

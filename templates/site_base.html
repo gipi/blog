@@ -5,6 +5,8 @@
 		<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}/css/native.css"/>
 		<script type="text/javascript" src="{{MEDIA_URL}}/js/jquery.js"></script>
 <body>
+	<div id="header">
+	{% block header%}<a href="/"><img id="logo" src="{{MEDIA_URL}}/logo.png"/></a>{% endblock%}
 	{% block navbar %}
 	<ul class="navbar">
 		{% if user.is_authenticated %}
@@ -17,8 +19,8 @@
 		<li><a href="{% url login %}">log in</a></li>
 		{% endif %}
 	</ul>
-	{% block header%}<img id="logo" src="{{MEDIA_URL}}/logo.png"/>{% endblock%}
 	{% endblock %}
+	</div>
 	{% block body %}{% endblock %}
 </body>
 </html>
