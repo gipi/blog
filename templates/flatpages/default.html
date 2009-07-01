@@ -1,0 +1,6 @@
+{% extends 'site_base.html'%}
+{% load markup %}
+{% block body %}
+	<h1>{{flatpage.title}}</h1>
+	<div class="flatpage_content">{{flatpage.content|restructuredtext}}</div>
+{% endblock %}
