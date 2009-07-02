@@ -4,6 +4,7 @@
 	{% if user.is_authenticated %}
 	<script type="text/javascript">
 		function submitData(){
+			$('#loader').css("display", "block");
 			$('#kt').load(
 					'/entry/',
 					{'content': document.getElementById('id_content').value
@@ -13,6 +14,7 @@
 						alert(responseText);
 						document.body.innerHTML = responseText;
 						}
+					$('#loader').css("display", "none");
 					});
 			
 		}
