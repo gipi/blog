@@ -1,0 +1,16 @@
+{% extends 'site_base.html' %}
+{% load markup %}
+{% block body %}
+{% if blog %}
+	<h1>{{blog.title}}</h1>
+	<div class="blog_content">
+		{{blog.content|restructuredtext}}
+	</div>
+{% endif %}
+{% if form %}
+	<form method="post" action="">
+	{{form.as_p}}
+	<input type="submit" value="salva"/>
+	</form>
+{% endif %}
+{% endblock %}

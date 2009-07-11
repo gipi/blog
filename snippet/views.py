@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.conf import settings
+from django.http import HttpResponseRedirect
 
-from snippet.forms import EntryForm
+from snippet.forms import EntryForm, BlogForm
 
 from snippet import rst_tex, rst_code
+
+from snippet.models import Blog
 
 example = """
 u
@@ -65,4 +68,28 @@ def test(request):
             {'form': form, 'entry':formula},
             context_instance=RequestContext(request))
 
+def blog_list(request):
+	return render_to_response('snippet/blog_list.html',
+			{'blogs': Blog.objects.all()},
+			context_instance=RequestContext(request))
+
+def blog_view(request, slug):
+	form = None
+	content = None
+	blog = get_object_or_404(Blog, slug=slug)
+
+	return render_to_response('snippet/blog.html', {'blog': blog},
+			context_instance=RequestContext(request))
+
+def blog_add(request):
+	if request.method == 'POST':
+		form = BlogForm(request.POST)
+		if form.is_valid():
+			blog = form.save()
+			return HttpResponseRedirect('/blog/list/')
+	else:
+		form = BlogForm()
+
+	return render_to_response('snippet/blog.html', {'form': form},
+			context_instance=RequestContext(request))
 

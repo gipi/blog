@@ -11,6 +11,10 @@ urlpatterns = patterns('',
         url(r'^login/$', 'django.contrib.auth.views.login', name='login'),
         url(r'^logout/$', 'django.contrib.auth.views.logout', name='logout'),
         (r'^entry/$', 'snippet.views.test'),
-        # Trick for Django to support static files (security hole: only for Dev environement! remove this on Prod!!!)$
+        (r'^blog/$', 'snippet.views.blog_list'),
+        (r'^blog/add/$', 'snippet.views.blog_add'),
+        (r'^blog/post/([\w\d-]*)/$', 'snippet.views.blog_view'),
+        # Trick for Django to support static files
+	# (security hole: only for Dev environement! remove this on Prod!!!)
         url(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
 )

@@ -11,6 +11,12 @@
 		<ul class="navbar">
 			{% if user.is_authenticated %}
 			<li>{{user}}</li> 
+			{% if user.is_superuser %}
+			<li><a href="{% url snippet.views.blog_add %}">
+					New post
+				</a>
+			</li>
+			{% endif %}
 			|
 			<li>profile</li>
 			<li>help</li>

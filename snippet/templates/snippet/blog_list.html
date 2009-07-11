@@ -1,0 +1,19 @@
+{% extends 'site_base.html' %}
+{% load markup %}
+{% load tagging_tags %}
+{% block body %}
+	{% if blogs %}
+		{% for blog in blogs %}
+		<div class="post">
+			<h2>
+				<a href="{% url snippet.views.blog_view blog.slug %}">{{blog.title}}</a>
+			</h2>
+			<p>{{blog.content|restructuredtext}}</p>
+			<div>
+				{% tags_for_object blog as tags %}
+				{% for tag in tags %}{{tag}} {% endfor %}
+			</div>
+		</div>
+		{% endfor %}
+	{% endif %}
+{% endblock %}

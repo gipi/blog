@@ -1,5 +1,5 @@
 from django.forms import ModelForm, Textarea, CharField
-from snippet.models import Entry
+from snippet.models import Entry, Blog
 
 class EntryForm(ModelForm):
     content = CharField(widget=Textarea(
@@ -7,3 +7,9 @@ class EntryForm(ModelForm):
 
     class Meta:
         model = Entry
+
+class BlogForm(ModelForm):
+    content = CharField(widget=Textarea(
+	    attrs={'style': 'width:60em;height:20em;'}))
+    class Meta:
+        model = Blog

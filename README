@@ -1,5 +1,7 @@
 # DEPENDENCIES
+
   * django <http://djangoproject.com>
+  * django-tagging <http://code.google.com/p/django-tagging/>
   * pygments <http://pygments.org/>
   * docutils
   * TeX
