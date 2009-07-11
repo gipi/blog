@@ -8,20 +8,22 @@
 	<div id="header">
 	{% block header%}<a href="/"><img id="logo" src="{{MEDIA_URL}}/logo.png"/></a>{% endblock%}
 	{% block navbar %}
-	<ul class="navbar">
-		{% if user.is_authenticated %}
-		<li>{{user}}</li> |
-		<li>profile</li>
-		<li>help</li>
-		<li>about</li>
-		<li><a href="{% url logout %}">log out</a></li>
-		{% else %}
-		<li><a href="{% url login %}">log in</a></li>
-		{% endif %}
-	</ul>
+		<ul class="navbar">
+			{% if user.is_authenticated %}
+			<li>{{user}}</li> 
+			|
+			<li>profile</li>
+			<li>help</li>
+			<li><a href="/about/">about</a></li>
+			<li><a href="{% url logout %}">log out</a></li>
+			{% else %}
+			<li><a href="{% url login %}">log in</a></li>
+			{% endif %}
+		</ul>
 	{% endblock %}
 	<div id="loader">Loading...</div>
 	</div>
 	{% block body %}{% endblock %}
+	</div>
 </body>
 </html>
