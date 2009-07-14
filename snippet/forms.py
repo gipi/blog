@@ -7,6 +7,7 @@ class EntryForm(ModelForm):
 
     class Meta:
         model = Entry
+	exclude = ['user',]
 
 class BlogForm(ModelForm):
     content = CharField(widget=Textarea(
