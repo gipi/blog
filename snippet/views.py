@@ -47,17 +47,18 @@ ma mica finisce cosi`, c'e` anche roba per coder
                 context_instance=RequestContext(request))
 """
 
-def test(request):
-    formula = ""
-    if request.method != 'POST':
-        form = EntryForm(initial={'content': example})
+@login_required
+def preview(request):
+    """
+    This function get only a POST with content variable and return
+    a preview of the post.
+    """
+    if request.is_ajax():
+        return render_to_response('restructured_text.html',
+                {'content':request.POST['content']},
+                context_instance=RequestContext(request))
     else:
-        form = EntryForm(request.POST)
-        if form.is_valid():
-            instance = form.save(commit=False)
-	    formula = instance.content
-	    # d41d8cd98f00b204e9800998ecf8427e = la stringa vuota
-	    print 'formula: ', formula
+    	return HttpResponseBadRequest('NONONONO')
 
     if request.is_ajax():
         return render_to_response('restructured_text.html',
