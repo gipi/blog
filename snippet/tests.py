@@ -5,7 +5,7 @@ from django.test import TestCase
 
 class RenderingTest(TestCase):
 	def test_tex(self):
-		content = """
+		content = r"""
 		.. latex::
 		 F_{\mu\nu} = \partial_\mu A_\nu - \partial_\nu A_\mu
 		"""
