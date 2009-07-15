@@ -55,6 +55,30 @@ class AuthTest(TestCase):
 		response = self.client.get('/blog/add/')
 		self.assertEqual(response.status_code, 403)
 
+	def test_preview(self):
+		# in order to preview need to login
+		response = self.client.get('/preview/')
+		self.assertRedirects(response, '/login/?next=/preview/')
+
+		response = self.client.post('/preview/',
+			{'content': 'miao'})
+		self.assertRedirects(response, '/login/?next=/preview/')
+
+		# need XMLHttpRequest
+		self.client.login(username='test', password='password')
+		response = self.client.get('/preview/')
+		self.assertEqual(response.status_code, 400)
+
+		response = self.client.post('/preview/',
+			{'content': 'miao'})
+		self.assertEqual(response.status_code, 400)
+
+		# so we use it
+		response = self.client.post('/preview/',
+			{'content': 'miao'},
+			HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+		self.assertEqual(response.status_code, 200)
+
 class UtilTests(TestCase):
 	def test_slugify(self):
 		slug = slugify('l\'amore non ESISTE')
