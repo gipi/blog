@@ -1,30 +1,4 @@
 {% extends 'site_base.html' %}
 {% load markup %}
 {% block body %}
-	{% if user.is_authenticated %}
-	<script type="text/javascript">
-		function submitData(){
-			$('#loader').css("display", "block");
-			$('#kt').load(
-					'/entry/',
-					{'content': document.getElementById('id_content').value
-					}, 
-					function(responseText, textStatus, XHR){
-					if(XHR.status == 500){
-						alert(responseText);
-						document.body.innerHTML = responseText;
-						}
-					$('#loader').css("display", "none");
-					});
-			
-		}
-	</script>
-	<form onsubmit="submitData();return false;" method="post" action="">
-        {{form.as_p}}
-        <input type="submit"/>
-	</form>
-	{% endif %}
-
-    <div id="kt" class="post">
-    </div>
 {% endblock body %}
