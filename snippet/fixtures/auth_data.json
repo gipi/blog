@@ -4,7 +4,8 @@
     "pk": 1,
     "fields": {
       "username": "test",
-      "password": "sha1$bb09e$3c9ba7bae63f8af4642b7a3941e96699bf9eaaa4"
+      "password": "sha1$bb09e$3c9ba7bae63f8af4642b7a3941e96699bf9eaaa4",
+      "is_superuser": "True"
     }
   }
 ]

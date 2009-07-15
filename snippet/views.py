@@ -5,7 +5,6 @@ from django.conf import settings
 from django.http import HttpResponseRedirect
 
 from snippet.forms import EntryForm, BlogForm
-
 from snippet import rst_tex, rst_code
 
 from snippet.models import Blog
@@ -82,15 +81,17 @@ def blog_view(request, slug):
 	return render_to_response('snippet/blog.html', {'blog': blog},
 			context_instance=RequestContext(request))
 
+@superuser_only
 def blog_add(request):
 	if request.method == 'POST':
 		form = BlogForm(request.POST)
 		if form.is_valid():
-			blog = form.save()
-			return HttpResponseRedirect('/blog/list/')
+			blog = form.save(commit=False)
+			blog.slug = slugify(blog.title)
+			blog.save()
+			return HttpResponseRedirect('/blog/')
 	else:
 		form = BlogForm()
 
 	return render_to_response('snippet/blog.html', {'form': form},
 			context_instance=RequestContext(request))
-

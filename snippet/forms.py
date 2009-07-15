@@ -14,3 +14,4 @@ class BlogForm(ModelForm):
 	    attrs={'style': 'width:60em;height:20em;'}))
     class Meta:
         model = Blog
+	exclude = ['slug',]
