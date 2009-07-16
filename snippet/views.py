@@ -2,12 +2,15 @@
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.conf import settings
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 
 from snippet.forms import EntryForm, BlogForm
 from snippet import rst_tex, rst_code
-
+from snippet.utils import slugify
 from snippet.models import Blog
+from snippet.decorators import superuser_only, ajax_required
 
 example = """
 u

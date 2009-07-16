@@ -26,6 +26,17 @@ class BlogTests(TestCase):
 		self.client.login(username='test', password='password')
 		response = self.client.get('/blog/add/')
 		self.assertEqual(response.status_code, 200)
+		print response.context
+
+		# some errors
+		response = self.client.post('/blog/add',
+			{
+				'content': 'this is a content',
+				'tags': 'love, lulz'
+			})
+		print response.context
+		self.assertFormError(response, 'form', 'title', '')
+		#self.assertRedirects(response, '/blog/')
 
 		# can I submit without error
 		response = self.client.post('/blog/add',
