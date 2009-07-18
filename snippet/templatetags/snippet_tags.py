@@ -19,3 +19,12 @@ def gravatar(email, site):
 	)
 
 	return { 'url': gravatar_url }
+
+@register.inclusion_tag('entry_skeleton.html')
+def entry(username, email, content, creation_date):
+	return {
+		'username': username,
+		'email': email,
+		'content': content,
+		'date': creation_date
+		}

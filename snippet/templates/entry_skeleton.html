@@ -1,0 +1,6 @@
+{% load snippet_tags %}
+<div class="entry">
+	<h3>posted by {{username}} at {{date|date:"D d M Y"}}</h3>
+	{% gravatar email 'miao' %}
+	<p>{{content}}</p>
+</div>
