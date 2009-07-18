@@ -14,7 +14,6 @@
 	<input type="button" value="preview"
 		onclick="submit_preview('id_content');">
 	</form>
-{% endif %}
     <div id="preview">
     </div>
     {% comment %}
@@ -23,4 +22,5 @@
     {% endcomment %}
     <input id="save_button" onclick="submit_new_entry('id_content');"
 		type="submit" style="display:none;" value="salva" />
+{% endif %}
 {% endblock %}
