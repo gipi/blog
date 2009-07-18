@@ -14,6 +14,8 @@ urlpatterns = patterns('',
         (r'^blog/$', 'snippet.views.blog_list'),
         (r'^blog/add/$', 'snippet.views.blog_add'),
         (r'^blog/post/([\w\d-]*)/$', 'snippet.views.blog_view'),
+	# comment stuffs
+	(r'^comments/', include('django.contrib.comments.urls')),
         # Trick for Django to support static files
 	# (security hole: only for Dev environement! remove this on Prod!!!)
         url(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
