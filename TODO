@@ -1,0 +1,7 @@
+# ROADMAP
+
+ 1 - Post snippet like twitter
+ 2 - Allow to create thread
+ 3 - Allow comment on blog post
+ 4 - Find a way to check malicious TeX commands
+     like '\alpha $$ \input /etc/passwd $$\beta'.
