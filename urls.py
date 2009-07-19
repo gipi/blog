@@ -13,7 +13,7 @@ urlpatterns = patterns('',
         (r'^preview/$', 'snippet.views.preview'),
         (r'^blog/$', 'snippet.views.blog_list'),
         (r'^blog/add/$', 'snippet.views.blog_add'),
-        (r'^blog/post/([\w\d-]*)/$', 'snippet.views.blog_view'),
+        url(r'^blog/post/([\w\d-]*)/$', 'snippet.views.blog_view', name='blog-post'),
 	# comment stuffs
 	(r'^comments/', include('django.contrib.comments.urls')),
         # Trick for Django to support static files
