@@ -39,6 +39,12 @@ ul.navbar li a{
 	border:1px dashed black;
 }
 
+.gravatar{
+	float:left;
+	margin:0px 10px 10px 0px;
+}
+
+
 .blog_header, .blog_creation_date{
 	text-align:center;
 }
