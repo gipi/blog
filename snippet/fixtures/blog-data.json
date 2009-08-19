@@ -9,5 +9,23 @@
       "creation_date": "2009-07-16 19:38:48.080528",
       "tags": "minimal surface,soap bubble, math"
     }
+  },
+  {
+    "pk": 1, 
+    "model": "comments.comment", 
+    "fields": {
+      "comment": "this is bull****!!!\n\nAre you sure about which you are saying?", 
+      "user_url": "http://packz.noblogs.org/", 
+      "submit_date": "2009-07-18 13:19:47", 
+      "ip_address": "127.0.0.1", 
+      "object_pk": "1", 
+      "site": 1, 
+      "is_removed": false, 
+      "user": null, 
+      "content_type": 14, 
+      "is_public": true, 
+      "user_name": "packz", 
+      "user_email": "packz@autistici.org"
+    }
   }
 ]
