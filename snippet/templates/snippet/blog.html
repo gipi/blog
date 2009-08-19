@@ -2,7 +2,10 @@
 {% load markup %}
 {% block body %}
 {% if blog %}
-	<h1>{{blog.title}}</h1>
+	<h1 class="blog_header">{{blog.title}}</h1>
+	<h3 class="blog_creation_date">
+		{{blog.creation_date|date:"D d M Y"}}
+	</h3>
 	<div class="blog_content">
 		{{blog.content|restructuredtext}}
 	</div>
