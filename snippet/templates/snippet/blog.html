@@ -1,4 +1,6 @@
 {% extends 'site_base.html' %}
+{% load comments %}
+{% load snippet_tags %}
 {% load markup %}
 {% block body %}
 {% if blog %}
@@ -26,4 +28,24 @@
     <input id="save_button" onclick="submit_new_entry('id_content');"
 		type="submit" style="display:none;" value="salva" />
 {% endif %}
+	<div id="comment_container">
+	<h2>Comments</h2>
+	{% get_comment_form for blog as cform %}
+	<form action="{% comment_form_target %}" method="POST">
+	{{ cform.as_p }}
+	<input type="hidden" name="next" value="{% url blog-post blog.slug %}"/>
+
+	<tr>
+		<td><input type="submit" value="post comment"/></td>
+		<td><input
+		type="submit" name="preview"
+		class="submit-post" value="Preview">
+		</td>
+	</tr>
+	</form>
+	{% get_comment_list for blog as comments %}
+	{% for comment in comments %}
+		{% entry comment.user_name comment.user_email comment.comment comment.submit_date %}
+	{% endfor %}
+	</div>
 {% endblock %}
