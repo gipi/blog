@@ -32,8 +32,18 @@ ul.navbar li{
 ul.navbar li a{
 	color:white;
 }
+
 .post{
 	margin:10px;
 	padding:10px;
 	border:1px dashed black;
+}
+
+.blog_header, .blog_creation_date{
+	text-align:center;
+}
+
+.blog_content{
+	width:500px;
+	margin:auto;
 }
