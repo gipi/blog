@@ -34,10 +34,14 @@ ul.navbar li a{
 	color:white;
 }
 
+#content{
+	width:600px;
+	margin:auto;
+}
+
 .post{
 	margin:10px;
 	padding:10px;
-	border:1px dashed black;
 }
 
 .gravatar{
