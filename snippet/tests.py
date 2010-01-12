@@ -21,13 +21,14 @@ class RenderingTest(TestCase):
 		self.assertEqual(response.status_code, 200)
 
 class BlogTests(TestCase):
-	fixtures = ['auth_data.json']
+	fixtures = ['auth_data.json', 'blog-data.json',]
 	def test_blog_add(self):
 		# the page exists
 		self.client.login(username='test', password='password')
 		response = self.client.get(reverse('blog-add'))
 		self.assertEqual(response.status_code, 200)
-		print response.context
+
+		previous_n = len(Blog.objects.all())
 
 		# some errors
 		response = self.client.post(reverse('blog-add'),
@@ -48,7 +49,7 @@ class BlogTests(TestCase):
 				'status': 'pubblicato',
 			})
 		#self.assertRedirects(response, '/blog/')
-		self.assertEqual(len(Blog.objects.all()), 1)
+		self.assertEqual(len(Blog.objects.all()), previous_n + 1)
 
 	def test_blog_list_with_bozza(self):
 		url = reverse('blog-list')
