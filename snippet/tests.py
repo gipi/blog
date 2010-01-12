@@ -63,17 +63,18 @@ class AuthTest(TestCase):
 		response = self.client.get('/login/')
 		self.assertEqual(response.status_code, 200)
 
-		response = self.client.post('/login/',
+		response = self.client.post(reverse('login'),
 				{'username': 'test', 'password': 'password'})
-		self.assertRedirects(response, '/')
+		self.assertRedirects(response, reverse('home'))
 
 	def test_logout(self):
 		response = self.client.get('/logout/')
 		self.assertEqual(response.status_code, 200)
 	
 	def test_blog_add(self):
-		response = self.client.get('/blog/add/')
-		self.assertEqual(response.status_code, 403)
+		response = self.client.get(reverse('blog-add'))
+		self.assertRedirects(response,
+			'/login/?next=' + reverse('blog-add'))
 
 	def test_preview(self):
 		# in order to preview need to login
