@@ -2,6 +2,7 @@
 #  1. chdir on texrender come back on error
 #  2. rmdir tmpdir
 from django.test import TestCase
+from django.core.urlresolvers import reverse
 
 from snippet.models import Blog
 from snippet.utils import slugify
@@ -24,12 +25,12 @@ class BlogTests(TestCase):
 	def test_blog_add(self):
 		# the page exists
 		self.client.login(username='test', password='password')
-		response = self.client.get('/blog/add/')
+		response = self.client.get(reverse('blog-add'))
 		self.assertEqual(response.status_code, 200)
 		print response.context
 
 		# some errors
-		response = self.client.post('/blog/add',
+		response = self.client.post(reverse('blog-add'),
 			{
 				'content': 'this is a content',
 				'tags': 'love, lulz'
@@ -39,7 +40,7 @@ class BlogTests(TestCase):
 		#self.assertRedirects(response, '/blog/')
 
 		# can I submit without error
-		response = self.client.post('/blog/add',
+		response = self.client.post(reverse('blog-add'),
 			{
 				'title': 'This is a test',
 				'content': 'this is a content',
