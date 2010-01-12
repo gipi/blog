@@ -36,8 +36,8 @@ class BlogTests(TestCase):
 				'content': 'this is a content',
 				'tags': 'love, lulz'
 			})
-		print response.context
-		self.assertFormError(response, 'form', 'title', '')
+		self.assertFormError(response, 'form', 'title',
+			[u'This field is required.'])
 		#self.assertRedirects(response, '/blog/')
 
 		# can I submit without error
