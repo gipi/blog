@@ -6,6 +6,10 @@ PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 DATABASE_ENGINE = 'sqlite3'
 DATABASE_NAME = PROJECT_ROOT + '/db.sqlite'
 
+ADMINS = (
+    # ('Your Name', 'your_email@domain.com'),
+)
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
