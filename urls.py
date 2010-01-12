@@ -11,11 +11,9 @@ urlpatterns = patterns('',
         url(r'^login/$', 'django.contrib.auth.views.login', name='login'),
         url(r'^logout/$', 'django.contrib.auth.views.logout', name='logout'),
         (r'^preview/$', 'snippet.views.preview'),
-        (r'^blog/$', 'snippet.views.blog_list'),
-        (r'^blog/add/$', 'snippet.views.blog_add'),
-        url(r'^blog/post/([\w\d-]*)/$', 'snippet.views.blog_view', name='blog-post'),
-	# comment stuffs
-	(r'^comments/', include('django.contrib.comments.urls')),
+        (r'^blog/', include('snippet.urls')),
+        # comment stuffs
+        (r'^comments/', include('django.contrib.comments.urls')),
 )
 
 if settings.DEBUG:
