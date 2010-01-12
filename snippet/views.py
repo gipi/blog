@@ -73,7 +73,7 @@ def preview(request):
 
 def blog_list(request):
 	return render_to_response('snippet/blog_list.html',
-			{'blogs': Blog.objects.all()},
+			{'blogs': Blog.objects.filter(status='pubblicato')},
 			context_instance=RequestContext(request))
 
 def blog_view(request, slug):
@@ -84,13 +84,14 @@ def blog_view(request, slug):
 	return render_to_response('snippet/blog.html', {'blog': blog},
 			context_instance=RequestContext(request))
 
-@superuser_only
+@login_required
 def blog_add(request):
 	if request.method == 'POST':
 		form = BlogForm(request.POST)
 		if form.is_valid():
 			blog = form.save(commit=False)
 			blog.slug = slugify(blog.title)
+			blog.user = request.user
 			blog.save()
 			return HttpResponseRedirect('/blog/')
 	else:

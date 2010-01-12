@@ -4,6 +4,8 @@
     "pk":1,
     "fields": {
       "slug": "superfici-minimali-e-bolle-di-sapone",
+      "status": "pubblicato",
+      "user": 1,
       "title": "Superfici minimali e bolle di sapone",
       "content": "Il problema di trovare la figura piana capace di massimizzare l'area a uguale perimetro è stato risolto da Pappo nel 390 A.D..\n\nLa **first variation of area formula** è data dalla formula\n\n.. latex:: {d\\,A\\over dt} = H A\n\ndove H è rappresenta la curvatura media. In base a questa formula, una superficie rappresenta un punto di minimo (o massimo) solo nel caso in cui la sua curvatura media si annulli.",
       "creation_date": "2009-07-16 19:38:48.080528",

@@ -43,10 +43,17 @@ class BlogTests(TestCase):
 			{
 				'title': 'This is a test',
 				'content': 'this is a content',
-				'tags': 'love, lulz'
+				'tags': 'love, lulz',
+				'status': 'pubblicato',
 			})
 		#self.assertRedirects(response, '/blog/')
 		self.assertEqual(len(Blog.objects.all()), 1)
+
+	def test_blog_list_with_bozza(self):
+		url = reverse('blog-list')
+		response = self.client.get(url)
+		print response.context[0]['blogs']
+		self.assertEqual(len(response.context[0]['blogs']), 1)
 
 class AuthTest(TestCase):
 	fixtures = ['auth_data.json']

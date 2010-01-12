@@ -8,6 +8,9 @@
 		<div class="post">
 			<h2>
 				<a href="{% url snippet.views.blog_view blog.slug %}">{{blog.title}}</a>
+				{% ifequal user blog.user %}
+				<a href="{% url snippet.views.blog_add blog.pk %}">edit</a>
+				{% endifequal %}
 			</h2>
 			<h3>{{blog.creation_date|time}}</h3>
 			<h3><b>Tags: </b>{% tags_for_object blog as tags %}
