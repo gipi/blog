@@ -94,9 +94,13 @@ SNIPPY_GIT_VERSION = '-zer0'
 
 try:
     from version import SNIPPY_GIT_VERSION
+except ImportError:
+    print '*** No \'version.py\' or doesn\'t contain SNIPPY_GIT_VERSION'
+
+try:
     from local_settings import *
 except ImportError:
-    print '*** Do you have a \'local_settings.py\' or \'version.py\'?'
+    print '*** Do you have a \'local_settings.py\'?'
 
 MANAGERS = ADMINS
 TEMPLATE_DEBUG = DEBUG
