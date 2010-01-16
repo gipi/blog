@@ -90,16 +90,14 @@ def blog_add(request, id=None):
 	if id:
 		instance = get_object_or_404(Blog, pk=id)
 
+    form = BlogForm(request.POST or None, instance=instance)
+
 	if request.method == 'POST':
-		form = BlogForm(request.POST, instance=instance)
 		if form.is_valid():
 			blog = form.save(commit=False)
 			blog.slug = slugify(blog.title)
 			blog.user = request.user
 			blog.save()
 			return HttpResponseRedirect('/blog/')
-	else:
-		form = BlogForm(instance=instance)
-
 	return render_to_response('snippet/blog.html', {'form': form},
 			context_instance=RequestContext(request))
