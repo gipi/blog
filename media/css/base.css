@@ -20,8 +20,8 @@ a{
 }
 
 ul.navbar{
-	background:#55f;
 	text-align:right;
+	background:url('/media/images/navbar-background.png');
 }
 
 ul.navbar li{
