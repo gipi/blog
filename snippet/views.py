@@ -2,7 +2,8 @@
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.conf import settings
-from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponseRedirect, HttpResponse, \
+         HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
@@ -60,7 +61,7 @@ def preview(request):
                 {'content':request.POST['content']},
                 context_instance=RequestContext(request))
     else:
-    	return HttpResponseBadRequest('NONONONO')
+        return HttpResponseBadRequest('NONONONO')
 
     if request.is_ajax():
         return render_to_response('restructured_text.html',
@@ -72,32 +73,37 @@ def preview(request):
             context_instance=RequestContext(request))
 
 def blog_list(request):
-	return render_to_response('snippet/blog_list.html',
-			{'blogs': Blog.objects.filter(status='pubblicato')},
-			context_instance=RequestContext(request))
+    return render_to_response('snippet/blog_list.html',
+            {'blogs': Blog.objects.filter(status='pubblicato')},
+            context_instance=RequestContext(request))
 
 def blog_view(request, slug):
-	form = None
-	content = None
-	blog = get_object_or_404(Blog, slug=slug)
+    """
+    Read article by Tim Berners Lee about importance of URL
+    """
+    form = None
+    content = None
+    blog = get_object_or_404(Blog, slug=slug)
 
-	return render_to_response('snippet/blog.html', {'blog': blog},
-			context_instance=RequestContext(request))
+    return render_to_response('snippet/blog.html', {'blog': blog},
+            context_instance=RequestContext(request))
 
 @login_required
 def blog_add(request, id=None):
-	instance = None
-	if id:
-		instance = get_object_or_404(Blog, pk=id)
+    instance = None
+    if id:
+        instance = get_object_or_404(Blog, pk=id)
 
     form = BlogForm(request.POST or None, instance=instance)
 
-	if request.method == 'POST':
-		if form.is_valid():
-			blog = form.save(commit=False)
-			blog.slug = slugify(blog.title)
-			blog.user = request.user
-			blog.save()
-			return HttpResponseRedirect('/blog/')
-	return render_to_response('snippet/blog.html', {'form': form},
-			context_instance=RequestContext(request))
+    if request.method == 'POST':
+        if form.is_valid():
+            blog = form.save(commit=False)
+            # TODO: maybe exists a Django function for slugify
+            blog.slug = slugify(blog.title)
+            blog.user = request.user
+            blog.save()
+            return HttpResponseRedirect('/blog/')
+
+    return render_to_response('snippet/blog.html', {'form': form},
+            context_instance=RequestContext(request))
