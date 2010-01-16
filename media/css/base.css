@@ -36,7 +36,12 @@ ul.navbar li a{
 
 #content{
 	width:600px;
+	min-height:400px;
 	margin:auto;
+}
+
+#footer{
+	text-align:center;
 }
 
 .post{
