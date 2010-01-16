@@ -13,14 +13,10 @@
 	{% block navbar %}
 		<ul class="navbar">
 			{% if user.is_authenticated %}
-			<li>{{user}}</li> 
-			{% if user.is_superuser %}
-			<li><a href="{% url snippet.views.blog_add %}">
-					New post
-				</a>
-			</li>
-			{% endif %}
+			<li>you are logged as {{user}}</li> 
 			|
+			<li><a href="{% url blog-add %}"> New post </a>
+			</li>
 			<li>profile</li>
 			<li>help</li>
 			<li><a href="/about/">about</a></li>
