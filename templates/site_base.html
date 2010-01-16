@@ -9,7 +9,7 @@
 		{% block extrajs %}{% endblock %}
 <body>
 	<div id="header">
-	{% block header%}<a href="/"><img id="logo" src="{{MEDIA_URL}}/logo.png"/></a>{% endblock%}
+	{% block header%}<a href="/"><img id="logo" src="{{MEDIA_URL}}images/logo.png"/></a>{% endblock%}
 	{% block navbar %}
 		<ul class="navbar">
 			{% if user.is_authenticated %}
