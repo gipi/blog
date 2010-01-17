@@ -10,8 +10,6 @@ a{
 }
 
 #logo{
-	float:left;
-	height:20px;
 	border:none;
 }
 
@@ -22,16 +20,16 @@ a{
 ul.navbar{
 	text-align:right;
 	background:url('/media/images/navbar-background.png');
+	font-weight:bold;
 }
 
 ul.navbar li{
 	display:inline;
+	padding:2px 5px;
 	font-weight:bold;
-	color:white;
 }
 
 ul.navbar li a{
-	color:white;
 }
 
 #content{
