@@ -72,3 +72,8 @@ ul.navbar li a{
 form label{
 	font-weight:bold;
 }
+
+/* the input for post's title */
+input#id_title{
+	width:40em;
+}
