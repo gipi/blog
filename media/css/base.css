@@ -68,3 +68,7 @@ ul.navbar li a{
 	width:500px;
 	margin:auto;
 }
+
+form label{
+	font-weight:bold;
+}
