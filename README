@@ -23,7 +23,7 @@ to install all.
 If you need to create an alternative stylesheet for the code
 embedded in the pages yu have to execute the following command
 
-  $ pygmentize -S native -f html > <project_root>/media/css/native.css
+  $ pygmentize -S friendly -f html > <project_root>/media/css/native.css
 
 
 In order to use alternative settings for your site, you can use

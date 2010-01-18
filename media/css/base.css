@@ -77,3 +77,12 @@ form label{
 input#id_title{
 	width:40em;
 }
+
+.post .codeblock{
+	padding-bottom:10px;
+	padding-top:15px;
+	padding-left:10px;
+	border-bottom: 1px solid #cccccc;
+	border-top: 1px solid #cccccc;
+	background:#f0f0f0;
+}
