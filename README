@@ -10,7 +10,7 @@
 The complete (python) dependencies are indicated in 'scripts/dependencies.txt'
 and can be used by pip with the following command
 
-  $ pip -r scripts/dependencies.txt
+  $ pip install -r scripts/dependencies.txt
 
 to install all.
 
