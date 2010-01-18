@@ -114,3 +114,9 @@ class UtilTests(TestCase):
     def test_slugify(self):
         slug = slugify('l\'amore non ESISTE')
         self.assertEqual(slug, 'l-amore-non-esiste')
+
+class FeedsTests(TestCase):
+    fixtures = ['blog-data.json']
+    def test_existence(self):
+        response = self.client.get('/feeds/latest/')
+        self.assertEqual(response.status_code, 200)
