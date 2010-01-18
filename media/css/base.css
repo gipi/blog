@@ -15,8 +15,8 @@ a{
 
 #loader{
 	display:none;
-    position:fixed;
-    top:0px;
+	position:fixed;
+	top:0px;
 }
 
 ul.navbar{
@@ -69,10 +69,20 @@ ul.navbar li a{
 	margin:auto;
 }
 
-.entry{
-	width:400px;
-	display:block;
-	border:1px solid black;
-	padding:10px;
-	-moz-border-radius:10px;
+form label{
+	font-weight:bold;
+}
+
+/* the input for post's title */
+input#id_title{
+	width:40em;
+}
+
+.post .codeblock{
+	padding-bottom:10px;
+	padding-top:15px;
+	padding-left:10px;
+	border-bottom: 1px solid #cccccc;
+	border-top: 1px solid #cccccc;
+	background:#f0f0f0;
 }
