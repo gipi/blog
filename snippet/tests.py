@@ -56,6 +56,18 @@ class BlogTests(TestCase):
         print response.context[0]['blogs']
         self.assertEqual(len(response.context[0]['blogs']), 1)
 
+    def test_blog_view_bozza_when_logged(self):
+        url = reverse('blog-list')
+
+        # first check there are only published
+        response = self.client.get(url)
+        self.assertEqual(len(response.context[0]['blogs']), 1)
+
+        # second check for unpublished when you are logged
+        self.client.login(username='test', password='password')
+        response = self.client.get(url)
+        self.assertEqual(len(response.context[0]['blogs']), 2)
+
 class AuthTest(TestCase):
     fixtures = ['auth_data.json']
     def test_login(self):

@@ -42,5 +42,18 @@
       "creation_date": "2009-10-20 19:38:48.080528",
       "tags": "test, code"
     }
+  },
+  {
+    "model": "snippet.blog",
+    "pk":3,
+    "fields": {
+      "slug": "this-is-a-bozza",
+      "status": "bozza",
+      "user": 2,
+      "title": "This is a bozza",
+      "content": "If you are not logged, you can't view this!!!!11!1!!!!",
+      "creation_date": "2009-10-21 19:38:48.080528",
+      "tags": "test"
+    }
   }
 ]

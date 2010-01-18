@@ -4,6 +4,7 @@ from django.template import RequestContext
 from django.conf import settings
 from django.http import HttpResponseRedirect, HttpResponse, \
          HttpResponseBadRequest
+from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
@@ -73,8 +74,18 @@ def preview(request):
             context_instance=RequestContext(request))
 
 def blog_list(request):
+    """
+    This show list of all posts pubblished but if you are authenticated
+    let you see also the (yours) unpubblished.
+    """
+    real_Q = Q(status='pubblicato')
+
+    if request.user.is_authenticated():
+        real_Q = real_Q | ( Q(user=request.user) & Q(status='bozza') )
+
+    blogs = Blog.objects.filter(real_Q)
     return render_to_response('snippet/blog_list.html',
-            {'blogs': Blog.objects.filter(status='pubblicato')},
+            {'blogs': blogs},
             context_instance=RequestContext(request))
 
 def blog_view(request, slug):
