@@ -127,3 +127,5 @@ class FeedsTests(TestCase):
         response = self.client.get('/feeds/user/test/')
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'Blog object')
+
+        # TODO: check for a precise number of posts

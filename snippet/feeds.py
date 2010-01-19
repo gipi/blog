@@ -14,7 +14,9 @@ class LatestBlogEntriesFeed(BlogFeed):
     description = 'Updates sui nuovi post'
 
     def items(self):
-        return Blog.objects.order_by('-creation_date')[:5]
+        return Blog.objects.\
+                filter(status='pubblicato').\
+                order_by('-creation_date')[:5]
 
 class LatestBlogEntriesForUserFeed(BlogFeed):
     def get_object(self, bits):
@@ -38,5 +40,7 @@ class LatestBlogEntriesForUserFeed(BlogFeed):
         return 'The latest posts written by user \'%s\'' % obj.username
 
     def items(self, obj):
-        return Blog.objects.filter(user__id__exact=obj.id).\
+        return Blog.objects.\
+                filter(user__id__exact=obj.id).\
+                filter(status='pubblicato').\
                 order_by('-creation_date')[:5]
