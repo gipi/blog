@@ -3,10 +3,11 @@ from django.conf import settings
 from django.views.generic.simple import direct_to_template
 
 from snippet.forms import EntryForm
-from snippet.feeds import LatestBlogEntriesFeed
+from snippet.feeds import LatestBlogEntriesFeed, LatestBlogEntriesForUserFeed
 
 feeds = {
     'latest': LatestBlogEntriesFeed,
+    'user': LatestBlogEntriesForUserFeed,
 }
 
 urlpatterns = patterns('',
