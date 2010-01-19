@@ -64,11 +64,6 @@ ul.navbar li a{
 	margin:auto;
 }
 
-#comment_container{
-	width:500px;
-	margin:auto;
-}
-
 form label{
 	font-weight:bold;
 }
@@ -85,4 +80,11 @@ input#id_title{
 	border-bottom: 1px solid #cccccc;
 	border-top: 1px solid #cccccc;
 	background:#f0f0f0;
+}
+
+/* COMMENTS */
+#comment_container{
+	width:500px;
+	margin:auto;
+	border-top:1px solid #cccccc;
 }
