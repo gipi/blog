@@ -83,7 +83,7 @@ def blog_list(request):
     if request.user.is_authenticated():
         real_Q = real_Q | ( Q(user=request.user) & Q(status='bozza') )
 
-    blogs = Blog.objects.filter(real_Q)
+    blogs = Blog.objects.filter(real_Q).order_by('-creation_date')
     return render_to_response('snippet/blog_list.html',
             {'blogs': blogs},
             context_instance=RequestContext(request))

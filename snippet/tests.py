@@ -68,6 +68,13 @@ class BlogTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(len(response.context[0]['blogs']), 2)
 
+    def test_blog_order(self):
+        self.client.login(username='test', password='password')
+        url = reverse('blog-list')
+        response = self.client.get(url)
+        blogs = response.context[0]['blogs']
+        self.assertEqual(blogs[0].creation_date > blogs[1].creation_date, True)
+
 class AuthTest(TestCase):
     fixtures = ['auth_data.json']
     def test_login(self):
