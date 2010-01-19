@@ -76,7 +76,7 @@ class AuthTest(TestCase):
 
         response = self.client.post(reverse('login'),
                 {'username': 'test', 'password': 'password'})
-        self.assertRedirects(response, reverse('home'))
+        self.assertRedirects(response, reverse('home'), target_status_code=301)
 
     def test_logout(self):
         response = self.client.get('/logout/')
