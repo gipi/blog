@@ -3,6 +3,12 @@ from django.conf import settings
 from django.views.generic.simple import direct_to_template
 
 from snippet.forms import EntryForm
+from snippet.feeds import LatestBlogEntriesFeed, LatestBlogEntriesForUserFeed
+
+feeds = {
+    'latest': LatestBlogEntriesFeed,
+    'user': LatestBlogEntriesForUserFeed,
+}
 
 urlpatterns = patterns('',
         url(r'^$', direct_to_template,
@@ -14,6 +20,8 @@ urlpatterns = patterns('',
         (r'^blog/', include('snippet.urls')),
         # comment stuffs
         (r'^comments/', include('django.contrib.comments.urls')),
+        (r'^feeds/(?P<url>.*)/$',
+            'django.contrib.syndication.views.feed', {'feed_dict': feeds}),
 )
 
 if settings.DEBUG:

@@ -114,3 +114,18 @@ class UtilTests(TestCase):
     def test_slugify(self):
         slug = slugify('l\'amore non ESISTE')
         self.assertEqual(slug, 'l-amore-non-esiste')
+
+class FeedsTests(TestCase):
+    fixtures = ['auth_data.json', 'blog-data.json',]
+    def test_existence(self):
+        response = self.client.get('/feeds/latest/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'snippet/feeds_title.html')
+        self.assertTemplateUsed(response, 'snippet/feeds_description.html')
+
+        # check for user realated feeds
+        response = self.client.get('/feeds/user/test/')
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Blog object')
+
+        # TODO: check for a precise number of posts
