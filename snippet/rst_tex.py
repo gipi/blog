@@ -48,7 +48,7 @@ directives.register_directive('tikz', tikz_directive)
 """
 Roles
 """
-def tex_role(name, rawtext, text, line, inliner, options={}, content=[]):
+def tex_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     src = rawtext.split('`')[1]
     if settings.DEBUG:
         print 'DEBUG of formula: ', src
