@@ -7,14 +7,14 @@ register = template.Library()
 
 
 @register.inclusion_tag('gravatar.html')
-def gravatar(email, site):
+def gravatar(email):
     size = 40
 
     # construct the url
     gravatar_url = "http://www.gravatar.com/avatar.php?"
     gravatar_url += urllib.urlencode({
         'gravatar_id':hashlib.md5(email).hexdigest(),
-        'default':site, 'size':str(size)}
+        'size':str(size)}
     )
 
     return { 'url': gravatar_url }
