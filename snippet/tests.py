@@ -11,8 +11,7 @@ class RenderingTest(TestCase):
     fixtures = ['auth_data.json']
     def test_tex(self):
         content = r"""
-        .. latex::
-        F_{\mu\nu} = \partial_\mu A_\nu - \partial_\nu A_\mu
+        .. latex:: F_{\mu\nu} = \partial_\mu A_\nu - \partial_\nu A_\mu
 
         lorem ipsum dixit :tex:`\alpha`, 
         check if there is an error doesn't crash :tex:`\doesnotexist`
