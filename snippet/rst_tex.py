@@ -16,6 +16,9 @@ def get_tikz_img(formula):
 
 
 
+"""
+TeX & Tikz directives
+"""
 def directive(get_img_func, name, arguments, options, content, lineno,
         content_offset, block_text, state, state_machine):
     imagename = get_img_func('\n'.join(content))
@@ -42,6 +45,9 @@ directives.register_directive('latex', latex_directive)
 tikz_directive.content = 1
 directives.register_directive('tikz', tikz_directive)
 
+"""
+Roles
+"""
 def tex_role(name, rawtext, text, line, inliner, options={}, content=[]):
     src = rawtext.split('`')[1]
     if settings.DEBUG:
