@@ -4,7 +4,8 @@ from django.conf import settings
 import texrender
  
 def get_img(formula,render_func):
-    print 'DEBUG of formula: ', formula
+    if settings.DEBUG:
+        print 'DEBUG of formula: ', formula
     return render_func(formula, settings.TEX_MEDIA)
 
 def get_latex_img(formula):
