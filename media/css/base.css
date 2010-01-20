@@ -11,6 +11,7 @@ a{
 
 #logo{
 	border:none;
+	margin:15px;
 }
 
 #loader{
@@ -22,6 +23,7 @@ a{
 ul.navbar{
 	text-align:right;
 	font-weight:bold;
+	padding-right:50px;
 }
 
 ul.navbar li{
