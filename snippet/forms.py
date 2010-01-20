@@ -1,4 +1,4 @@
-from django.forms import ModelForm, Textarea, CharField
+from django.forms import ModelForm, Form, Textarea, CharField, FileField
 from snippet.models import Entry, Blog
 
 class EntryForm(ModelForm):
@@ -16,3 +16,6 @@ class BlogForm(ModelForm):
     class Meta:
         model = Blog
         exclude = ['slug', 'user',]
+
+class UploadFileForm(Form):
+    file = FileField()

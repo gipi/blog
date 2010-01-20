@@ -7,8 +7,10 @@ from django.http import HttpResponseRedirect, HttpResponse, \
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 
 from snippet.forms import EntryForm, BlogForm
+from snippet.forms import EntryForm, BlogForm, UploadFileForm
 from snippet import rst_tex, rst_code
 from snippet.utils import slugify
 from snippet.models import Blog
@@ -118,3 +120,21 @@ def blog_add(request, id=None):
 
     return render_to_response('snippet/blog.html', {'form': form},
             context_instance=RequestContext(request))
+
+@login_required
+def upload(request):
+    form = UploadFileForm(request.POST or None, request.FILES or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            filez = request.FILES['file']
+
+            # write all the file in memory in a file with the same name
+            # TODO: read it in chunks and check for overwriting.
+            destination = open(settings.UPLOAD_PATH + filez.name, 'wb')
+            destination.write(filez.read())
+            destination.close()
+
+            return HttpResponseRedirect(reverse('blog-list'))
+
+    return render_to_response('upload.html',
+            {'form': form}, RequestContext(request))

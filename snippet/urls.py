@@ -7,4 +7,5 @@ urlpatterns = patterns('',
                     'snippet.views.blog_add', name='blog-edit'),
                 url(r'^post/([\w\d-]*)/$',
                         'snippet.views.blog_view', name='blog-post'),
+                url(r'^upload/$', 'snippet.views.upload', name='blog-upload'),
 )
