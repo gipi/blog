@@ -46,6 +46,17 @@ ul.navbar li a{
 	padding:10px;
 }
 
+.post h3{
+	font-style:italic;
+	font-weight:normal;
+	font-size:1em;
+	text-align:center;
+}
+
+.post h3.bozza{
+	background:rgba(255,0, 0, .6);
+}
+
 .post .tag_list{
 	font-size:0.7em;
 	text-align:right;
