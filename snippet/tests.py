@@ -9,7 +9,7 @@ from snippet.utils import slugify
 
 class RenderingTest(TestCase):
     fixtures = ['auth_data.json']
-    def test_tex(self):
+    def test_directive_tex(self):
         content = r"""
         .. latex:: F_{\mu\nu} = \partial_\mu A_\nu - \partial_\nu A_\mu
 
