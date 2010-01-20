@@ -41,3 +41,17 @@ directives.register_directive('latex', latex_directive)
 
 tikz_directive.content = 1
 directives.register_directive('tikz', tikz_directive)
+
+def tex_role(name, rawtext, text, line, inliner, options={}, content=[]):
+    src = rawtext.split('`')[1]
+    if settings.DEBUG:
+        print 'DEBUG of formula: ', src
+    imagename = get_latex_img(src)
+    if imagename == 'error.png':
+        return [nodes.raw('', '<b>Errore</b>', format='html')],[]
+
+    url = settings.TEX_MEDIA_URL + imagename
+    return [nodes.raw(rawtext,
+        '<img class="inline tikz" src="%s" />' % url, format='html')],[]
+
+roles.register_canonical_role('tex', tex_role)

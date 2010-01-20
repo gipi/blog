@@ -13,12 +13,16 @@ class RenderingTest(TestCase):
         content = r"""
         .. latex::
         F_{\mu\nu} = \partial_\mu A_\nu - \partial_\nu A_\mu
+
+        lorem ipsum dixit :tex:`\alpha`, 
+        check if there is an error doesn't crash :tex:`\doesnotexist`
         """
         self.client.login(username='test', password='password')
         response = self.client.post('/preview/',
             {'content': content},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'ERROR')
 
 class BlogTests(TestCase):
     fixtures = ['auth_data.json', 'blog-data.json',]
