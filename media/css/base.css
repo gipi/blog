@@ -85,3 +85,21 @@ input#id_title{
 	margin:auto;
 	border-top:1px solid #cccccc;
 }
+
+#comment_container form {
+	padding-bottom:15px;
+	border-bottom:1px solid #cccccc;
+}
+
+#comment_container form label{
+	width:150px;
+	float:left;
+}
+
+label[for="id_honeypot"], #id_honeypot{
+	display:none;
+}
+
+#comment_container .entry{
+	margin-top:50px;
+}
