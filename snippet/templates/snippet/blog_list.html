@@ -18,7 +18,8 @@
 			{{ tags|join:", " }}</h3>
 			<div class="comment">
 			{% get_comment_count for blog as count%}
-			Comments ({{count}})
+			<a href="{% url blog-post blog.slug %}#comment_container">Comments</a> 
+			({{count}})
 			</div>
 		</div>
 		{% endfor %}
