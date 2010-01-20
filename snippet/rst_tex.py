@@ -54,7 +54,12 @@ def tex_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
         print 'DEBUG of formula: ', src
     imagename = get_latex_img(src)
     if imagename == 'error.png':
-        return [nodes.raw('', '<b>Errore</b>', format='html')],[]
+        msg = inliner.reporter.error(
+                'Something goes wrong with your text: \'%s\'' % text,
+                line=lineno)
+        prb = inliner.problematic(rawtext, rawtext, msg)
+        return [prb], [msg]
+
 
     url = settings.TEX_MEDIA_URL + imagename
     return [nodes.raw(rawtext,
