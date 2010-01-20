@@ -46,6 +46,10 @@ ul.navbar li a{
 	padding:10px;
 }
 
+.post .tag_list{
+	font-size:0.7em;
+	text-align:right;
+}
 .gravatar{
 	float:left;
 	margin:0px 10px 10px 0px;

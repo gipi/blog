@@ -13,9 +13,9 @@
 				{% endifequal %}
 			</h2>
 			<h3>{{blog.creation_date|time}}</h3>
-			<h3><b>Tags: </b>{% tags_for_object blog as tags %}
-			{{ tags|join:", " }}</h3>
 			<p>{{blog.content|restructuredtext}}</p>
+			<h3 class="tag_list"><b>Tagged as: </b>{% tags_for_object blog as tags %}
+			{{ tags|join:", " }}</h3>
 			<div class="comment">
 			{% get_comment_count for blog as count%}
 			Comments ({{count}})
