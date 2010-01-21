@@ -28,3 +28,18 @@ embedded in the pages yu have to execute the following command
 
 In order to use alternative settings for your site, you can use
 a 'local_settings.py' file.
+
+
+# HACKING
+
+The code for this project is contained in a git repository hosted by gitorious
+and can be cloned with
+
+  git clone git://gitorious.org/yet-another-django-blog/yet-another-django-blog.git
+
+The development model which I (hope to) follow is to use this branching model
+
+  - master	stable branch
+  - next	development branch, when ready it's merged in master
+  - <whatever>	feature branch, branch off from next and when ready it's merged
+              	in next.
