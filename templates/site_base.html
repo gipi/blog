@@ -14,21 +14,23 @@
 		<ul class="navbar">
 			{% if user.is_authenticated %}
 			<li>you are logged as {{user}}</li> 
-			|
+			<li><a href="{% url logout %}">log out</a></li>
 			<li><a href="{% url blog-add %}"> New post </a>
 			</li>
 			<li>profile</li>
-			<li>help</li>
-			<li><a href="/about/">about</a></li>
-			<li><a href="{% url logout %}">log out</a></li>
 			{% else %}
+			<li>you are not logged</li>
 			<li><a href="{% url login %}">log in</a></li>
 			{% endif %}
+			|
+			<li><a href="/archives/">archives</a></li>
+			<li><a href="/projects/">projects</a></li>
+			<li><a href="/about/">about</a></li>
+			<li><a href="/feeds/latest/">feeds</a></li>
 		</ul>
 	{% endblock %}
 	<div id="loader">Loading...</div>
 	</div>
 	<div id="content">{% block body %}{% endblock %}</div>
-	<div id="footer">no proprietary software was harmed in the making of this site</div>
 </body>
 </html>

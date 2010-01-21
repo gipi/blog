@@ -78,15 +78,15 @@ class BlogTests(TestCase):
 class AuthTest(TestCase):
     fixtures = ['auth_data.json']
     def test_login(self):
-        response = self.client.get('/login/')
+        response = self.client.get(reverse('login'))
         self.assertEqual(response.status_code, 200)
 
         response = self.client.post(reverse('login'),
                 {'username': 'test', 'password': 'password'})
-        self.assertRedirects(response, reverse('home'))
+        self.assertRedirects(response, reverse('home'), target_status_code=301)
 
     def test_logout(self):
-        response = self.client.get('/logout/')
+        response = self.client.get(reverse('logout'))
         self.assertEqual(response.status_code, 200)
 
     def test_blog_add(self):

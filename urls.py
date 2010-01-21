@@ -1,6 +1,6 @@
 from django.conf.urls.defaults import *
 from django.conf import settings
-from django.views.generic.simple import direct_to_template
+from django.views.generic.simple import redirect_to
 
 from snippet.feeds import LatestBlogEntriesFeed, LatestBlogEntriesForUserFeed
 
@@ -10,8 +10,7 @@ feeds = {
 }
 
 urlpatterns = patterns('',
-        url(r'^$', direct_to_template,
-            {'template': 'homepage.html'}, name='home'),
+        url(r'^$', redirect_to, {'url': '/blog/'}, name='home'),
         url(r'^login/$', 'django.contrib.auth.views.login', name='login'),
         url(r'^logout/$', 'django.contrib.auth.views.logout', name='logout'),
         (r'^preview/$', 'snippet.views.preview'),
