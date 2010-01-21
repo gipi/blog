@@ -99,6 +99,12 @@ class BlogTests(TestCase):
         return response
 
     def test_upload(self):
+        # first delete previously 'tests.py' file
+        uploaded_file = self._get_uploaded_file_name()
+        try:
+            os.remove(uploaded_file)
+        except OSError:
+            pass
         #   1. the file is being uploaded
         self.client.login(username='test', password='password')
 
