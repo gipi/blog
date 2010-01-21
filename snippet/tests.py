@@ -3,9 +3,12 @@
 #  2. rmdir tmpdir
 from django.test import TestCase
 from django.core.urlresolvers import reverse
+from django.conf import settings
 
 from snippet.models import Blog
 from snippet.utils import slugify
+
+import os
 
 class RenderingTest(TestCase):
     fixtures = ['auth_data.json']
@@ -75,6 +78,32 @@ class BlogTests(TestCase):
         blogs = response.context[0]['blogs']
         self.assertEqual(blogs[0].creation_date > blogs[1].creation_date, True)
 
+    def _upload_my_self(self):
+        url = reverse('blog-upload')
+        # first delete previously 'tests.py' file
+        uploaded_file = settings.UPLOAD_PATH + os.path.basename(__file__)
+        os.remove(uploaded_file)
+
+        # then open THIS file
+        filez = open(__file__, 'r')
+
+        post_data = {
+            'file': filez,
+        }
+        response = self.client.post(url, post_data)
+        filez.close()
+
+        self.assertEqual(os.stat(uploaded_file) != None, True)
+
+        return response
+
+    def test_upload(self):
+        #   1. the file is being uploaded
+        self.client.login(username='test', password='password')
+
+        response = self._upload_my_self()
+        self.assertRedirects(response, reverse('blog-list'))
+
 class AuthTest(TestCase):
     fixtures = ['auth_data.json']
     def test_login(self):
@@ -93,6 +122,11 @@ class AuthTest(TestCase):
         response = self.client.get(reverse('blog-add'))
         self.assertRedirects(response,
                 '/login/?next=' + reverse('blog-add'))
+
+    def test_upload(self):
+        response = self.client.get(reverse('blog-upload'))
+        self.assertRedirects(response,
+                '/login/?next=' + reverse('blog-upload'))
 
     def test_preview(self):
         # in order to preview need to login
