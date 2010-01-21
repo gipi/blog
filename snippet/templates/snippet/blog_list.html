@@ -9,16 +9,22 @@
 			<h2>
 				<a href="{% url snippet.views.blog_view blog.slug %}">{{blog.title}}</a>
 				{% ifequal user blog.user %}
-				<a href="{% url snippet.views.blog_add blog.pk %}">edit</a>
+				| <a href="{% url snippet.views.blog_add blog.pk %}">edit</a>
 				{% endifequal %}
 			</h2>
-			<h3>{{blog.creation_date|time}}</h3>
-			<h3><b>Tags: </b>{% tags_for_object blog as tags %}
-			{{ tags|join:", " }}</h3>
+			{% comment %}
+			TODO: insert somewhere the modify_date
+			{% endcomment %}
+			<h3 class="{{blog.status}}">{{blog.status}}
+				by {{blog.user}}
+				at {{blog.creation_date|date:"D d M Y"}}</h3>
 			<p>{{blog.content|restructuredtext}}</p>
+			<h3 class="tag_list"><b>Tagged as: </b>{% tags_for_object blog as tags %}
+			{{ tags|join:", " }}</h3>
 			<div class="comment">
 			{% get_comment_count for blog as count%}
-			Comments ({{count}})
+			<a href="{% url blog-post blog.slug %}#comment_container">Comments</a> 
+			({{count}})
 			</div>
 		</div>
 		{% endfor %}

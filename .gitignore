@@ -2,3 +2,4 @@
 db.sqlite
 local_settings.py
 *.swp
+media/TeX/

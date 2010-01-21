@@ -11,6 +11,7 @@ a{
 
 #logo{
 	border:none;
+	margin:15px;
 }
 
 #loader{
@@ -21,8 +22,8 @@ a{
 
 ul.navbar{
 	text-align:right;
-	background:url('/media/images/navbar-background.png');
 	font-weight:bold;
+	padding-right:50px;
 }
 
 ul.navbar li{
@@ -40,18 +41,30 @@ ul.navbar li a{
 	margin:auto;
 }
 
-#footer{
-	text-align:center;
-}
-
 .post{
 	margin:10px;
 	padding:10px;
 }
 
+.post h3{
+	font-style:italic;
+	font-weight:normal;
+	font-size:1em;
+	text-align:center;
+}
+
+.post h3.bozza{
+	background:rgba(255,0, 0, .6);
+}
+
+.post .tag_list{
+	font-size:0.7em;
+	text-align:right;
+}
 .gravatar{
 	float:left;
 	margin:0px 10px 10px 0px;
+	height:40px;
 }
 
 
@@ -60,11 +73,6 @@ ul.navbar li a{
 }
 
 .blog_content{
-	width:500px;
-	margin:auto;
-}
-
-#comment_container{
 	width:500px;
 	margin:auto;
 }
@@ -85,4 +93,29 @@ input#id_title{
 	border-bottom: 1px solid #cccccc;
 	border-top: 1px solid #cccccc;
 	background:#f0f0f0;
+}
+
+/* COMMENTS */
+#comment_container{
+	width:500px;
+	margin:auto;
+	border-top:1px solid #cccccc;
+}
+
+#comment_container form {
+	padding-bottom:15px;
+	border-bottom:1px solid #cccccc;
+}
+
+#comment_container form label{
+	width:150px;
+	float:left;
+}
+
+label[for="id_honeypot"], #id_honeypot{
+	display:none;
+}
+
+#comment_container .entry{
+	margin-top:50px;
 }
