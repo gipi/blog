@@ -4,10 +4,6 @@ from django.core.urlresolvers import reverse
 
 from tagging.fields import TagField
 
-class Entry(models.Model):
-    content = models.CharField(max_length=1000)
-    user = models.ForeignKey(User)
-
 class Blog(models.Model):
     slug = models.SlugField(unique=True)
     title = models.CharField(max_length=100)

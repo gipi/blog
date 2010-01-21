@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
-from snippet.forms import EntryForm, BlogForm
+from snippet.forms import BlogForm
 from snippet import rst_tex, rst_code
 from snippet.utils import slugify
 from snippet.models import Blog
