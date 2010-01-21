@@ -16,6 +16,8 @@ from snippet.utils import slugify
 from snippet.models import Blog
 from snippet.decorators import superuser_only, ajax_required
 
+import os
+
 example = """
 u
 
@@ -121,6 +123,19 @@ def blog_add(request, id=None):
     return render_to_response('snippet/blog.html', {'form': form},
             context_instance=RequestContext(request))
 
+def find_a_free_number(basename):
+    # TODO: more pythonic
+    idx = 0
+    while 1:
+        idx += 1
+        filename = basename + '.' + str(idx)
+        try:
+            os.stat(filename)
+        except OSError:
+            print filename
+            return filename
+
+
 @login_required
 def upload(request):
     form = UploadFileForm(request.POST or None, request.FILES or None)
@@ -130,7 +145,14 @@ def upload(request):
 
             # write all the file in memory in a file with the same name
             # TODO: read it in chunks and check for overwriting.
-            destination = open(settings.UPLOAD_PATH + filez.name, 'wb')
+            filename = settings.UPLOAD_PATH + filez.name
+            print 'free:', find_a_free_number(filename)
+            try:
+                os.stat(filename)
+                destination = open(find_a_free_number(filename),'wb')
+            except OSError:
+                destination = open(filename, 'wb')
+
             destination.write(filez.read())
             destination.close()
 

@@ -111,6 +111,16 @@ class BlogTests(TestCase):
         response = self._upload_my_self()
         self.assertRedirects(response, reverse('blog-list'))
 
+        #   2. if a file has the same name of one yet uploaded add a number
+        response = self._upload_my_self()
+        self.assertRedirects(response, reverse('blog-list'))
+
+        uploaded_file = self._get_uploaded_file_name()
+        self.assertEqual(os.stat(uploaded_file + '.1') != None, True)
+
+        self._upload_my_self()
+        self.assertEqual(os.stat(uploaded_file + '.2') != None, True)
+
 class AuthTest(TestCase):
     fixtures = ['auth_data.json']
     def test_login(self):
