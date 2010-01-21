@@ -17,7 +17,7 @@ to install all.
 
 # DEPLOY
 
-  $ mkdir media/js media/TeX
+  $ mkdir media/js media/TeX media/uploads
   $ wget <jquery URL> -O media/js/jquery.js
 
 If you need to create an alternative stylesheet for the code
