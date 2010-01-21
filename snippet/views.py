@@ -18,42 +18,6 @@ from snippet.decorators import superuser_only, ajax_required
 
 import os
 
-example = """
-u
-
-Twitter per programmatori e scienziati
-======================================
-
-Ecco un esempio di codice TeX
-
-.. latex::
- A = \pmatrix{
-   a & b \cr
-   c & d \cr
-  }\quad\det(A - \lambda I) =
- \left|\matrix{
- a - \lambda & b \cr
- c           & d -\lambda \cr
- }\\right| = \lambda^2 - \hbox{tr}(A)\lambda + \det(A)
-
-ma anche di capacita` grafiche senza pari
-
-.. tikz::
- [scale=0.5]
- \draw (0,0) -- (90:1cm) arc (90:360:1cm) arc (0:30:1cm) -- cycle;
- \draw (60:5pt) -- +(30:1cm) arc (30:90:1cm) -- cycle;
- \draw (3,0)  +(0:1cm) -- +(72:1cm) -- +(144:1cm) -- +(216:1cm) --
-           +(288:1cm) -- cycle;
-
-ma mica finisce cosi`, c'e` anche roba per coder
-
-.. code-block:: python
-
-    if request.is_ajax():
-        return render_to_response('restructured_text.html',
-                {'content':formula},
-                context_instance=RequestContext(request))
-"""
 
 @login_required
 def preview(request):
