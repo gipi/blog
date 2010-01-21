@@ -78,11 +78,11 @@ class BlogTests(TestCase):
         blogs = response.context[0]['blogs']
         self.assertEqual(blogs[0].creation_date > blogs[1].creation_date, True)
 
+    def _get_uploaded_file_name(self):
+        return settings.UPLOAD_PATH + os.path.basename(__file__)
+
     def _upload_my_self(self):
         url = reverse('blog-upload')
-        # first delete previously 'tests.py' file
-        uploaded_file = settings.UPLOAD_PATH + os.path.basename(__file__)
-        os.remove(uploaded_file)
 
         # then open THIS file
         filez = open(__file__, 'r')
@@ -93,6 +93,7 @@ class BlogTests(TestCase):
         response = self.client.post(url, post_data)
         filez.close()
 
+        uploaded_file = self._get_uploaded_file_name()
         self.assertEqual(os.stat(uploaded_file) != None, True)
 
         return response
