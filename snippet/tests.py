@@ -8,7 +8,7 @@ from django.conf import settings
 from snippet.models import Blog
 from snippet.utils import slugify
 
-import os
+import os, glob
 
 class RenderingTest(TestCase):
     fixtures = ['auth_data.json']
@@ -99,12 +99,11 @@ class BlogTests(TestCase):
         return response
 
     def test_upload(self):
-        # first delete previously 'tests.py' file
+        # first delete previously 'tests.py.<digit>' files
         uploaded_file = self._get_uploaded_file_name()
-        try:
-            os.remove(uploaded_file)
-        except OSError:
-            pass
+        for file in  glob.iglob(uploaded_file + '*'):
+            os.remove(file)
+
         #   1. the file is being uploaded
         self.client.login(username='test', password='password')
 
