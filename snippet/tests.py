@@ -3,9 +3,12 @@
 #  2. rmdir tmpdir
 from django.test import TestCase
 from django.core.urlresolvers import reverse
+from django.conf import settings
 
 from snippet.models import Blog
 from snippet.utils import slugify
+
+import os, glob
 
 class RenderingTest(TestCase):
     fixtures = ['auth_data.json']
@@ -53,7 +56,6 @@ class BlogTests(TestCase):
     def test_blog_list_with_bozza(self):
         url = reverse('blog-list')
         response = self.client.get(url)
-        print response.context[0]['blogs']
         self.assertEqual(len(response.context[0]['blogs']), 1)
 
     def test_blog_view_bozza_when_logged(self):
@@ -75,6 +77,48 @@ class BlogTests(TestCase):
         blogs = response.context[0]['blogs']
         self.assertEqual(blogs[0].creation_date > blogs[1].creation_date, True)
 
+    def _get_uploaded_file_name(self):
+        return settings.UPLOAD_PATH + os.path.basename(__file__)
+
+    def _upload_my_self(self):
+        url = reverse('blog-upload')
+
+        # then open THIS file
+        filez = open(__file__, 'r')
+
+        post_data = {
+            'file': filez,
+        }
+        response = self.client.post(url, post_data)
+        filez.close()
+
+        uploaded_file = self._get_uploaded_file_name()
+        self.assertEqual(os.stat(uploaded_file) != None, True)
+
+        return response
+
+    def test_upload(self):
+        # first delete previously 'tests.py.<digit>' files
+        uploaded_file = self._get_uploaded_file_name()
+        for file in  glob.iglob(uploaded_file + '*'):
+            os.remove(file)
+
+        #   1. the file is being uploaded
+        self.client.login(username='test', password='password')
+
+        response = self._upload_my_self()
+        self.assertRedirects(response, reverse('blog-list'))
+
+        #   2. if a file has the same name of one yet uploaded add a number
+        response = self._upload_my_self()
+        self.assertRedirects(response, reverse('blog-list'))
+
+        uploaded_file = self._get_uploaded_file_name()
+        self.assertEqual(os.stat(uploaded_file + '.1') != None, True)
+
+        self._upload_my_self()
+        self.assertEqual(os.stat(uploaded_file + '.2') != None, True)
+
 class AuthTest(TestCase):
     fixtures = ['auth_data.json']
     def test_login(self):
@@ -93,6 +137,11 @@ class AuthTest(TestCase):
         response = self.client.get(reverse('blog-add'))
         self.assertRedirects(response,
                 '/login/?next=' + reverse('blog-add'))
+
+    def test_upload(self):
+        response = self.client.get(reverse('blog-upload'))
+        self.assertRedirects(response,
+                '/login/?next=' + reverse('blog-upload'))
 
     def test_preview(self):
         # in order to preview need to login

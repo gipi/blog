@@ -7,49 +7,16 @@ from django.http import HttpResponseRedirect, HttpResponse, \
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 
-from snippet.forms import BlogForm
+from snippet.forms import BlogForm, UploadFileForm
 from snippet import rst_tex, rst_code
 from snippet.utils import slugify
 from snippet.models import Blog
 from snippet.decorators import superuser_only, ajax_required
 
-example = """
-u
+import os
 
-Twitter per programmatori e scienziati
-======================================
-
-Ecco un esempio di codice TeX
-
-.. latex::
- A = \pmatrix{
-   a & b \cr
-   c & d \cr
-  }\quad\det(A - \lambda I) =
- \left|\matrix{
- a - \lambda & b \cr
- c           & d -\lambda \cr
- }\\right| = \lambda^2 - \hbox{tr}(A)\lambda + \det(A)
-
-ma anche di capacita` grafiche senza pari
-
-.. tikz::
- [scale=0.5]
- \draw (0,0) -- (90:1cm) arc (90:360:1cm) arc (0:30:1cm) -- cycle;
- \draw (60:5pt) -- +(30:1cm) arc (30:90:1cm) -- cycle;
- \draw (3,0)  +(0:1cm) -- +(72:1cm) -- +(144:1cm) -- +(216:1cm) --
-           +(288:1cm) -- cycle;
-
-ma mica finisce cosi`, c'e` anche roba per coder
-
-.. code-block:: python
-
-    if request.is_ajax():
-        return render_to_response('restructured_text.html',
-                {'content':formula},
-                context_instance=RequestContext(request))
-"""
 
 @login_required
 def preview(request):
@@ -118,3 +85,39 @@ def blog_add(request, id=None):
 
     return render_to_response('snippet/blog.html', {'form': form},
             context_instance=RequestContext(request))
+
+def find_a_free_number(basename):
+    # TODO: more pythonic
+    idx = 0
+    while 1:
+        idx += 1
+        filename = basename + '.' + str(idx)
+        try:
+            os.stat(filename)
+        except OSError:
+            return filename
+
+
+@login_required
+def upload(request):
+    form = UploadFileForm(request.POST or None, request.FILES or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            filez = request.FILES['file']
+
+            # write all the file in memory in a file with the same name
+            # TODO: read it in chunks and check for overwriting.
+            filename = settings.UPLOAD_PATH + filez.name
+            try:
+                os.stat(filename)
+                destination = open(find_a_free_number(filename),'wb')
+            except OSError:
+                destination = open(filename, 'wb')
+
+            destination.write(filez.read())
+            destination.close()
+
+            return HttpResponseRedirect(reverse('blog-list'))
+
+    return render_to_response('upload.html',
+            {'form': form}, RequestContext(request))

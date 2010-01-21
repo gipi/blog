@@ -33,6 +33,8 @@ MEDIA_ROOT = PROJECT_ROOT + '/media/'
 
 TEX_MEDIA = MEDIA_ROOT + '/TeX/'
 
+UPLOAD_PATH = MEDIA_ROOT + '/uploads/'
+
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash if there is a path component (optional in other cases).
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
