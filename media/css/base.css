@@ -1,7 +1,6 @@
 body{
 	margin:0px;
 	padding:0px;
-	font-family:Georgia;
 }
 
 a{
@@ -58,7 +57,7 @@ ul.navbar li a{
 }
 
 .post .tag_list{
-	font-size:0.7em;
+	font-family:"Delicious SmallCaps";
 	text-align:right;
 }
 .gravatar{
