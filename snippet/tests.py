@@ -119,6 +119,12 @@ class BlogTests(TestCase):
         self._upload_my_self()
         self.assertEqual(os.stat(uploaded_file + '.2') != None, True)
 
+    def test_archives(self):
+        url = reverse('blog-archives')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context[0]['object_list']), 1)
+
 class AuthTest(TestCase):
     fixtures = ['auth_data.json']
     def test_login(self):
