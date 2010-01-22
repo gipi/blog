@@ -1,0 +1,9 @@
+{% extends 'site_base.html' %}
+{% block body %}
+<h1>Archive for {{month}}</h1>
+<ul>
+{% for object in object_list %}
+	<li><a href="{% url blog-post object.slug %}">{{object.title}}</a></li>
+{% endfor %}
+</ul>
+{% endblock %}
