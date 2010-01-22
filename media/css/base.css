@@ -9,8 +9,11 @@ a{
 	color:blue;
 }
 
-#logo{
+img{
 	border:none;
+}
+
+#header #logo{
 	margin:15px;
 }
 
