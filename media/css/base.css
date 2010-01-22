@@ -18,6 +18,10 @@ img{
 	margin:15px;
 }
 
+#header .validator{
+	float:right;
+}
+
 #loader{
 	display:none;
 	position:fixed;
