@@ -75,6 +75,12 @@ class BlogTests(TestCase):
         blogs = response.context[0]['blogs']
         self.assertEqual(blogs[0].creation_date > blogs[1].creation_date, True)
 
+    def test_archives(self):
+        url = reverse('blog-archives')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context[0]['object_list']), 1)
+
 class AuthTest(TestCase):
     fixtures = ['auth_data.json']
     def test_login(self):

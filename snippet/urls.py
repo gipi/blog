@@ -1,5 +1,6 @@
 from django.conf.urls.defaults import *
 from django.views.generic.date_based import archive_month
+from django.views.generic.list_detail import object_list
 
 from snippet.models import Blog
 
@@ -10,10 +11,16 @@ urlpatterns = patterns('',
                     'snippet.views.blog_add', name='blog-edit'),
                 url(r'^post/([\w\d-]*)/$',
                         'snippet.views.blog_view', name='blog-post'),
+                url(r'^archives/$', object_list, {
+                    'template_name': 'snippet/archives_list.html',
+                    'queryset': Blog.objects.\
+                                filter(status='pubblicato').\
+                                dates('creation_date', 'month'),
+                    }, name='blog-archives'),
                 url(r'^archives/(?P<year>\d{4})/(?P<month>.*)/$',
                     archive_month, {
                         'queryset': Blog.objects.all().\
                                 filter(status='pubblicato'),
                         'date_field': 'creation_date'
-                    }, name='blog-archives'),
+                    }, name='blog-archives-month'),
 )
