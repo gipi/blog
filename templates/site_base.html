@@ -3,6 +3,29 @@
 		<title>Snippy - {{version}}</title>
 		<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/base.css"/>
 		<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/native.css"/>
+		<style>
+		/* A font by Jos Buivenga (exljbris) -> www.exljbris.com */
+		@font-face {
+			font-family: "Delicious";
+			src: url({{MEDIA_URL}}fonts/Delicious-Roman.otf) format('opentype');
+		}
+		@font-face {
+			font-family: "Delicious";
+			font-weight:bold;
+			src: url({{MEDIA_URL}}fonts/Delicious-Bold.otf) format('opentype');
+		}
+		@font-face {
+			font-family: "Delicious Heavy";
+			src: url({{MEDIA_URL}}fonts/Delicious-Heavy.otf) format('opentype');
+		}
+		@font-face {
+			font-family: "Delicious SmallCaps";
+			src: url({{MEDIA_URL}}fonts/Delicious-SmallCaps.otf) format('opentype');
+		}
+		body{
+			font-family:"Delicious";
+		}
+		</style>
 		<script type="text/javascript" src="{{MEDIA_URL}}js/jquery.js"></script>
 		<script type="text/javascript" src="{{MEDIA_URL}}js/snippy.js">
 		</script>
