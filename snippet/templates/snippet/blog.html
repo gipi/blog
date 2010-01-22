@@ -18,13 +18,11 @@
 	{{ cform.as_p }}
 	<input type="hidden" name="next" value="{% url blog-post blog.slug %}"/>
 
-	<tr>
-		<td><input type="submit" value="post comment"/></td>
-		<td><input
+	<p><input type="submit" value="post comment"/></p>
+	<p><input
 		type="submit" name="preview"
 		class="submit-post" value="Preview">
-		</td>
-	</tr>
+		class="submit-post" value="Preview"></p>
 	</form>
 	{% get_comment_list for blog as comments %}
 	{% for comment in comments %}
