@@ -4,7 +4,6 @@
 #
 # This script uses git mktree command to generate a subtree to include
 # in the object database without track it in the official history.
-TMP=.tmp-mktree
 
 die () {
 	echo $1
