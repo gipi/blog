@@ -18,7 +18,9 @@
 			<h3 class="{{blog.status}}">{{blog.status}}
 				by {{blog.user}}
 				at {{blog.creation_date|date:"D d M Y"}}</h3>
-			<p>{{blog.content|restructuredtext}}</p>
+			<div class="post_content">
+				{{blog.content|restructuredtext}}
+			</div>
 			<h3 class="tag_list"><b>Tagged as: </b>{% tags_for_object blog as tags %}
 			{{ tags|join:", " }}</h3>
 			<div class="comment">
