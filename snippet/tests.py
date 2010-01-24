@@ -31,6 +31,14 @@ class RenderingTest(TestCase):
         """
         self._preview(content)
 
+    def test_directive_tex_errors(self):
+        content = r"""
+        .. latex:: F_{\mu\nu} = \artial_\mu A_\nu - \partial_\nu A_\mu
+
+        """
+        response = self._preview(content)
+        self.assertContains(response, 'ERROR')
+
     def test_role_tex(self):
         content = r"""
         lorem ipsum dixit :tex:`\alpha`,

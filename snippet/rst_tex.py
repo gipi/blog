@@ -23,7 +23,11 @@ def directive(get_img_func, name, arguments, options, content, lineno,
         content_offset, block_text, state, state_machine):
     imagename = get_img_func('\n'.join(content))
     if imagename == 'error.png':
-        return [nodes.raw('', '<b>Errore</b>', format='html')]
+        error = state_machine.reporter.error(
+                'ERROR: "%s"' % content,
+                nodes.literal_block(block_text, block_text), line=lineno)
+        return [error]
+
 
     url = settings.TEX_MEDIA_URL + imagename
     return [nodes.raw('', '<img class="tikz" src="%s" />' % url, format='html')]
