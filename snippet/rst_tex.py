@@ -22,7 +22,7 @@ def directive(get_img_func, name, arguments, options, content, lineno,
         return [nodes.raw('', '<b>Errore</b>', format='html')]
 
     url = settings.TEX_MEDIA_URL + imagename
-    return [nodes.raw('', '<img class="tikz" src="%s" />' % url, format='html')]
+    return [nodes.raw('', '<img class="tikz" src="%s" alt="tex generated images"/>' % url, format='html')]
 
 def latex_directive(name, arguments, options, content, lineno,
         content_offset, block_text, state, state_machine):

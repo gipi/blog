@@ -1,7 +1,7 @@
+/* CSS3 valid */
 body{
 	margin:0px;
 	padding:0px;
-	font-family:Georgia;
 }
 
 a{
@@ -9,9 +9,16 @@ a{
 	color:blue;
 }
 
-#logo{
+img{
 	border:none;
+}
+
+#header #logo{
 	margin:15px;
+}
+
+#header .validator{
+	float:right;
 }
 
 #loader{
@@ -54,11 +61,12 @@ ul.navbar li a{
 }
 
 .post h3.bozza{
-	background:rgba(255,0, 0, .6);
+	background-color:rgb(255, 0, 0);
+	opacity:0.6;
 }
 
 .post .tag_list{
-	font-size:0.7em;
+	font-family:"Delicious SmallCaps";
 	text-align:right;
 }
 .gravatar{
