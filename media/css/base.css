@@ -30,6 +30,11 @@ img.inline{
 	float:right;
 }
 
+#footer{
+	clear:both;
+	text-align:center;
+}
+
 #loader{
 	display:none;
 	position:fixed;
