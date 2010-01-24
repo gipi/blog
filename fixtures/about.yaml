@@ -49,3 +49,52 @@
          enable_comments: false
          registration_required: false
          sites: [1]
+
+- model: flatpages.flatpage
+  pk: 2
+  fields:
+         url: /projects/
+         title: Projects
+         content: |
+                  **Tesi di dottorato**
+
+                  Nel 2008 ho conseguito il dottorato di ricerca in Matematica
+                  presso l'università di Torino con una tesi intitolata
+                  *Ostruzioni topologiche e classi caratteristiche nelle
+                  applicazioni in fisica matematica*.
+                  Il sorgente è possibile trovarlo presso un repository su
+                  `gitorious <http://gitorious.org/classi-caratteristiche>`_.
+
+                  **django-location**
+
+                  Semplice applicazione django per ottenere in maniera veloce
+                  e pulita una google mappa nel vostro sito django.
+
+                  repository: http://gitorious.org/django-location
+
+                  **django-condition**
+
+                  Applicazione django che permette di creare a partire da un
+                  modello un nuovo modello capace di descrivere il primo. È
+                  un progetto **molto** sperimentale e non ho ancora avuto
+                  occasione di sperimentarlo seriamente. Sfrutta molto le
+                  capacità introspettive del python.
+
+                  repository: http://gitorious.org/django-condition
+
+                  **django-simple-gallery**
+
+                  Applicazione Django per ottenere, a partire da una directory
+                  contenente delle immagini, una galleria di immagini
+                  utilizzante lightbox.
+
+                  repository: http://gitorious.org/django-simple-gallery
+
+                  **Yet another Django blog**
+
+                  È in pratica il codice sorgente di questo blog.
+
+                  repository: http://gitorious.org/yet-another-django-blog
+         enable_comments: false
+         registration_required: false
+         sites: [1]
