@@ -12,16 +12,48 @@ import os, glob
 
 class RenderingTest(TestCase):
     fixtures = ['auth_data.json']
-    def test_tex(self):
-        content = r"""
-        .. latex::
-        F_{\mu\nu} = \partial_\mu A_\nu - \partial_\nu A_\mu
+    def _preview(self, content):
+        """
+        Checks that calling the preview view, with argument content by
+        a POST call, it return a 200 status code.
+
+        Returns the response object.
         """
         self.client.login(username='test', password='password')
         response = self.client.post('/preview/',
             {'content': content},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
+
+        return response
+
+    def test_directive_tex(self):
+        content = r"""
+        .. latex:: F_{\mu\nu} = \partial_\mu A_\nu - \partial_\nu A_\mu
+
+        """
+        self._preview(content)
+
+    def test_directive_tex_errors(self):
+        content = r"""
+        .. latex:: F_{\mu\nu} = \artial_\mu A_\nu - \partial_\nu A_\mu
+
+        """
+        response = self._preview(content)
+        self.assertContains(response, 'ERROR')
+
+    def test_role_tex(self):
+        content = r"""
+        lorem ipsum dixit :tex:`\alpha`,
+        """
+        self._preview(content)
+
+    def test_role_tex_errors(self):
+        content = r"""
+        check if there is an error doesn't crash :tex:`\doesnotexist`
+        """
+        response = self._preview(content)
+        self.assertContains(response, 'ERROR')
 
 class BlogTests(TestCase):
     fixtures = ['auth_data.json', 'blog-data.json',]
