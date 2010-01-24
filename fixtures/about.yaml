@@ -1,0 +1,51 @@
+- model: flatpages.flatpage
+  pk: 1
+  fields:
+         url: /about/
+         title: About
+         content: |
+                  Questo è il blog di Gianluca Pacchiella, di miei blog 
+                  ce ne sono tanti, ma questo è il mio.
+
+                  Appassionato di informatica, scienza e controcultura digitale
+                  ritengo opportuno conoscere quello che gli strumenti del
+                  giorno d'oggi ci stanno mettendo a disposizione.
+
+                  In particolare, non contento delle piattaforme di blogging
+                  messe a disposizione dai maggiori hosting ora presenti
+                  ho deciso di scrivere in `Django <http://djangoproject.com>`_
+                  un framework in python
+                  e renderlo disponibile tramite codice GPL. Quello che non
+                  mi soddisfava era l'assenza di strumenti per pubblicare
+                  facilmente e in maniera "carina" sia codice che formule
+                  matematiche, in particolare poter usare il ``TeX`` per
+                  quanto riguarda quest'ultimo aspetto.
+
+                  Quindi il codice utilizzato da me utilizza una direttiva
+                  `restructuredText <http://docutils.sourceforge.net/rst.html>`_
+                  modificata da me per richiamare
+                  l'eseguibile ``tex`` così da ottenere una perfetta
+                  integrazione, come in questo esempio: se noi prendiamo gli
+                  studi di Shannon sappiamo che se un canale ha ampiezza di
+                  banda :tex:`W` è soggetto ad un rumore dato da :tex:`N` e si
+                  trasmette con una potenza pari a :tex:`P` la sua capacità
+                  (:tex:`C`) è data dalla formula
+
+                  .. latex:: C = W \log\left( 1 + {P\over N} \right)
+
+                  Sapendo che il rumore termico ha una ben precisa relazione
+                  con la temperatura, data da :tex:`N = kTW` possiamo arrivare
+                  ad una ben comoda relazione:
+
+                  .. latex:: \eqalign{
+                        & \lim_{W\to\infty} W\log\left(1 + {P\over N}\right)\cr
+                        & \lim_{W\to\infty} \log\left(1 + {P\over kTW}\right)^W
+                   }
+
+                  Per quanto riguarda invece la direttiva riguardante il codice
+                  inserito nelle pagine, ho utilizzato
+                  `docutils <http://docutils.sourceforge.net/>`_
+                  e `pygments <http://pygments.org/>`_.
+         enable_comments: false
+         registration_required: false
+         sites: [1]

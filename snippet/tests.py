@@ -223,3 +223,11 @@ class FeedsTests(TestCase):
         self.assertNotContains(response, 'Blog object')
 
         # TODO: check for a precise number of posts
+
+# TODO: move to a file with general tests
+class AboutTests(TestCase):
+    fixtures = [settings.PROJECT_ROOT + '/fixtures/about.yaml']
+    def test_page_exists(self):
+        url = '/about/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
