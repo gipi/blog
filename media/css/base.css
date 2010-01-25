@@ -65,6 +65,10 @@ ul.navbar li a{
 	opacity:0.6;
 }
 
+table.citation {
+	border-top:1px solid black;
+}
+
 .post .tag_list{
 	font-family:"Delicious SmallCaps";
 	text-align:right;
