@@ -3,12 +3,27 @@ function get_preview_dom_element () {
 	return document.getElementById(id_for_preview);
 }
 
+/* this function return string I want to preview */
+function get_data_to_preview (textarea) {
+	/* https://developer.mozilla.org/en/DOM/TextArea */
+	start = textarea.selectionStart;
+	end = textarea.selectionEnd;
+
+	/* textarea must be a textarea DOM element */
+	var is_selected_something = (start == end);
+
+	if(!is_selected_something)
+		return textarea.value.slice(start, end);
+
+	return textarea.value;
+}
+
 function submit_preview (id_with_value) {
 	/* shows the loading message */
 	$('#loader').css("display", "block");
 
 	/* save the data from form */
-	data = document.getElementById(id_with_value).value;
+	data = get_data_to_preview(document.getElementById(id_with_value));
 
 	/**/
 	var preview = get_preview_dom_element();
