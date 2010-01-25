@@ -226,7 +226,7 @@ class FeedsTests(TestCase):
 
 # TODO: move to a file with general tests
 class AboutTests(TestCase):
-    fixtures = [settings.PROJECT_ROOT + '/fixtures/about.yaml']
+    fixtures = [settings.PROJECT_ROOT + '/fixtures/initial_data.yaml']
     def test_page_exists(self):
         url = '/about/'
         response = self.client.get(url)
