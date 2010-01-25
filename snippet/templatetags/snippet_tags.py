@@ -1,15 +1,16 @@
 # http://en.gravatar.com/site/implement/python
 # import code for encoding urls and generating md5 hashes
-import urllib, hashlib
 from django import template
 from django.core.urlresolvers import reverse
 from django.conf import settings
 from django.utils.functional import allow_lazy
 from django.utils.encoding import force_unicode
 
-register = template.Library()
+import urllib, hashlib
 import re
 
+
+register = template.Library()
 
 @register.inclusion_tag('gravatar.html')
 def gravatar(email):
