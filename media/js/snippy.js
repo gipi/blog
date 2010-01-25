@@ -1,3 +1,10 @@
+/* global variable */
+var g_is_edited = false;
+
+function is_edited_toggle () {
+	g_is_edited = true;
+}
+
 function get_preview_dom_element () {
 	var id_for_preview = 'preview';
 	return document.getElementById(id_for_preview);

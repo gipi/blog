@@ -2,6 +2,23 @@
 {% load comments %}
 {% load snippet_tags %}
 {% load markup %}
+{% block extrajs %}
+<script type="text/javascript">
+	$(document).ready( function () {
+			/* The change event occurs when a control
+			   loses the input focus and its value has
+			   been modified since gaining focus.*/
+			document.getElementById('id_content').onchange = is_edited_toggle;
+	});
+	window.onbeforeunload = function () {
+		if(g_is_edited){
+			window.stop();
+			if(!window.confirm('You have editated the post! Do you really want to leave this page?'))
+				alert("stopped?");
+		}
+	};
+</script>
+{% endblock %}
 {% block body %}
 {% if blog %}
 	<h1 class="blog_header">{{blog.title}}</h1>
