@@ -10,6 +10,17 @@ function get_preview_dom_element () {
 	return document.getElementById(id_for_preview);
 }
 
+/* http://hacks.mozilla.org/2009/12/w3c-fileapi-in-firefox-3-6/ */
+function from_file_get_content (file, textarea) {
+	/* https://developer.mozilla.org/en/DOM/FileReader */
+	var binaryReader = new FileReader();
+	binaryReader.onloadend = function(arg){
+		textarea.value += this.result;
+	}
+
+	binaryReader.readAsText(file);
+}
+
 /* this function return string I want to preview */
 function get_data_to_preview (textarea) {
 	/* https://developer.mozilla.org/en/DOM/TextArea */
