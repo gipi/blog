@@ -38,8 +38,10 @@
                   ad una ben comoda relazione:
 
                   .. latex:: \eqalign{
-                        & \lim_{W\to\infty} W\log\left(1 + {P\over N}\right)\cr
-                        & \lim_{W\to\infty} \log\left(1 + {P\over kTW}\right)^W
+                        \lim_{W\to\infty} C(W) 
+                        &= \lim_{W\to\infty} W\log\left(1 + {P\over N(W)}\right)\cr
+                        &= \lim_{W\to\infty} {P\over kT}\log\left(1 + {P\over kTW}\right)^{kTW\over P} \cr
+                        &= \lim_{x \to\infty} {P\over kT}\log\left(1+{1\over x}\right)^x \cr
                    }
 
                   Per quanto riguarda invece la direttiva riguardante il codice
