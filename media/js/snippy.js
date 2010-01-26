@@ -10,12 +10,19 @@ function get_preview_dom_element () {
 	return document.getElementById(id_for_preview);
 }
 
+/* indent text with a space after every newline */
+function indent_text (text) {
+	return text.replace(/\n/g, '\n ');
+}
+
 /* http://hacks.mozilla.org/2009/12/w3c-fileapi-in-firefox-3-6/ */
 function from_file_get_content (file, textarea) {
 	/* https://developer.mozilla.org/en/DOM/FileReader */
 	var binaryReader = new FileReader();
 	binaryReader.onloadend = function(arg){
-		textarea.value += this.result;
+		/* TODO: add the type of file when uploaded */
+		textarea.value += '.. code-block::\n\n ' +
+			indent_text(this.result);
 	}
 
 	binaryReader.readAsText(file);
