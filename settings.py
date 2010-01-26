@@ -94,6 +94,8 @@ DEBUG = False
 
 SNIPPY_GIT_VERSION = '-zer0'
 
+PREVIEW_POST_LENGTH = 150
+
 try:
     from version import SNIPPY_GIT_VERSION
 except ImportError:
