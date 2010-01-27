@@ -79,6 +79,12 @@ table.citation {
 	height:40px;
 }
 
+#drag_zone{
+	text-align:center;
+	padding:5px;
+	border:2px dashed #cccccc;
+	-moz-border-radius:10px;
+}
 
 .blog_header, .blog_creation_date{
 	text-align:center;
