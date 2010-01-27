@@ -76,7 +76,11 @@ TEMPLATE_DIRS = (
 )
 
 INSTALLED_APPS = (
+    # to make 'auth' tests work
+    # you have to include 'django.contrib.admin'
+    # http://osdir.com/ml/DjangoUsers/2009-05/msg00972.html
     'django.contrib.auth',
+    'django.contrib.admin',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
