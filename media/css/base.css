@@ -86,6 +86,10 @@ table.citation {
 	-moz-border-radius:10px;
 }
 
+#drag_zone:-moz-drag-over{
+	background-color:blue;
+}
+
 .blog_header, .blog_creation_date{
 	text-align:center;
 }
