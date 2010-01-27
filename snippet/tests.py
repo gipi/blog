@@ -4,11 +4,13 @@
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 from django.conf import settings
+from django.contrib.comments.models import Comment
+from django.utils.hashcompat import sha_constructor
 
 from snippet.models import Blog
 from snippet.utils import slugify
 
-import os, glob
+import os, glob, time
 
 class RenderingTest(TestCase):
     fixtures = ['auth_data.json']
@@ -156,6 +158,38 @@ class BlogTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context[0]['object_list']), 1)
+
+    def test_comment_moderation(self):
+        n_before = len(Comment.objects.all())
+        url = '/comments/post/'
+        """Generate a (SHA1) security hash from the provided info.
+           copyied from django.contrib.comment.forms
+        """
+        content_type = 'snippet.blog'
+        object_pk = str(1)
+        timestamp = str(int(time.time()))
+        info = (content_type, object_pk, timestamp, settings.SECRET_KEY)
+        security_hash = sha_constructor("".join(info)).hexdigest()
+
+        post_data = {
+            'name': 'gianluca',
+            'email': 'gianluca.pacchiella@ktln2.org',
+            'url': 'http://ktln2.org',
+            'comment': 'yeah, it\'s internet baby!!!',
+            # security stuffs
+            'content_type': content_type,
+            'object_pk': object_pk,
+            'timestamp': timestamp,
+            'security_hash': security_hash,
+        }
+        response = self.client.post(url, post_data)
+        self.assertRedirects(response, '/comments/posted/?c=2')
+
+        n_after =  len(Comment.objects.all())
+        self.assertEqual(n_after == (n_before + 1), True)
+
+        from django.core import mail
+        self.assertEqual(len(mail.outbox), 1)
 
 class AuthTest(TestCase):
     fixtures = ['auth_data.json']
