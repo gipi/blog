@@ -9,6 +9,10 @@ message () {
 	echo -e "$1"
 }
 
+usage () {
+	echo "usage: $0 name mail_address site_URL"
+}
+
 # exec 2> /tmp/installation.log
 
 # INSTALL DEPENDENCIES
@@ -17,7 +21,7 @@ virtualenv --no-site-packages ${ENV_ROOT}
 source ${ENV_ROOT}bin/activate
 
 easy_install pip 
-pip install -r scripts/dependencies.txt
+pip install -q -r scripts/dependencies.txt
 
 # CREATE local_settings.py
 message "[local settings]"
