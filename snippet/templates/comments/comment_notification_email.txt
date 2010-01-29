@@ -1,3 +1,3 @@
 Hi dude!!! There is a new comment, check it out:
 
-From {{comment.user_name}} "{{comment.comment}"
+From {{comment.user_name}} "{{comment.comment}}"
