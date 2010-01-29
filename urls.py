@@ -13,6 +13,8 @@ feeds = {
 }
 
 urlpatterns = patterns('',
+        (r'^favicon\.ico$', redirect_to ,
+            {'url': settings.MEDIA_URL + 'images/favicon.ico'}),
         (r'^admin/(.*)', admin.site.root),
         url(r'^$', redirect_to, {'url': '/blog/'}, name='home'),
         url(r'^login/$', 'django.contrib.auth.views.login', name='login'),

@@ -257,3 +257,10 @@ class FeedsTests(TestCase):
         self.assertNotContains(response, 'Blog object')
 
         # TODO: check for a precise number of posts
+
+class MainSiteTests(TestCase):
+    def test_favicon(self):
+        response = self.client.get('/favicon.ico')
+        print response
+        self.assertRedirects(response,
+                '/media/images/favicon.ico', status_code=301)
