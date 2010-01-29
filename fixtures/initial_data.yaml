@@ -4,50 +4,33 @@
          url: /about/
          title: About
          content: |
-                  Questo è il blog di Gianluca Pacchiella, di miei blog 
-                  ce ne sono tanti, ma questo è il mio.
+                  Questo è il mio blog, mio perché scritto da me sia nella sua
+                  anima (cioé il software) che nel suo contenuto.
 
-                  Appassionato di informatica, scienza e controcultura digitale
-                  ritengo opportuno conoscere quello che gli strumenti del
+                  Questo blog rispecchia nei contenuti quelli che interessa
+                  la mia persona: informatica, scienza e più in generale
+                  tutto quello che può essere interessante (definizione un po'
+                  vaga lo ammetto ma perché ingabbiarsi da soli?).
+                  Ritengo opportuno conoscere quello che gli strumenti del
                   giorno d'oggi ci stanno mettendo a disposizione.
 
-                  In particolare, non contento delle piattaforme di blogging
-                  messe a disposizione dai maggiori hosting ora presenti
+                  In particolare, proprio perché
+                  non contento delle piattaforme di blogging
+                  messe a disposizione dai maggiori hosting
                   ho deciso di scrivere in `Django <http://djangoproject.com>`_
-                  un framework in python
-                  e renderlo disponibile tramite codice GPL. Quello che non
-                  mi soddisfava era l'assenza di strumenti per pubblicare
+                  (un framework in python) questo blog.
+                  Ho cercato
+                  di crearmi uno strumento su misura per pubblicare
                   facilmente e in maniera "carina" sia codice che formule
-                  matematiche, in particolare poter usare il ``TeX`` per
-                  quanto riguarda quest'ultimo aspetto.
-
-                  Quindi il codice utilizzato da me utilizza una direttiva
+                  matematiche; tutto questo è stato implementato
+                  tramite direttive
                   `restructuredText <http://docutils.sourceforge.net/rst.html>`_
-                  modificata da me per richiamare
-                  l'eseguibile ``tex`` così da ottenere una perfetta
-                  integrazione, come in questo esempio: se noi prendiamo gli
-                  studi di Shannon sappiamo che se un canale ha ampiezza di
-                  banda :tex:`W` è soggetto ad un rumore dato da :tex:`N` e si
-                  trasmette con una potenza pari a :tex:`P` la sua capacità
-                  (:tex:`C`) è data dalla formula
-
-                  .. latex:: C = W \log\left( 1 + {P\over N} \right)
-
-                  Sapendo che il rumore termico ha una ben precisa relazione
-                  con la temperatura, data da :tex:`N = kTW` possiamo arrivare
-                  ad una ben comoda relazione:
-
-                  .. latex:: \eqalign{
-                        \lim_{W\to\infty} C(W) 
-                        &= \lim_{W\to\infty} W\log\left(1 + {P\over N(W)}\right)\cr
-                        &= \lim_{W\to\infty} {P\over kT}\log\left(1 + {P\over kTW}\right)^{kTW\over P} \cr
-                        &= \lim_{x \to\infty} {P\over kT}\log\left(1+{1\over x}\right)^x \cr
-                   }
-
-                  Per quanto riguarda invece la direttiva riguardante il codice
-                  inserito nelle pagine, ho utilizzato
-                  `docutils <http://docutils.sourceforge.net/>`_
+                  via `docutils <http://docutils.sourceforge.net/>`_
                   e `pygments <http://pygments.org/>`_.
+
+                  Chi fosse interessato al codice di questo blog può andare
+                  alla pagina *projects* e nel caso venisse utilizzato
+                  sarebbe carino farmelo sapere.
          enable_comments: false
          registration_required: false
          sites: [1]
