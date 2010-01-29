@@ -264,3 +264,9 @@ class MainSiteTests(TestCase):
         print response
         self.assertRedirects(response,
                 '/media/images/favicon.ico', status_code=301)
+
+    def test_robots(self):
+        response = self.client.get('/robots.txt')
+        print response
+        self.assertRedirects(response,
+                '/media/robots.txt', status_code=301)
