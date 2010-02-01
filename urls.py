@@ -12,11 +12,15 @@ feeds = {
     'user': LatestBlogEntriesForUserFeed,
 }
 
-urlpatterns = patterns('',
+static_patterns = patterns('',
         (r'^favicon\.ico$', redirect_to ,
             {'url': settings.MEDIA_URL + 'images/favicon.ico'}),
         (r'^robots\.txt', redirect_to,
             {'url': settings.MEDIA_URL + 'robots.txt'}),
+)
+
+urlpatterns = patterns('',
+        (r'^', include(static_patterns)),
         (r'^admin/(.*)', admin.site.root),
         url(r'^$', redirect_to, {'url': '/blog/'}, name='home'),
         url(r'^login/$', 'django.contrib.auth.views.login', name='login'),
