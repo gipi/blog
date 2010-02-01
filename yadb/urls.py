@@ -13,7 +13,7 @@ urlpatterns = patterns('',
                         'snippet.views.blog_view', name='blog-post'),
                 url(r'^upload/$', 'snippet.views.upload', name='blog-upload'),
                 url(r'^archives/$', object_list, {
-                    'template_name': 'snippet/archives_list.html',
+                    'template_name': 'yadb/archives_list.html',
                     'queryset': Blog.objects.\
                                 filter(status='pubblicato').\
                                 dates('creation_date', 'month'),

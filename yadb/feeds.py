@@ -5,8 +5,8 @@ from django.contrib.auth.models import User
 from snippet.models import Blog
 
 class BlogFeed(Feed):
-    title_template = 'snippet/feeds_title.html'
-    description_template = 'snippet/feeds_description.html'
+    title_template = 'yadb/feeds_title.html'
+    description_template = 'yadb/feeds_description.html'
 
 class LatestBlogEntriesFeed(BlogFeed):
     title = 'Latest blog post'

@@ -248,8 +248,8 @@ class FeedsTests(TestCase):
     def test_existence(self):
         response = self.client.get('/feeds/latest/')
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'snippet/feeds_title.html')
-        self.assertTemplateUsed(response, 'snippet/feeds_description.html')
+        self.assertTemplateUsed(response, 'yadb/feeds_title.html')
+        self.assertTemplateUsed(response, 'yadb/feeds_description.html')
 
         # check for user realated feeds
         response = self.client.get('/feeds/user/test/')
