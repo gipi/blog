@@ -7,8 +7,8 @@ from django.conf import settings
 from django.contrib.comments.models import Comment
 from django.utils.hashcompat import sha_constructor
 
-from snippet.models import Blog
-from snippet.utils import slugify
+from yadb.models import Blog
+from yadb.utils import slugify
 
 import os, glob, time
 
@@ -165,7 +165,7 @@ class BlogTests(TestCase):
         """Generate a (SHA1) security hash from the provided info.
            copyied from django.contrib.comment.forms
         """
-        content_type = 'snippet.blog'
+        content_type = 'yadb.blog'
         object_pk = str(1)
         timestamp = str(int(time.time()))
         info = (content_type, object_pk, timestamp, settings.SECRET_KEY)

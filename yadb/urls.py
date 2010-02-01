@@ -2,7 +2,7 @@ from django.conf.urls.defaults import *
 from django.views.generic.date_based import archive_month
 from django.views.generic.list_detail import object_list
 
-from snippet.models import Blog
+from yadb.models import Blog
 
 urlpatterns = patterns('',
                 url(r'^$', 'snippet.views.blog_list', name='blog-list'),

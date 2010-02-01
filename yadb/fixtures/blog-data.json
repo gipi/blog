@@ -1,6 +1,6 @@
 [
   {
-    "model": "snippet.blog",
+    "model": "yadb.blog",
     "pk":1,
     "fields": {
       "slug": "superfici-minimali-e-bolle-di-sapone",
@@ -31,7 +31,7 @@
     }
   },
   {
-    "model": "snippet.blog",
+    "model": "yadb.blog",
     "pk":2,
     "fields": {
       "slug": "qualche-test-di-codice",
@@ -44,7 +44,7 @@
     }
   },
   {
-    "model": "snippet.blog",
+    "model": "yadb.blog",
     "pk":3,
     "fields": {
       "slug": "this-is-a-bozza",

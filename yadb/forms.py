@@ -1,5 +1,5 @@
 from django.forms import ModelForm, Form, Textarea, CharField, FileField
-from snippet.models import Blog
+from yadb.models import Blog
 
 
 class BlogForm(ModelForm):

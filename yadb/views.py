@@ -9,11 +9,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 
-from snippet.forms import BlogForm, UploadFileForm
-from snippet import rst_tex, rst_code
-from snippet.utils import slugify
-from snippet.models import Blog
-from snippet.decorators import superuser_only, ajax_required
+from yadb.forms import BlogForm, UploadFileForm
+from yadb import rst_tex, rst_code
+from yadb.utils import slugify
+from yadb.models import Blog
+from yadb.decorators import superuser_only, ajax_required
 
 import os
 

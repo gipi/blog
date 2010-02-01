@@ -2,7 +2,7 @@ from django.contrib.syndication.feeds import Feed, FeedDoesNotExist
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User
 
-from snippet.models import Blog
+from yadb.models import Blog
 
 class BlogFeed(Feed):
     title_template = 'yadb/feeds_title.html'
