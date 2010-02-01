@@ -4,14 +4,12 @@ from django.views.generic.list_detail import object_list
 
 from yadb.models import Blog
 
-urlpatterns = patterns('',
-                url(r'^$', 'snippet.views.blog_list', name='blog-list'),
-                url(r'^add/$', 'snippet.views.blog_add', name='blog-add'),
-                url(r'^edit/(\d*)/$',
-                    'snippet.views.blog_add', name='blog-edit'),
-                url(r'^post/([\w\d-]*)/$',
-                        'snippet.views.blog_view', name='blog-post'),
-                url(r'^upload/$', 'snippet.views.upload', name='blog-upload'),
+urlpatterns = patterns('yadb.views',
+                url(r'^$', 'blog_list', name='blog-list'),
+                url(r'^add/$', 'blog_add', name='blog-add'),
+                url(r'^edit/(\d*)/$', 'blog_add', name='blog-edit'),
+                url(r'^post/([\w\d-]*)/$', 'blog_view', name='blog-post'),
+                url(r'^upload/$', 'upload', name='blog-upload'),
                 url(r'^archives/$', object_list, {
                     'template_name': 'yadb/archives_list.html',
                     'queryset': Blog.objects.\
