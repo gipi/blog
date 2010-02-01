@@ -259,6 +259,7 @@ class FeedsTests(TestCase):
         # TODO: check for a precise number of posts
 
 class MainSiteTests(TestCase):
+    urls = 'static_urls'
     def test_favicon(self):
         response = self.client.get('/favicon.ico')
         print response
