@@ -1,6 +1,6 @@
 {% extends 'site_base.html' %}
 {% load comments %}
-{% load snippet_tags %}
+{% load yadb_tags %}
 {% load markup %}
 {% block extrajs %}
 <script type="text/javascript">
@@ -59,7 +59,7 @@
 	</form>
 	{% get_comment_list for blog as comments %}
 	{% for comment in comments %}
-		{% entry comment.user_name comment.user_email comment.comment comment.submit_date %}
+		{% comment_entry comment.user_name comment.user_email comment.comment comment.submit_date %}
 	{% endfor %}
 	</div>
 {% endif %}

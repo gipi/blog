@@ -5,7 +5,7 @@ from django.contrib import admin
 
 admin.autodiscover()
 
-from snippet.feeds import LatestBlogEntriesFeed, LatestBlogEntriesForUserFeed
+from yadb.feeds import LatestBlogEntriesFeed, LatestBlogEntriesForUserFeed
 
 feeds = {
     'latest': LatestBlogEntriesFeed,
@@ -25,8 +25,8 @@ urlpatterns = patterns('',
         url(r'^$', redirect_to, {'url': '/blog/'}, name='home'),
         url(r'^login/$', 'django.contrib.auth.views.login', name='login'),
         url(r'^logout/$', 'django.contrib.auth.views.logout', name='logout'),
-        (r'^preview/$', 'snippet.views.preview'),
-        (r'^blog/', include('snippet.urls')),
+        (r'^preview/$', 'yadb.views.preview'),
+        (r'^blog/', include('yadb.urls')),
         # comment stuffs
         (r'^comments/', include('django.contrib.comments.urls')),
         (r'^feeds/(?P<url>.*)/$',

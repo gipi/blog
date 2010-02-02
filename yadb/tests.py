@@ -7,8 +7,8 @@ from django.conf import settings
 from django.contrib.comments.models import Comment
 from django.utils.hashcompat import sha_constructor
 
-from snippet.models import Blog
-from snippet.utils import slugify
+from yadb.models import Blog
+from yadb.utils import slugify
 
 import os, glob, time
 
@@ -165,7 +165,7 @@ class BlogTests(TestCase):
         """Generate a (SHA1) security hash from the provided info.
            copyied from django.contrib.comment.forms
         """
-        content_type = 'snippet.blog'
+        content_type = 'yadb.blog'
         object_pk = str(1)
         timestamp = str(int(time.time()))
         info = (content_type, object_pk, timestamp, settings.SECRET_KEY)
@@ -248,8 +248,8 @@ class FeedsTests(TestCase):
     def test_existence(self):
         response = self.client.get('/feeds/latest/')
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'snippet/feeds_title.html')
-        self.assertTemplateUsed(response, 'snippet/feeds_description.html')
+        self.assertTemplateUsed(response, 'yadb/feeds_title.html')
+        self.assertTemplateUsed(response, 'yadb/feeds_description.html')
 
         # check for user realated feeds
         response = self.client.get('/feeds/user/test/')

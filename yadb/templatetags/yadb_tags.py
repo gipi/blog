@@ -25,8 +25,8 @@ def gravatar(email):
 
     return { 'url': gravatar_url }
 
-@register.inclusion_tag('entry_skeleton.html')
-def entry(username, email, content, creation_date):
+@register.inclusion_tag('comments/entry_skeleton.html')
+def comment_entry(username, email, content, creation_date):
     return {
         'username': username,
         'email': email,

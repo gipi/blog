@@ -9,11 +9,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 
-from snippet.forms import BlogForm, UploadFileForm
-from snippet import rst_tex, rst_code
-from snippet.utils import slugify
-from snippet.models import Blog
-from snippet.decorators import superuser_only, ajax_required
+from yadb.forms import BlogForm, UploadFileForm
+from yadb import rst_tex, rst_code
+from yadb.utils import slugify
+from yadb.models import Blog
+from yadb.decorators import superuser_only, ajax_required
 
 import os
 
@@ -51,7 +51,7 @@ def blog_list(request):
         real_Q = real_Q | ( Q(user=request.user) & Q(status='bozza') )
 
     blogs = Blog.objects.filter(real_Q).order_by('-creation_date')
-    return render_to_response('snippet/blog_list.html',
+    return render_to_response('yadb/blog_list.html',
             {'blogs': blogs},
             context_instance=RequestContext(request))
 
@@ -63,7 +63,7 @@ def blog_view(request, slug):
     content = None
     blog = get_object_or_404(Blog, slug=slug)
 
-    return render_to_response('snippet/blog.html', {'blog': blog},
+    return render_to_response('yadb/blog.html', {'blog': blog},
             context_instance=RequestContext(request))
 
 @login_required
@@ -83,7 +83,7 @@ def blog_add(request, id=None):
             blog.save()
             return HttpResponseRedirect('/blog/')
 
-    return render_to_response('snippet/blog.html', {'form': form},
+    return render_to_response('yadb/blog.html', {'form': form},
             context_instance=RequestContext(request))
 
 def find_a_free_number(basename):
