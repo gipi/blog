@@ -17,6 +17,11 @@ to install all.
 
 # DEPLOY
 
+To do this, you need a shell account (ssh maybe) so to manage the following
+commands
+
+  $ python manage.py bootstrap
+
   $ mkdir media/js media/TeX media/uploads media/fonts
   $ wget <jquery URL> -O media/js/jquery.js
   $ wget <some URL pointed by link on http://www.josbuivenga.demon.nl/delicious.html>
