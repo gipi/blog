@@ -159,9 +159,7 @@ class BlogTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context[0]['object_list']), 1)
 
-    def test_comment_moderation(self):
-        n_before = len(Comment.objects.all())
-        url = '/comments/post/'
+    def _generate_post_data_for_comment(self, text):
         """Generate a (SHA1) security hash from the provided info.
            copyied from django.contrib.comment.forms
         """
@@ -171,17 +169,23 @@ class BlogTests(TestCase):
         info = (content_type, object_pk, timestamp, settings.SECRET_KEY)
         security_hash = sha_constructor("".join(info)).hexdigest()
 
-        post_data = {
+        return {
             'name': 'gianluca',
             'email': 'gianluca.pacchiella@ktln2.org',
             'url': 'http://ktln2.org',
-            'comment': 'yeah, it\'s internet baby!!!',
+            'comment': text,
             # security stuffs
             'content_type': content_type,
             'object_pk': object_pk,
             'timestamp': timestamp,
             'security_hash': security_hash,
         }
+
+    def test_comment_moderation(self):
+        n_before = len(Comment.objects.all())
+        url = '/comments/post/'
+        post_data = self._generate_post_data_for_comment(
+                'yeah, it\'s internet baby!!!')
         response = self.client.post(url, post_data)
         self.assertRedirects(response, '/comments/posted/?c=2')
 
@@ -190,6 +194,17 @@ class BlogTests(TestCase):
 
         from django.core import mail
         self.assertEqual(len(mail.outbox), 1)
+
+    def test_comment_rst_rendering(self):
+        url = '/comments/post/'
+        post_data = self._generate_post_data_for_comment(r'im useless')
+
+        response = self.client.post(url, post_data)
+        self.assertRedirects(response, '/comments/posted/?c=2')
+
+        response = self.client.get(reverse('blog-post',
+            args=['superfici-minimali-e-bolle-di-sapone']))
+        self.assertNotContains(response, 'ERROR')
 
 class AuthTest(TestCase):
     fixtures = ['auth_data.json']
