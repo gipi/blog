@@ -114,6 +114,43 @@ class BlogTests(TestCase):
         self.assertEqual(initial_title + '-1',
         Blog.objects.get(title='superfici minimali,e bolle di sapone').slug)
 
+    def test_edit(self):
+        pk = 2
+        url = reverse('blog-edit', args=[pk])
+        self.client.login(username='test', password='password')
+
+        self.assertEqual(Blog.objects.get(pk=pk).status, 'bozza')
+
+        previous_n = len(Blog.objects.all())
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        blog = response.context[0]['form'].instance
+
+        self.assertEqual(blog.status, 'bozza')
+
+        previous_date = blog.creation_date
+
+        post_data = {
+            'title': blog.title,
+            'content': blog.content,
+            'tags': blog.tags,
+            # change only this
+            'status': 'pubblicato',
+        }
+        response = self.client.post(url, post_data)
+
+        # if the forms has not errors then redirects
+        self.assertEqual(response.context, None)
+        self.assertRedirects(response, '/blog/')
+
+        self.assertEqual(len(Blog.objects.all()), previous_n)
+
+        blog = Blog.objects.get(pk=pk)
+        # check that published date is now
+        self.assertEqual(previous_date < blog.creation_date, True)
+
     def test_blog_list_with_bozza(self):
         url = reverse('blog-list')
         response = self.client.get(url)

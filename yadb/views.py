@@ -15,7 +15,7 @@ from yadb.utils import slugify
 from yadb.models import Blog
 from yadb.decorators import superuser_only, ajax_required
 
-import os
+import os, datetime
 
 
 @login_required
@@ -75,7 +75,9 @@ def blog_add(request, id=None):
     form = BlogForm(request.POST or None, instance=instance)
 
     if request.method == 'POST':
+        old_status = getattr(instance, 'status', None)
         if form.is_valid():
+            # form.save change instance so must save the status before
             blog = form.save(commit=False)
             # TODO: maybe exists a Django function for slugify
             initial_slug = slugify(blog.title)
@@ -92,6 +94,10 @@ def blog_add(request, id=None):
 
             blog.slug = initial_slug + trailing
             blog.user = request.user
+
+            if ( old_status == 'bozza') and (blog.status == 'pubblicato'):
+                blog.creation_date = datetime.datetime.now()
+
             blog.save()
             return HttpResponseRedirect('/blog/')
 
