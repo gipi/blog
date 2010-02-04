@@ -1,4 +1,5 @@
-{% load snippet_tags %}
+{% load yadb_tags %}
+{% load markup %}
 <div class="entry">
 	<h3>posted by {{username}} at {{date|date:"D d M Y"}}</h3>
 	<p>{% gravatar email %}{{content}}</p>
