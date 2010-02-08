@@ -24,7 +24,7 @@ class Blog(models.Model):
     #enable_comments = models.BooleanField()
 
     def get_absolute_url(self):
-        return reverse('blog-post', args=[self.pk])
+        return reverse('blog-post', args=[self.slug])
 
 class BlogCommentModeration(CommentModerator):
     email_notification = True
