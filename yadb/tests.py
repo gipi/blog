@@ -208,6 +208,11 @@ class BlogTests(TestCase):
         from django.core import mail
         self.assertEqual(len(mail.outbox), 1)
 
+    def test_sidebar(self):
+        url = reverse('blog-list')
+        response = self.client.get(url)
+        self.assertContains(response, '<div id="sidebar">')
+
     def test_comment_rst_rendering(self):
         url = '/comments/post/'
         post_data = self._generate_post_data_for_comment(r'im useless')

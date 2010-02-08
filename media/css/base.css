@@ -66,6 +66,17 @@ ul.navbar li a{
 	width:250px;
 }
 
+
+#content #sidebar li {
+	list-style-type: none;
+}
+
+#sidebar h3 {
+	background-color:#9090ff;
+	padding:5px 10px 5px;
+	-moz-border-radius:5px;
+}
+
 .post{
 	margin:10px;
 	padding:10px;
