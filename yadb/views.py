@@ -41,6 +41,10 @@ def preview(request):
             context_instance=RequestContext(request))
 
 def blog_list(request):
+    return _blog_general_list(request, 'yadb/blog_list.html')
+
+# TODO: use generic view
+def _blog_general_list(request, template):
     """
     This show list of all posts pubblished but if you are authenticated
     let you see also the (yours) unpubblished.
@@ -51,9 +55,11 @@ def blog_list(request):
         real_Q = real_Q | ( Q(user=request.user) & Q(status='bozza') )
 
     blogs = Blog.objects.filter(real_Q).order_by('-creation_date')
-    return render_to_response('yadb/blog_list.html',
-            {'blogs': blogs},
+    return render_to_response(template, {'blogs': blogs},
             context_instance=RequestContext(request))
+
+def blog_archives(request):
+    return _blog_general_list(request, 'yadb/archives_list.html')
 
 def blog_view(request, slug):
     """

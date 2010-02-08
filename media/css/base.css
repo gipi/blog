@@ -108,6 +108,14 @@ table.citation {
 	margin:auto;
 }
 
+#archive_list li.date{
+	list-style-type: none;
+}
+
+#archive_list li.bozza a{
+	color:red;
+}
+
 form label{
 	font-weight:bold;
 }
