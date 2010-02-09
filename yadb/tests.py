@@ -36,6 +36,14 @@ class RenderingTest(TestCase):
         """
         self._preview(content)
 
+    def test_directive_video(self):
+        content = r"""
+        .. video:: http://www.example.com
+
+        """
+        response = self._preview(content)
+        self.assertNotContains(response, 'ERROR')
+
     def test_directive_tex_errors(self):
         content = r"""
         .. latex:: F_{\mu\nu} = \artial_\mu A_\nu - \partial_\nu A_\mu

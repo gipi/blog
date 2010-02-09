@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 
 from yadb.forms import BlogForm, UploadFileForm
-from yadb import rst_tex, rst_code
+from yadb import rst_tex, rst_code, rst_video
 from yadb.utils import slugify
 from yadb.models import Blog
 from yadb.decorators import superuser_only, ajax_required
