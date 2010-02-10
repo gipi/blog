@@ -1,6 +1,7 @@
 from django.contrib.syndication.feeds import Feed, FeedDoesNotExist
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User
+from django.contrib.sites.models import Site
 
 from yadb.models import Blog
 
@@ -9,7 +10,7 @@ class BlogFeed(Feed):
     description_template = 'yadb/feeds_description.html'
 
 class LatestBlogEntriesFeed(BlogFeed):
-    title = 'Latest blog post'
+    title = Site.objects.get(pk=1).name + ' latest blog posts'
     link = '/blog/'
     description = 'Updates sui nuovi post'
 
