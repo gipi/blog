@@ -40,6 +40,14 @@ There is a bootstrap script in 'scripts/' you can use to quickly deployment
 and some htaccess and fcgi example.
 
 
+# BACKUP
+
+In 'scripts/' there is a script named 'backup.sh' which can save in a local
+GIT repository the blog posts. It needs only a '.backuprc' file with a shell
+variable 'GIT_OBJ_DB_PATH' pointing to the local repository. Eventually a
+post-receive hook can push this changes in a remote repository.
+
+
 # HACKING
 
 The code for this project is contained in a git repository hosted by gitorious
