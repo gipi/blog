@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.contrib import admin
 from django.core.urlresolvers import reverse
 from django.contrib.comments.moderation import CommentModerator, moderator
 
@@ -31,3 +32,4 @@ class BlogCommentModeration(CommentModerator):
     #enable_field = 'enable_comments'
 
 moderator.register(Blog, BlogCommentModeration)
+admin.site.register(Blog)
