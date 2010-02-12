@@ -78,7 +78,19 @@ def blog_add(request, id=None):
         if form.is_valid():
             blog = form.save(commit=False)
             # TODO: maybe exists a Django function for slugify
-            blog.slug = slugify(blog.title)
+            initial_slug = slugify(blog.title)
+
+            # check for slug existence
+            trailing = ''
+            idx = 0
+            try:
+                while Blog.objects.get(slug=initial_slug + trailing):
+                    idx += 1
+                    trailing = '-%d' % idx
+            except Blog.DoesNotExist:
+                pass
+
+            blog.slug = initial_slug + trailing
             blog.user = request.user
             blog.save()
             return HttpResponseRedirect('/blog/')

@@ -100,6 +100,20 @@ class BlogTests(TestCase):
         #self.assertRedirects(response, '/blog/')
         self.assertEqual(len(Blog.objects.all()), previous_n + 1)
 
+    def test_blog_add_with_same_slug(self):
+        self.client.login(username='test', password='password')
+        initial_title = 'superfici-minimali-e-bolle-di-sapone'
+        response = self.client.post(reverse('blog-add'),
+                {
+                'title': 'superfici minimali,e bolle di sapone',
+                'content': 'this is a content',
+                'tags': 'love, lulz',
+                'status': 'pubblicato',
+                })
+        self.assertRedirects(response, '/blog/')
+        self.assertEqual(initial_title + '-1',
+        Blog.objects.get(title='superfici minimali,e bolle di sapone').slug)
+
     def test_blog_list_with_bozza(self):
         url = reverse('blog-list')
         response = self.client.get(url)
@@ -270,6 +284,13 @@ class UtilTests(TestCase):
     def test_slugify(self):
         slug = slugify('l\'amore non ESISTE')
         self.assertEqual(slug, 'l-amore-non-esiste')
+
+        slug = slugify('here there aren\'t two  dashes or     more')
+        self.assertEqual(slug, 'here-there-aren-t-two-dashes-or-more')
+
+        slug = slugify('here there aren\'t # @ ^')
+        self.assertEqual(slug, 'here-there-aren-t')
+
 
 class FeedsTests(TestCase):
     fixtures = ['auth_data.json', 'blog-data.json',]
