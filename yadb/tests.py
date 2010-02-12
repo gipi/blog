@@ -67,6 +67,11 @@ class RenderingTest(TestCase):
 
 class BlogTests(TestCase):
     fixtures = ['auth_data.json', 'blog-data.json',]
+    def test_blog_view_a_post(self):
+        post = Blog.objects.get(pk=1)
+        response = self.client.get(post.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+
     def test_blog_add(self):
         # the page exists
         self.client.login(username='test', password='password')
