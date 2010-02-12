@@ -1,7 +1,11 @@
 {% extends 'site_base.html' %}
 {% load comments %}
 {% load yadb_tags %}
+{% load trackback_tags %}
 {% load markup %}
+{% block link_trackback %}
+		<link rel="pingback" href="{% get_pingback_url %}"/>
+{% endblock %}
 {% block extrajs %}
 <script type="text/javascript">
 	function do_something_with_text_file (event) {
@@ -45,6 +49,7 @@
 	<div class="blog_content">
 		{{blog.content|restructuredtext}}
 	</div>
+	<div id="trackback">{% get_trackback_rdf_for blog %}</div>
 	<div id="comment_container">
 	<h2>Comments</h2>
 	{% get_comment_form for blog as cform %}

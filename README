@@ -2,6 +2,7 @@
 
   * django <http://djangoproject.com>
   * django-tagging <http://code.google.com/p/django-tagging/>
+  * django-trackback <http://code.google.com/p/django-trackback/>
   * pygments <http://pygments.org/>
   * docutils
   * TeX

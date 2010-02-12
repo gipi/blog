@@ -58,6 +58,10 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware',
+    # he pingback specs also allow publishing the pingback url
+    # via an HTTP X-Header. To enable this feature decomment
+    # the following line
+    #'trackback.middleware.PingbackUrlInjectionMiddleware',
 )
 
 ROOT_URLCONF = 'urls'
@@ -75,6 +79,13 @@ TEMPLATE_DIRS = (
     PROJECT_ROOT + '/templates/',
 )
 
+
+PINGBACK_RESOLVERS = (
+    'trackback.utils.resolvers.decorated',
+    'trackback.utils.resolvers.generic_view',
+)
+
+
 INSTALLED_APPS = (
     # to make 'auth' tests work
     # you have to include 'django.contrib.admin'
@@ -87,6 +98,7 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'django.contrib.flatpages',
     'django.contrib.comments',
+    'trackback',
     'tagging',
     'yadb',
 )
