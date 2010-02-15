@@ -55,17 +55,6 @@ def blog_list(request):
             {'blogs': blogs},
             context_instance=RequestContext(request))
 
-def blog_view(request, slug):
-    """
-    Read article by Tim Berners Lee about importance of URL
-    """
-    form = None
-    content = None
-    blog = get_object_or_404(Blog, slug=slug)
-
-    return render_to_response('yadb/blog.html', {'blog': blog},
-            context_instance=RequestContext(request))
-
 @login_required
 def blog_add(request, id=None):
     instance = None
