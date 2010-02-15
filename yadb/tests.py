@@ -66,7 +66,7 @@ class RenderingTest(TestCase):
         self.assertContains(response, 'ERROR')
 
 class BlogTests(TestCase):
-    fixtures = ['auth_data.json', 'blog-data.json',]
+    fixtures = ['site.json', 'auth_data.json', 'blog-data.json',]
     def test_blog_add(self):
         # the page exists
         self.client.login(username='test', password='password')
