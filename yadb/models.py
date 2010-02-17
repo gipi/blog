@@ -9,7 +9,7 @@ from tagging.fields import TagField
 
 class Blog(models.Model):
     slug = models.SlugField(unique=True)
-    title = models.CharField(max_length=100)
+    title = models.CharField(max_length=100, unique=True)
     status = models.CharField(max_length=10,
         choices=(
             ('bozza', 'bozza'),

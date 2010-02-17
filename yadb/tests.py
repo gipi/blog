@@ -100,6 +100,18 @@ class BlogTests(TestCase):
         #self.assertRedirects(response, '/blog/')
         self.assertEqual(len(Blog.objects.all()), previous_n + 1)
 
+    def test_blog_add_with_same_title(self):
+        self.client.login(username='test', password='password')
+        response = self.client.post(reverse('blog-add'),
+                {
+                'title': 'superfici minimali e bolle di sapone',
+                'content': 'this is a content',
+                'tags': 'love, lulz',
+                'status': 'pubblicato',
+                })
+        self.assertFormError(response, 'form',
+                'title', [u'Blog with this Title already exists.'])
+
     def test_blog_add_with_same_slug(self):
         self.client.login(username='test', password='password')
         initial_title = 'superfici-minimali-e-bolle-di-sapone'
