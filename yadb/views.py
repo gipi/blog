@@ -8,6 +8,7 @@ from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.core.paginator import Paginator, InvalidPage, EmptyPage
 
 from yadb.forms import BlogForm, UploadFileForm
 from yadb import rst_tex, rst_code, rst_video
@@ -15,7 +16,7 @@ from yadb.utils import slugify
 from yadb.models import Blog
 from yadb.decorators import superuser_only, ajax_required
 
-import os, datetime
+import os, datetime, operator
 
 
 @login_required
@@ -139,3 +140,30 @@ def upload(request):
 
     return render_to_response('upload.html',
             {'form': form}, RequestContext(request))
+
+@login_required
+def uploaded(request):
+    FILES_ROOT = settings.UPLOAD_PATH
+    files = os.listdir(FILES_ROOT)
+
+    couples = []
+    for file in files:
+        couples.append((file, os.stat(FILES_ROOT + file).st_mtime))
+
+    couples = sorted(couples, key=operator.itemgetter(1), reverse=True)
+    ordered_filenames = map(operator.itemgetter(0), couples)
+    paginator = Paginator(ordered_filenames, 10)
+
+    try:
+        page = int(request.GET.get('page', '1'))
+    except ValueError:
+        page = 1
+
+    try:
+        filez = paginator.page(page)
+    except (EmptyPage, InvalidPage):
+        filez = paginator.page(paginator.num_pages)
+
+    return render_to_response('yadb/uploaded.html', {
+        'UPLOAD_URL': settings.UPLOAD_URL,
+        'files': filez}, context_instance=RequestContext(request))

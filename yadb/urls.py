@@ -22,4 +22,5 @@ urlpatterns = patterns('yadb.views',
                                 filter(status='pubblicato'),
                         'date_field': 'creation_date'
                     }, name='blog-archives-month'),
+                url(r'^upload_popup/$', 'uploaded', name='blog-upload-popup'),
 )
