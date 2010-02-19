@@ -115,3 +115,73 @@ def truncatewords_html_and_more(value, args):
 
 truncatewords_html_and_more.is_safe = True
 register.filter('truncatewords_html_and_more', truncatewords_html_and_more)
+
+@register.tag(name='restructuredTextWO')
+def restructured_text_without(parser, token):
+    """
+    Allow to delete a registered role from the restructuredtext
+    filter so to avoid unwanted side effects. For example I don't
+    want to allow latex directive in comment.
+    """
+    nodelist = parser.parse(('endrestructuredTextWO',))
+    parser.delete_first_token()
+
+    try:
+        args = token.split_contents()
+        if len(args) == 1:
+            raise ValueError
+
+    except ValueError:
+        raise template.TemplateSyntaxError(
+                '%r tag requires at least an argument' % token.contents.split()[0])
+
+    tag_name = args.pop(0)
+
+    return Without(nodelist, args)
+
+
+
+class Without(template.Node):
+    def __init__(self, nodelist, rst_names):
+        if settings.DEBUG:
+            print 'Without', rst_names
+
+        self.nodelist = nodelist
+        self.rst_names = rst_names
+        self.roles = {}
+        self.directives = {}
+
+    def render(self, context):
+        from docutils.parsers.rst import roles, directives
+
+        for name in self.rst_names:
+            if roles._role_registry.has_key(name):
+                role_fn1 = roles._role_registry.pop(name, None)
+                # I don't know why but also this has to be pop'd (maybe cache)
+                role_fn2 = roles._roles.pop(name, None)
+                print 'r1, r2', role_fn1, role_fn2
+                self.roles[name] = (role_fn1, role_fn2)
+
+            if directives._directives.has_key(name):
+                print '****** directive'
+                directive_fn1 = None#directives._directive_registry.pop(name)
+                directive_fn2 = directives._directives.pop(name)
+                self.directives[name] = (directive_fn1, directive_fn2)
+
+        output = self.nodelist.render(context)
+
+        # restore the roles and directives
+        for name, (fn1, fn2) in self.roles.items():
+            if fn1:
+                roles._role_registry[name] = fn1
+            if fn2:
+                roles._roles[name] = fn2
+
+        for name, (fn1, fn2) in self.directives.items():
+            # I don't know if this works like roles
+            #if fn1:
+            #    directives._directive_registry[name] = fn1
+            if fn2:
+                directives._directives[name] = fn2
+
+        return output

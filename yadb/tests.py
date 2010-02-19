@@ -67,6 +67,13 @@ class RenderingTest(TestCase):
 
 class BlogTests(TestCase):
     fixtures = ['auth_data.json', 'blog-data.json',]
+    def test_page_rendering(self):
+        url = reverse('blog-post', args=['superfici-minimali-e-bolle-di-sapone',])
+        response = self.client.get(url)
+
+        # this checks :tex: role in comment doesn't work
+        self.assertContains(response, 'ERROR', 2)
+
     def test_blog_add(self):
         # the page exists
         self.client.login(username='test', password='password')
