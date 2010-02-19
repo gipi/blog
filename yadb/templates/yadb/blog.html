@@ -59,7 +59,7 @@
 	</form>
 	{% get_comment_list for blog as comments %}
 	{% for comment in comments %}
-		{% comment_entry comment.user_name comment.user_email comment.comment comment.submit_date %}
+		{% comment_entry comment %}
 	{% endfor %}
 	</div>
 {% endif %}
