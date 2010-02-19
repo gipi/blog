@@ -1,6 +1,7 @@
 {% extends 'site_base.html' %}
 {% load comments markup yadb_tags %}
 {% block extrajs %}
+{% if form %}
 <script type="text/javascript">
 	function do_something_with_text_file (event) {
 		event.preventDefault();
@@ -33,7 +34,9 @@
 		}
 	};
 </script>
+{% endif %}
 {% endblock %}
+
 {% block body %}
 {% if blog %}
 	<h1 class="blog_header">{{blog.title|capfirst}}</h1>
