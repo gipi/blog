@@ -202,7 +202,7 @@ class BlogTests(TestCase):
         post_data = self._generate_post_data_for_comment(
                 'yeah, it\'s internet baby!!!')
         response = self.client.post(url, post_data)
-        self.assertRedirects(response, '/comments/posted/?c=2')
+        self.assertRedirects(response, '/comments/posted/?c=%d' % (n_before + 1))
 
         n_after =  len(Comment.objects.all())
         self.assertEqual(n_after == (n_before + 1), True)
@@ -211,11 +211,12 @@ class BlogTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
 
     def test_comment_rst_rendering(self):
+        n_before = len(Comment.objects.all())
         url = '/comments/post/'
         post_data = self._generate_post_data_for_comment(r'im useless')
 
         response = self.client.post(url, post_data)
-        self.assertRedirects(response, '/comments/posted/?c=2')
+        self.assertRedirects(response, '/comments/posted/?c=%d' % (n_before + 1))
 
         response = self.client.get(reverse('blog-post',
             args=['superfici-minimali-e-bolle-di-sapone']))
