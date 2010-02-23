@@ -174,12 +174,12 @@ class BlogTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context[0]['object_list']), 1)
 
-    def _generate_post_data_for_comment(self, text):
+    def _generate_post_data_for_comment(self, pk, text):
         """Generate a (SHA1) security hash from the provided info.
            copyied from django.contrib.comment.forms
         """
         content_type = 'yadb.blog'
-        object_pk = str(1)
+        object_pk = str(pk)
         timestamp = str(int(time.time()))
         info = (content_type, object_pk, timestamp, settings.SECRET_KEY)
         security_hash = sha_constructor("".join(info)).hexdigest()
@@ -199,7 +199,7 @@ class BlogTests(TestCase):
     def test_comment_moderation(self):
         n_before = len(Comment.objects.all())
         url = '/comments/post/'
-        post_data = self._generate_post_data_for_comment(
+        post_data = self._generate_post_data_for_comment(1,
                 'yeah, it\'s internet baby!!!')
         response = self.client.post(url, post_data)
         self.assertRedirects(response, '/comments/posted/?c=%d' % (n_before + 1))
