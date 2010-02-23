@@ -17,7 +17,7 @@
     "model": "comments.comment", 
     "fields": {
       "comment": "this is bull****!!!\n\nAre you sure about which you are saying?", 
-      "user_url": "http://packz.noblogs.org/", 
+      "user_url": "http://www.example.com/", 
       "submit_date": "2009-07-18 13:19:47", 
       "ip_address": "127.0.0.1", 
       "object_pk": "1", 
