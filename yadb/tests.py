@@ -67,7 +67,7 @@ class RenderingTest(TestCase):
 
 class BlogTests(TestCase):
     fixtures = ['auth_data.json', 'blog-data.json',]
-    def test_page_rendering(self):
+    def test_page_and_comment_rendering(self):
         url = reverse('blog-post', args=['superfici-minimali-e-bolle-di-sapone',])
         response = self.client.get(url)
 
@@ -209,18 +209,6 @@ class BlogTests(TestCase):
 
         from django.core import mail
         self.assertEqual(len(mail.outbox), 1)
-
-    def test_comment_rst_rendering(self):
-        n_before = len(Comment.objects.all())
-        url = '/comments/post/'
-        post_data = self._generate_post_data_for_comment(r'im useless')
-
-        response = self.client.post(url, post_data)
-        self.assertRedirects(response, '/comments/posted/?c=%d' % (n_before + 1))
-
-        response = self.client.get(reverse('blog-post',
-            args=['superfici-minimali-e-bolle-di-sapone']))
-        self.assertNotContains(response, 'ERROR')
 
 class AuthTest(TestCase):
     fixtures = ['auth_data.json']
