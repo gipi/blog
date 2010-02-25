@@ -129,4 +129,4 @@ def upload(request):
             return HttpResponseRedirect(reverse('blog-list'))
 
     return render_to_response('upload.html',
-            {'form': form}, RequestContext(request))
+            {'form': form}, context_instance=RequestContext(request))
