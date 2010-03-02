@@ -24,7 +24,7 @@
       "site": 1, 
       "is_removed": false, 
       "user": null, 
-      "content_type": 14, 
+      "content_type": ["yadb", "blog"], 
       "is_public": true, 
       "user_name": "packz", 
       "user_email": "packz@autistici.org"
@@ -42,7 +42,7 @@
       "site": 1, 
       "is_removed": false, 
       "user": null, 
-      "content_type": 14, 
+      "content_type": ["yadb", "blog"], 
       "is_public": true, 
       "user_name": "mario", 
       "user_email": "mario@example.com"
