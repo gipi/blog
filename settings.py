@@ -40,6 +40,7 @@ UPLOAD_PATH = MEDIA_ROOT + '/uploads/'
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
 MEDIA_URL = '/media/'
 TEX_MEDIA_URL = MEDIA_URL + '/TeX/'
+UPLOAD_URL = MEDIA_URL + '/uploads/'
 
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.

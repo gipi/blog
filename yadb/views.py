@@ -8,6 +8,7 @@ from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.core.paginator import Paginator, InvalidPage, EmptyPage
 
 from yadb.forms import BlogForm, UploadFileForm
 from yadb import rst_tex, rst_code, rst_video
@@ -15,7 +16,7 @@ from yadb.utils import slugify
 from yadb.models import Blog
 from yadb.decorators import superuser_only, ajax_required
 
-import os
+import os, datetime, operator
 
 
 @login_required
@@ -75,11 +76,29 @@ def blog_add(request, id=None):
     form = BlogForm(request.POST or None, instance=instance)
 
     if request.method == 'POST':
+        old_status = getattr(instance, 'status', None)
         if form.is_valid():
+            # form.save change instance so must save the status before
             blog = form.save(commit=False)
             # TODO: maybe exists a Django function for slugify
-            blog.slug = slugify(blog.title)
+            initial_slug = slugify(blog.title)
+
+            # check for slug existence
+            trailing = ''
+            idx = 0
+            try:
+                while Blog.objects.get(slug=initial_slug + trailing):
+                    idx += 1
+                    trailing = '-%d' % idx
+            except Blog.DoesNotExist:
+                pass
+
+            blog.slug = initial_slug + trailing
             blog.user = request.user
+
+            if ( old_status == 'bozza') and (blog.status == 'pubblicato'):
+                blog.creation_date = datetime.datetime.now()
+
             blog.save()
             return HttpResponseRedirect('/blog/')
 
@@ -121,3 +140,30 @@ def upload(request):
 
     return render_to_response('upload.html',
             {'form': form}, RequestContext(request))
+
+@login_required
+def uploaded(request):
+    FILES_ROOT = settings.UPLOAD_PATH
+    files = os.listdir(FILES_ROOT)
+
+    couples = []
+    for file in files:
+        couples.append((file, os.stat(FILES_ROOT + file).st_mtime))
+
+    couples = sorted(couples, key=operator.itemgetter(1), reverse=True)
+    ordered_filenames = map(operator.itemgetter(0), couples)
+    paginator = Paginator(ordered_filenames, 10)
+
+    try:
+        page = int(request.GET.get('page', '1'))
+    except ValueError:
+        page = 1
+
+    try:
+        filez = paginator.page(page)
+    except (EmptyPage, InvalidPage):
+        filez = paginator.page(paginator.num_pages)
+
+    return render_to_response('yadb/uploaded.html', {
+        'UPLOAD_URL': settings.UPLOAD_URL,
+        'files': filez}, context_instance=RequestContext(request))

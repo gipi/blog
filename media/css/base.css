@@ -30,6 +30,11 @@ img.inline{
 	float:right;
 }
 
+#footer{
+	clear:both;
+	text-align:center;
+}
+
 #loader{
 	display:none;
 	position:fixed;
@@ -113,8 +118,12 @@ form label{
 }
 
 /* the input for post's title */
-input#id_title{
+form input#id_title{
 	width:40em;
+}
+
+form #id_tags {
+	width:100%;
 }
 
 .codeblock{

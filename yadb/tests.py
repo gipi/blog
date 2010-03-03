@@ -67,6 +67,11 @@ class RenderingTest(TestCase):
 
 class BlogTests(TestCase):
     fixtures = ['auth_data.json', 'blog-data.json',]
+    def test_blog_view_a_post(self):
+        post = Blog.objects.get(pk=1)
+        response = self.client.get(post.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+
     def test_blog_add(self):
         # the page exists
         self.client.login(username='test', password='password')
@@ -94,6 +99,69 @@ class BlogTests(TestCase):
                 })
         #self.assertRedirects(response, '/blog/')
         self.assertEqual(len(Blog.objects.all()), previous_n + 1)
+
+    def test_blog_add_with_same_title(self):
+        self.client.login(username='test', password='password')
+        response = self.client.post(reverse('blog-add'),
+                {
+                'title': 'superfici minimali e bolle di sapone',
+                'content': 'this is a content',
+                'tags': 'love, lulz',
+                'status': 'pubblicato',
+                })
+        self.assertFormError(response, 'form',
+                'title', [u'Blog with this Title already exists.'])
+
+    def test_blog_add_with_same_slug(self):
+        self.client.login(username='test', password='password')
+        initial_title = 'superfici-minimali-e-bolle-di-sapone'
+        response = self.client.post(reverse('blog-add'),
+                {
+                'title': 'superfici minimali,e bolle di sapone',
+                'content': 'this is a content',
+                'tags': 'love, lulz',
+                'status': 'pubblicato',
+                })
+        self.assertRedirects(response, '/blog/')
+        self.assertEqual(initial_title + '-1',
+        Blog.objects.get(title='superfici minimali,e bolle di sapone').slug)
+
+    def test_edit(self):
+        pk = 2
+        url = reverse('blog-edit', args=[pk])
+        self.client.login(username='test', password='password')
+
+        self.assertEqual(Blog.objects.get(pk=pk).status, 'bozza')
+
+        previous_n = len(Blog.objects.all())
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        blog = response.context[0]['form'].instance
+
+        self.assertEqual(blog.status, 'bozza')
+
+        previous_date = blog.creation_date
+
+        post_data = {
+            'title': blog.title,
+            'content': blog.content,
+            'tags': blog.tags,
+            # change only this
+            'status': 'pubblicato',
+        }
+        response = self.client.post(url, post_data)
+
+        # if the forms has not errors then redirects
+        self.assertEqual(response.context, None)
+        self.assertRedirects(response, '/blog/')
+
+        self.assertEqual(len(Blog.objects.all()), previous_n)
+
+        blog = Blog.objects.get(pk=pk)
+        # check that published date is now
+        self.assertEqual(previous_date < blog.creation_date, True)
 
     def test_blog_list_with_bozza(self):
         url = reverse('blog-list')
@@ -265,6 +333,13 @@ class UtilTests(TestCase):
     def test_slugify(self):
         slug = slugify('l\'amore non ESISTE')
         self.assertEqual(slug, 'l-amore-non-esiste')
+
+        slug = slugify('here there aren\'t two  dashes or     more')
+        self.assertEqual(slug, 'here-there-aren-t-two-dashes-or-more')
+
+        slug = slugify('here there aren\'t # @ ^')
+        self.assertEqual(slug, 'here-there-aren-t')
+
 
 class FeedsTests(TestCase):
     fixtures = ['auth_data.json', 'blog-data.json',]
