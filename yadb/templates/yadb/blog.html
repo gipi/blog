@@ -49,6 +49,7 @@
 	<h2>Comments</h2>
 	{% get_comment_form for blog as cform %}
 	<form action="{% comment_form_target %}" method="post">
+	{% csrf_token %}
 	{{ cform.as_p }}
 	<input type="hidden" name="next" value="{% url blog-post blog.slug %}"/>
 
@@ -70,7 +71,7 @@
 	    'WindowForUpload', 'height=400, width=600');">here</a> to upload files</p>
     <p>click <a href="#" onclick="window.open('{% url blog-upload-popup %}',
 	    'WindowUploaded', 'height=100, width=100');">here</a> to insert uploaded files</p>
-	<form method="post" action="">
+	<form method="post" action="">{% csrf_token %}
 	{{form.as_p}}
 	<p>You can select the part to preview in order to limit</p>
 	<p id="drag_zone">

@@ -1,7 +1,11 @@
 /* CSS3 valid */
-body{
+*{
 	margin:0px;
 	padding:0px;
+}
+
+p{
+	margin:10px 0px;
 }
 
 a{
@@ -15,6 +19,11 @@ img{
 
 img.tikz{
 	margin-left:25px;
+	padding:10px;
+}
+
+ul.simple li{
+	margin:10px 30px;
 }
 
 /* TODO: rindondante */
@@ -57,14 +66,35 @@ ul.navbar li a{
 }
 
 #content{
-	width:600px;
+	width:800px;
 	min-height:400px;
 	margin:auto;
+	margin-top:50px;
+}
+
+#content #central {
+	width:500px;
+	float:left;
+}
+
+#content #sidebar {
+	float:right;
+	width:250px;
+}
+
+
+#content #sidebar li {
+	list-style-type: none;
+}
+
+#sidebar h3 {
+	background-color:#9090ff;
+	padding:5px 10px 5px;
+	-moz-border-radius:5px;
 }
 
 .post{
-	margin:10px;
-	padding:10px;
+	margin-bottom:40px;
 }
 
 .post h3{
@@ -111,6 +141,14 @@ table.citation {
 .blog_content{
 	width:500px;
 	margin:auto;
+}
+
+#archive_list li.date{
+	list-style-type: none;
+}
+
+#archive_list li.bozza a{
+	color:red;
 }
 
 form label{

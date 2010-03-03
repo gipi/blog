@@ -233,7 +233,12 @@ class BlogTests(TestCase):
         url = reverse('blog-archives')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context[0]['object_list']), 1)
+        self.assertEqual(len(response.context[0]['blogs']), 1)
+
+        self.client.login(username='test', password='password')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context[0]['blogs']), 2)
 
     def _generate_post_data_for_comment(self, text):
         """Generate a (SHA1) security hash from the provided info.
@@ -270,6 +275,11 @@ class BlogTests(TestCase):
 
         from django.core import mail
         self.assertEqual(len(mail.outbox), 1)
+
+    def test_sidebar(self):
+        url = reverse('blog-list')
+        response = self.client.get(url)
+        self.assertContains(response, '<div id="sidebar">')
 
     def test_comment_rst_rendering(self):
         url = '/comments/post/'

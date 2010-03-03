@@ -10,17 +10,6 @@ urlpatterns = patterns('yadb.views',
                 url(r'^edit/(\d*)/$', 'blog_add', name='blog-edit'),
                 url(r'^post/([\w\d-]*)/$', 'blog_view', name='blog-post'),
                 url(r'^upload/$', 'upload', name='blog-upload'),
-                url(r'^archives/$', object_list, {
-                    'template_name': 'yadb/archives_list.html',
-                    'queryset': Blog.objects.\
-                                filter(status='pubblicato').\
-                                dates('creation_date', 'month'),
-                    }, name='blog-archives'),
-                url(r'^archives/(?P<year>\d{4})/(?P<month>.*)/$',
-                    archive_month, {
-                        'queryset': Blog.objects.all().\
-                                filter(status='pubblicato'),
-                        'date_field': 'creation_date'
-                    }, name='blog-archives-month'),
                 url(r'^upload_popup/$', 'uploaded', name='blog-upload-popup'),
+                url(r'^archives/$', 'blog_archives', name='blog-archives'),
 )

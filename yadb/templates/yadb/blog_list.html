@@ -4,6 +4,7 @@
 {% load yadb_tags %}
 {% load comments %}
 {% block body %}
+<div id="central">
 	{% if blogs %}
 		{% for blog in blogs %}
 		<div class="post">
@@ -34,4 +35,24 @@
 	{% else %}
 		<h1>no posts yet</h1>
 	{% endif %}
+	</div>
+<div id="sidebar">
+	<ul>
+	{% if blogs %}
+	<li><h3>Latest posts</h3></li>
+		{% for blog in blogs|slice:":5" %}
+	<li><a href="{% url blog-post blog.slug %}">{{blog.title}}</a></li>
+		{% endfor %}
+	{% endif %}
+	{% if comments %}
+	<li><h3>Latest comments</h3></li>
+		{% for comment in comments %}
+			{% with comment.content_object as cblog %}
+	<li>{{comment.user_name}} commented on
+	<a href="{{ cblog.get_absolute_url }}">{{cblog.title}}</a></li>
+			{% endwith %}
+		{% endfor %}
+	{% endif %}
+</ul>
+</div>
 {% endblock %}
