@@ -6,11 +6,14 @@ from django.core.urlresolvers import reverse
 from django.conf import settings
 from django.contrib.comments.models import Comment
 from django.utils.hashcompat import sha_constructor
+from django.contrib.contenttypes.models import ContentType
+
+from trackback.models import Trackback
 
 from yadb.models import Blog
 from yadb.utils import slugify
 
-import os, glob, time
+import os, glob, time, random
 
 class RenderingTest(TestCase):
     fixtures = ['auth_data.json']
@@ -66,7 +69,12 @@ class RenderingTest(TestCase):
         self.assertContains(response, 'ERROR')
 
 class BlogTests(TestCase):
-    fixtures = ['auth_data.json', 'blog-data.json',]
+    fixtures = [
+        'site.json',
+        'auth_data.json',
+        'blog-data.json',
+        'trackback.json',
+    ]
     def test_blog_view_a_post(self):
         post = Blog.objects.get(pk=1)
         response = self.client.get(post.get_absolute_url())
@@ -162,6 +170,60 @@ class BlogTests(TestCase):
         blog = Blog.objects.get(pk=pk)
         # check that published date is now
         self.assertEqual(previous_date < blog.creation_date, True)
+
+    def test_trackback(self):
+        # OUT
+        self.client.login(username='test', password='password')
+        response = self.client.post(reverse('blog-add'), {
+            'title': 'This is a test',
+            'content': r"""
+            this a test for external trackback http://testserver/blog/post/superfici-minimali-e-bolle-di-sapone/
+            """,
+            'tags': 'love, lulz',
+            'status': 'pubblicato',
+        })
+        #self.assertContains(response, 'OK')
+
+        # IN pingback (take a random post)
+        all_posts = Blog.objects.all()
+        length = len(all_posts)
+        instance = random.choice(all_posts)
+        url_to_pingback = 'http://testserver%s' % instance.get_absolute_url()
+
+        response = self.client.post(reverse('receive_pingback'),
+        """<?xml version="1.0"?>
+        <methodCall>
+        <methodName>pingback.ping</methodName>
+        <params>
+               <param>
+                       <value>
+                               <string>http://www.example.com</string>
+                       </value>
+               </param>
+               <param>
+                       <value>
+                               <string>%s</string>
+                       </value>
+               </param>
+        </params>
+        </methodCall>
+        """ % url_to_pingback, content_type='application/xml')
+
+        self.assertContains(response, 'OK')
+        pingback = Trackback.objects.all()
+        self.assertEqual(pingback[len(pingback) - 1].content_object, instance)
+
+        # IN trackback
+        content_type = ContentType.objects.get(model='blog', app_label='yadb')
+        response = self.client.post(
+                reverse('receive_trackback',
+                    args=[content_type.pk, instance.pk]),
+            {
+                'title': 'an awesome trackback',
+                'excerpt': 'did it for the lulz',
+                'url': 'http://www.example.com'
+            })
+        self.assertContains(response, '<error>0</error>')
 
     def test_blog_list_with_bozza(self):
         url = reverse('blog-list')

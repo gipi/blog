@@ -65,17 +65,6 @@ def _blog_general_list(request, template):
 def blog_archives(request):
     return _blog_general_list(request, 'yadb/archives_list.html')
 
-def blog_view(request, slug):
-    """
-    Read article by Tim Berners Lee about importance of URL
-    """
-    form = None
-    content = None
-    blog = get_object_or_404(Blog, slug=slug)
-
-    return render_to_response('yadb/blog.html', {'blog': blog},
-            context_instance=RequestContext(request))
-
 @login_required
 def blog_add(request, id=None):
     instance = None

@@ -1,7 +1,11 @@
 {% extends 'site_base.html' %}
 {% load comments %}
 {% load yadb_tags %}
+{% load trackback_tags %}
 {% load markup %}
+{% block link_trackback %}
+		<link rel="pingback" href="{% get_pingback_url %}"/>
+{% endblock %}
 {% block extrajs %}
 <script type="text/javascript">
 	function do_something_with_text_file (event) {
@@ -44,6 +48,19 @@
 	</h3>
 	<div class="blog_content">
 		{{blog.content|restructuredtext}}
+	</div>
+	<div id="trackback">{% get_trackback_rdf_for blog %}
+		<h3>Trackback</h3>
+		{% get_trackbacks_for blog as trackbacks %}
+		{% if trackbacks %}
+		<ul>
+			{% for trackback in trackbacks %}
+				<li>{{ trackback }}</li>
+			{% endfor %}
+		</ul>
+		{% else %}
+		<b>No trackback yet</b>
+		{% endif %}
 	</div>
 	<div id="comment_container">
 	<h2>Comments</h2>
