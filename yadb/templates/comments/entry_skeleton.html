@@ -1,6 +1,8 @@
-{% load yadb_tags %}
-{% load markup %}
+{% load markup yadb_tags %}
+{% restructuredTextWO tex latex %}
 <div class="entry">
-	<h3>posted by {{username}} at {{date|date:"D d M Y"}}</h3>
-	<p>{% gravatar email %}{{content}}</p>
+	<h3>posted by <a href="{{site}}">{{username}}</a>
+	       	at {{date|date:"D d M Y"}}</h3>
+	<p>{% gravatar email %}{{content|restructuredtext}}</p>
 </div>
+{% endrestructuredTextWO %}

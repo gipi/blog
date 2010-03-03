@@ -7,7 +7,7 @@
       "status": "pubblicato",
       "user": 1,
       "title": "superfici minimali e bolle di sapone",
-      "content": "Il problema di trovare la figura piana capace di massimizzare l'area a uguale perimetro è stato risolto da Pappo nel 390 A.D..\n\nLa **first variation of area formula** è data dalla formula\n\n.. latex:: {d\\,A\\over dt} = H A\n\ndove H è rappresenta la curvatura media. In base a questa formula, una superficie rappresenta un punto di minimo (o massimo) solo nel caso in cui la sua curvatura media si annulli.",
+      "content": "Il problema di trovare la figura piana capace di massimizzare l'area a uguale perimetro è stato risolto da Pappo nel 390 A.D..\n\nLa **first variation of area formula** è data dalla formula\n\n.. latex:: {d\\,A\\over dt} = H A\n\ndove :tex:`H` è rappresenta la curvatura media. In base a questa formula, una superficie rappresenta un punto di minimo (o massimo) solo nel caso in cui la sua curvatura media si annulli.",
       "creation_date": "2009-07-16 19:38:48.080528",
       "tags": "minimal surface,soap bubble, math"
     }
@@ -17,17 +17,35 @@
     "model": "comments.comment", 
     "fields": {
       "comment": "this is bull****!!!\n\nAre you sure about which you are saying?", 
-      "user_url": "http://packz.noblogs.org/", 
+      "user_url": "http://www.example.com/", 
       "submit_date": "2009-07-18 13:19:47", 
       "ip_address": "127.0.0.1", 
       "object_pk": "1", 
       "site": 1, 
       "is_removed": false, 
       "user": null, 
-      "content_type": 14, 
+      "content_type": ["yadb", "blog"], 
       "is_public": true, 
       "user_name": "packz", 
       "user_email": "packz@autistici.org"
+    }
+  },
+  {
+    "pk": 2, 
+    "model": "comments.comment", 
+    "fields": {
+      "comment": "I check for :tex:`\\alpha`, and\n\n.. code-block:: python\n\n def foo(*args, *kwargs):\n  pass\n\n.. latex:: \\beta\n\nand now?",
+      "user_url": "http://www.example.com/", 
+      "submit_date": "2010-02-18 13:19:47", 
+      "ip_address": "127.0.0.1", 
+      "object_pk": "1", 
+      "site": 1, 
+      "is_removed": false, 
+      "user": null, 
+      "content_type": ["yadb", "blog"], 
+      "is_public": true, 
+      "user_name": "mario", 
+      "user_email": "mario@example.com"
     }
   },
   {

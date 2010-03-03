@@ -54,8 +54,6 @@ Roles
 """
 def tex_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     src = rawtext.split('`')[1]
-    if settings.DEBUG:
-        print 'DEBUG of formula: ', src
     imagename = get_latex_img(src)
     if imagename == 'error.png':
         msg = inliner.reporter.error(

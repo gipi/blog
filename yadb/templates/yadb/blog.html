@@ -1,12 +1,10 @@
 {% extends 'site_base.html' %}
-{% load comments %}
-{% load yadb_tags %}
-{% load trackback_tags %}
-{% load markup %}
+{% load comments markup yadb_tags trackback_tags %}
 {% block link_trackback %}
 		<link rel="pingback" href="{% get_pingback_url %}"/>
 {% endblock %}
 {% block extrajs %}
+{% if form %}
 <script type="text/javascript">
 	function do_something_with_text_file (event) {
 		event.preventDefault();
@@ -39,7 +37,9 @@
 		}
 	};
 </script>
+{% endif %}
 {% endblock %}
+
 {% block body %}
 {% if blog %}
 	<h1 class="blog_header">{{blog.title|capfirst}}</h1>
@@ -77,7 +77,7 @@
 	</form>
 	{% get_comment_list for blog as comments %}
 	{% for comment in comments %}
-		{% comment_entry comment.user_name comment.user_email comment.comment comment.submit_date %}
+		{% comment_entry comment %}
 	{% endfor %}
 	</div>
 {% endif %}

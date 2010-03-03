@@ -80,6 +80,13 @@ class BlogTests(TestCase):
         response = self.client.get(post.get_absolute_url())
         self.assertEqual(response.status_code, 200)
 
+    def test_page_and_comment_rendering(self):
+        url = reverse('blog-post', args=['superfici-minimali-e-bolle-di-sapone',])
+        response = self.client.get(url)
+
+        # this checks :tex: role in comment doesn't work
+        self.assertContains(response, 'ERROR', 2)
+
     def test_blog_add(self):
         # the page exists
         self.client.login(username='test', password='password')
@@ -302,12 +309,12 @@ class BlogTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context[0]['blogs']), 2)
 
-    def _generate_post_data_for_comment(self, text):
+    def _generate_post_data_for_comment(self, pk, text):
         """Generate a (SHA1) security hash from the provided info.
            copyied from django.contrib.comment.forms
         """
         content_type = 'yadb.blog'
-        object_pk = str(1)
+        object_pk = str(pk)
         timestamp = str(int(time.time()))
         info = (content_type, object_pk, timestamp, settings.SECRET_KEY)
         security_hash = sha_constructor("".join(info)).hexdigest()
@@ -327,10 +334,10 @@ class BlogTests(TestCase):
     def test_comment_moderation(self):
         n_before = len(Comment.objects.all())
         url = '/comments/post/'
-        post_data = self._generate_post_data_for_comment(
+        post_data = self._generate_post_data_for_comment(1,
                 'yeah, it\'s internet baby!!!')
         response = self.client.post(url, post_data)
-        self.assertRedirects(response, '/comments/posted/?c=2')
+        self.assertRedirects(response, '/comments/posted/?c=%d' % (n_before + 1))
 
         n_after =  len(Comment.objects.all())
         self.assertEqual(n_after == (n_before + 1), True)
@@ -342,18 +349,6 @@ class BlogTests(TestCase):
         url = reverse('blog-list')
         response = self.client.get(url)
         self.assertContains(response, '<div id="sidebar">')
-
-    def test_comment_rst_rendering(self):
-        url = '/comments/post/'
-        post_data = self._generate_post_data_for_comment(r'im useless')
-
-        response = self.client.post(url, post_data)
-        self.assertRedirects(response, '/comments/posted/?c=2')
-
-        response = self.client.get(reverse('blog-post',
-            args=['superfici-minimali-e-bolle-di-sapone']))
-        self.assertNotContains(response, 'ERROR')
-
 class AuthTest(TestCase):
     fixtures = ['auth_data.json']
     def test_login(self):
