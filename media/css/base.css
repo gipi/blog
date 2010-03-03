@@ -77,6 +77,18 @@ ul.navbar li a{
 	float:left;
 }
 
+#content #trackback {
+	width:500px;
+	margin:auto;
+	padding-top:10px;
+	padding-bottom:10px;
+	border-top:1px solid #cccccc;
+}
+
+#content #trackback li {
+	margin-left:40px;
+}
+
 #content #sidebar {
 	float:right;
 	width:250px;

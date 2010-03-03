@@ -50,14 +50,14 @@
 		{{blog.content|restructuredtext}}
 	</div>
 	<div id="trackback">{% get_trackback_rdf_for blog %}
-		<h3>Trackback</h3>
 		{% get_trackbacks_for blog as trackbacks %}
 		{% if trackbacks %}
-		<ul>
+		<h3>Trackback</h3>
+		<ol>
 			{% for trackback in trackbacks %}
-				<li>{{ trackback }}</li>
+			<li>from <a href="{{ trackback.url}}">{{trackback.blog_name}}</a></li>
 			{% endfor %}
-		</ul>
+		</ol>
 		{% else %}
 		<b>No trackback yet</b>
 		{% endif %}
