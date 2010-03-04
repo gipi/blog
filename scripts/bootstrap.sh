@@ -11,17 +11,21 @@
 #     4. syncdb
 #     5. load initial data
 ENV_ROOT=env/
-SECRET_KEY_CMD="python -c 'import random; print \"\".join([random.choice(\"abcdefghijklmnopqrstuvwxyz0123456789\!@#$%^&*(-_=+)\") for i in range(50)])'"
+
+# on first error exit
+set -e
 
 message () {
 	echo -e "$1"
 }
 
 usage () {
-	echo "usage: $0 name mail_address password site_URL site_name [ fixture1 fixture2 ... ]"
+	echo "usage: $0 name mail_address password site_URL site_name git_bare_repo_path.git [ fixture1 fixture2 ... ]"
 }
 
-if [ $# -lt 5 ]
+# exec 2> /tmp/installation.log
+
+if [ $# -lt 6 ]
 then
 	usage
 	exit 1
@@ -33,19 +37,43 @@ PASSWORD=$3
 SITE_URL=$4
 SITE_NAME=$5
 
-# exec 2> /tmp/installation.log
-
-if [ -e "env/" ]
+# set object database path
+export GIT_DIR="$6"
+if [ ! -d "${GIT_DIR}" ]
 then
-	message "'env/' directory already exists"
+	echo "${GIT_DIR} doesn't exist"
+	echo "you are in $PWD"
 	exit 1
 fi
 
-# INSTALL DEPENDENCIES
 export PYTHONPATH=
-virtualenv --no-site-packages ${ENV_ROOT}
+
+# clone virtualenv
+if [ -d virtualenv ]
+then
+	echo "*** 'virtualenv/' already present"
+else
+	# download and install
+	hg clone http://bitbucket.org/ianb/virtualenv/
+	( cd virtualenv ; python2.5 setup.py install --root .. )
+fi
+
+
+# create new virtualenv and activate it
+if [ -d "env/" ]
+then
+	message "*** 'env/' directory already exists"
+else
+	PYTHONPATH=usr/lib/python2.5/site-packages/ usr/bin/virtualenv \
+		--no-site-packages ${ENV_ROOT}
+fi
 source ${ENV_ROOT}bin/activate
 
+SECRET_KEY_CMD="python -c 'import random; print \"\".join([random.choice(\"abcdefghijklmnopqrstuvwxyz0123456789\!@#$%^&*(-_=+)\") for i in range(50)])'"
+
+
+# INSTALL DEPENDENCIES
+echo "*** install pip and site dependencies"
 easy_install pip 
 pip install -r scripts/dependencies.txt
 
@@ -62,7 +90,7 @@ VERSION=`git describe --tags`
 echo SNIPPY_GIT_VERSION=\'${VERSION}\' > version.py
 
 # CREATE NECESSARY DIRS
-mkdir media/TeX media/fonts media/uploads
+mkdir --parents media/TeX media/fonts media/uploads
 # TESTS
 python manage.py test
 
@@ -87,14 +115,31 @@ EOF
 
 # LOAD fixtures
 # first shift the args from commandline
-shift 5
+shift 6
 echo "loading fixtures: $@"
 
 python manage.py loaddata $@
 
+# TODO: colorize output for better readability
 echo '
-Remember to set variable in local_settings.py to reflect
-database which you have in the server.
+Remember to
 
-Remember also to deploy files not included into the repository.
+  0. delete/drop previous database if exists
+
+  1. set variable in local_settings.py to reflect database, smtp and
+     other settings that you have in the server.
+
+  2. deploy files not included into the repository using "scripts/dumptree.sh".
+
+  3. eventually copy the htaccess and run.fcgi file
+
+  4. set scripts/.backuprc and cron job to scripts/backup.sh
+
+  5. eventually create superuser
+
+  6. ln -s /path/to/django/contrib/admin/media admin_media
+
+  after all try
+  
+  	$ PAH_INFO=/blog/ ./run.fcgi
 '
