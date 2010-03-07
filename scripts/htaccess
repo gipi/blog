@@ -1,0 +1,6 @@
+RewriteEngine On
+RewriteBase /
+RewriteRule ^(media/.*)$ - [L]
+RewriteRule ^(admin_media/.*)$ - [L]
+RewriteRule ^(run\.fcgi/.*)$ - [L]
+RewriteRule ^(.*)$ run.fcgi/$1 [L]

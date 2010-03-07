@@ -5,3 +5,4 @@ django-tagging==0.3
 docutils==0.6
 pyyaml
 -e svn+http://django-trackback.googlecode.com/svn/trunk/#egg=trackback
+flup

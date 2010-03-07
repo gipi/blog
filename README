@@ -36,7 +36,8 @@ embedded in the pages yu have to execute the following command
 In order to use alternative settings for your site, you can use
 a 'local_settings.py' file.
 
-There is a bootstrap script in 'scripts/' you can use to quickly deployment.
+There is a bootstrap script in 'scripts/' you can use to quickly deployment
+and some htaccess and fcgi example.
 
 
 # HACKING
