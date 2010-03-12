@@ -10,7 +10,7 @@ cd $(dirname $0)
 
 # activate the virtualenv
 export PYTHONPATH=
-source env/bin/activate
+source ../env/bin/activate
 
 if [ ! -e .backuprc ]
 then
