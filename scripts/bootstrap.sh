@@ -147,20 +147,32 @@ state_message "create database"
 python manage.py syncdb
 
 # Site and User initializated
-cat <<EOF | python manage.py shell
-
-from django.contrib.sites.models import Site
-
-site = Site.objects.get(pk=1)
-site.domain = "${SITE_URL}"
-site.name = "${SITE_NAME}"
-site.save()
-
-from django.contrib.auth.models import User
-
-User.objects.create_user("${NAME}", "${EMAIL}", password="${PASSWORD}")
-
+state_message "create user and site into database"
+SHA1_PSW=$( echo -n ${PASSWORD} | sha1sum )
+SALT=$(date | sha1sum | head -c 5)
+cat <<EOF > /tmp/miao.json
+[
+  {
+    "model": "sites.site",
+    "pk": 1,
+    "fields": {
+      "domain": "${SITE_URL}",
+      "name": "${SITE_NAME}"
+    }
+  },
+  {
+    "model": "auth.user",
+    "pk": 1,
+    "fields": {
+      "username": "${NAME}",
+      "email": "${EMAIL}",
+      "password": "sha1\$${SALT}${SHA1_PSW}"
+    }
+  }
+]
 EOF
+
+python manage.py loaddata /tmp/miao.json
 
 # LOAD fixtures
 # first shift the args from commandline
