@@ -38,6 +38,26 @@ git_bare_repo_path.git \
 }
 
 # exec 2> /tmp/installation.log
+check_and_create_virtualenv () {
+	if [ -d virtualenv ]
+	then
+		message "'virtualenv/' already present"
+	else
+		# download and install
+		hg clone http://bitbucket.org/ianb/virtualenv/
+		( cd virtualenv ; python2.5 setup.py install --root .. )
+	fi
+}
+
+check_and_do_env () {
+	if [ -d "env/" ]
+	then
+		message "*** 'env/' directory already exists"
+	else
+		PYTHONPATH=usr/lib/python2.5/site-packages/ usr/bin/virtualenv \
+			--no-site-packages ${ENV_ROOT}
+	fi
+}
 
 if [ $# -lt 6 ]
 then
@@ -62,25 +82,8 @@ fi
 
 export PYTHONPATH=
 
-# clone virtualenv
-if [ -d virtualenv ]
-then
-	echo "*** 'virtualenv/' already present"
-else
-	# download and install
-	hg clone http://bitbucket.org/ianb/virtualenv/
-	( cd virtualenv ; python2.5 setup.py install --root .. )
-fi
-
-
-# create new virtualenv and activate it
-if [ -d "env/" ]
-then
-	message "*** 'env/' directory already exists"
-else
-	PYTHONPATH=usr/lib/python2.5/site-packages/ usr/bin/virtualenv \
-		--no-site-packages ${ENV_ROOT}
-fi
+check_and_create_virtualenv
+check_and_do_env
 source ${ENV_ROOT}bin/activate
 
 SECRET_KEY_CMD="python -c 'import random; print \"\".join([random.choice(\"abcdefghijklmnopqrstuvwxyz0123456789\!@#$%^&*(-_=+)\") for i in range(50)])'"
