@@ -1,7 +1,8 @@
 #!/bin/bash
 #
 # This script is intended for final deployment once the source
-# code is in the correct location.
+# code is in the correct location. It has to be executed on the
+# root directory of your django project.
 #
 # Steps
 #
@@ -10,6 +11,9 @@
 #     3. create local_settings.py
 #     4. syncdb
 #     5. load initial data
+
+source $(dirname $0)/lib-shell.sh
+
 ENV_ROOT=env/
 BOOTSTRAP_STATE='start'
 COUNTER=1
@@ -25,33 +29,11 @@ exec 2>&1
 # on first error exit
 set -e
 
-DEFAULT_COLOR_SETTING='\e[1m'
-OK_COLOR=${DEFAULT_COLOR_SETTING}'\e[32m'
-WARNING_COLOR=${DEFAULT_COLOR_SETTING}'\e[36m'
-FAIL_COLOR=${DEFAULT_COLOR_SETTING}'\e[31m'
-RESET_COLOR='\e[0m'
-
-ok_message () {
-	echo -e ${OK_COLOR}$1${RESET_COLOR}
-}
-
 state_message () {
 	BOOTSTRAP_STATE="$1"
 	echo -n "Step ${COUNTER}: "
 	ok_message "$1"
 	COUNTER=$((${COUNTER}+1))
-}
-
-warning_message () {
-	echo -e ${WARNING_COLOR}$1${RESET_COLOR}
-}
-
-fail_message () {
-	echo -e ${FAIL_COLOR}$1${RESET_COLOR}
-}
-
-message () {
-	echo -e "$1"
 }
 
 usage () {
