@@ -11,6 +11,16 @@
 #     4. syncdb
 #     5. load initial data
 ENV_ROOT=env/
+BOOTSTRAP_STATE='start'
+COUNTER=1
+
+print_bootstrap_state () {
+	fail_message "exit on '${BOOTSTRAP_STATE}'"
+	exit 1
+}
+
+exec 2>&1
+> .error.log
 
 # on first error exit
 set -e
@@ -20,7 +30,11 @@ message () {
 }
 
 usage () {
-	echo "usage: $0 name mail_address password site_URL site_name git_bare_repo_path.git [ fixture1 fixture2 ... ]"
+	echo "usage: $0 \
+name mail_address password \
+site_URL site_name \
+git_bare_repo_path.git \
+[ fixture1 fixture2 ... ]"
 }
 
 # exec 2> /tmp/installation.log
