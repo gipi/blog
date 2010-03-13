@@ -25,6 +25,31 @@ exec 2>&1
 # on first error exit
 set -e
 
+DEFAULT_COLOR_SETTING='\e[1m'
+OK_COLOR=${DEFAULT_COLOR_SETTING}'\e[32m'
+WARNING_COLOR=${DEFAULT_COLOR_SETTING}'\e[36m'
+FAIL_COLOR=${DEFAULT_COLOR_SETTING}'\e[31m'
+RESET_COLOR='\e[0m'
+
+ok_message () {
+	echo -e ${OK_COLOR}$1${RESET_COLOR}
+}
+
+state_message () {
+	BOOTSTRAP_STATE="$1"
+	echo -n "Step ${COUNTER}: "
+	ok_message "$1"
+	COUNTER=$((${COUNTER}+1))
+}
+
+warning_message () {
+	echo -e ${WARNING_COLOR}$1${RESET_COLOR}
+}
+
+fail_message () {
+	echo -e ${FAIL_COLOR}$1${RESET_COLOR}
+}
+
 message () {
 	echo -e "$1"
 }
@@ -39,9 +64,10 @@ git_bare_repo_path.git \
 
 # exec 2> /tmp/installation.log
 check_and_create_virtualenv () {
+	state_message "installing virtualenv"
 	if [ -d virtualenv ]
 	then
-		message "'virtualenv/' already present"
+		warning_message "'virtualenv/' already present"
 	else
 		# download and install
 		hg clone http://bitbucket.org/ianb/virtualenv/
@@ -50,9 +76,10 @@ check_and_create_virtualenv () {
 }
 
 check_and_do_env () {
+	state_message "create new virtualenv and activate it"
 	if [ -d "env/" ]
 	then
-		message "*** 'env/' directory already exists"
+		warning_message "*** 'env/' directory already exists"
 	else
 		PYTHONPATH=usr/lib/python2.5/site-packages/ usr/bin/virtualenv \
 			--no-site-packages ${ENV_ROOT}
@@ -80,22 +107,24 @@ then
 	exit 1
 fi
 
-export PYTHONPATH=
+# let me know where you are exited
+trap print_bootstrap_state 0
 
 check_and_create_virtualenv
 check_and_do_env
+export PYTHONPATH=
 source ${ENV_ROOT}bin/activate
 
 SECRET_KEY_CMD="python -c 'import random; print \"\".join([random.choice(\"abcdefghijklmnopqrstuvwxyz0123456789\!@#$%^&*(-_=+)\") for i in range(50)])'"
 
 
 # INSTALL DEPENDENCIES
-echo "*** install pip and site dependencies"
+state_message "install pip and site dependencies"
 easy_install pip 
 pip install -r scripts/dependencies.txt
 
 # CREATE local_settings.py
-message "[local settings]"
+state_message "local settings"
 cat <<EOF >> local_settings.py
 # `date`
 SECRET_KEY = "`eval ${SECRET_KEY_CMD}`"
@@ -107,11 +136,14 @@ VERSION=`git describe --tags`
 echo SNIPPY_GIT_VERSION=\'${VERSION}\' > version.py
 
 # CREATE NECESSARY DIRS
+state_message "creating media subdirectories"
 mkdir --parents media/TeX media/fonts media/uploads
 # TESTS
+state_message "tests"
 python manage.py test
 
 # CREATE DATABASE
+state_message "create database"
 python manage.py syncdb
 
 # Site and User initializated
@@ -133,11 +165,13 @@ EOF
 # LOAD fixtures
 # first shift the args from commandline
 shift 6
-echo "loading fixtures: $@"
-
+state_message "loading fixtures: $@"
 python manage.py loaddata $@
 
-# TODO: colorize output for better readability
+# it's all right, reset trap
+trap - 0
+
+# little reminder
 echo '
 Remember to
 
