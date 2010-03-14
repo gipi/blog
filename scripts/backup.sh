@@ -8,6 +8,7 @@
 #	GIT_OBJ_DB_PATH
 #	APPS
 cd $(dirname $0)
+source ./lib-shell.sh
 
 # activate the virtualenv
 export PYTHONPATH=
@@ -15,7 +16,7 @@ source ../env/bin/activate
 
 if [ ! -e .backuprc ]
 then
-	echo "Could not found .backuprc file"
+	fail_message "Could not found .backuprc file"
 	exit 1
 fi
 
@@ -25,7 +26,7 @@ fi
 # check the variable
 if [ "${GIT_OBJ_DB_PATH}" == "" ] || [ "${APPS}" == "" ]
 then
-	echo "Do you have set GIT_OBJ_DB_PATH and/or APPS variables?"
+	fail_message "Do you have set GIT_OBJ_DB_PATH and/or APPS variables?"
 	exit 1
 fi
 
@@ -42,7 +43,8 @@ then
 fi
 
 for APP in ${APPS};do
-		python ../manage.py dumpdata \
+	ok_message "create fixture for "${APP}
+	python ../manage.py dumpdata \
 		--format yaml --indent 2 \
 		${APP} > ${TMP_DIR}/${APP}.yaml ;
 done
