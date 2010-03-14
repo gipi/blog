@@ -6,6 +6,7 @@
 # Needs a .backuprc file where set the following variables
 #
 #	GIT_OBJ_DB_PATH
+#	APPS
 cd $(dirname $0)
 
 # activate the virtualenv
@@ -22,9 +23,9 @@ fi
 . ./.backuprc
 
 # check the variable
-if [ "${GIT_OBJ_DB_PATH}" == "" ]
+if [ "${GIT_OBJ_DB_PATH}" == "" ] || [ "${APPS}" == "" ]
 then
-	echo "Do you have set GIT_OBJ_DB_PATH variable?"
+	echo "Do you have set GIT_OBJ_DB_PATH and/or APPS variables?"
 	exit 1
 fi
 
@@ -40,10 +41,11 @@ then
 	( cd ${GIT_OBJ_DB_PATH} && git init --bare )
 fi
 
-cat <<EOF | while read line; do python ../manage.py dumpdata --format yaml --indent 2 ${line} > ${TMP_DIR}/${line}.yaml ;done
-yadb
-comments
-EOF
+for APP in ${APPS};do
+		python ../manage.py dumpdata \
+		--format yaml --indent 2 \
+		${APP} > ${TMP_DIR}/${APP}.yaml ;
+done
 
 export GIT_DIR=${GIT_OBJ_DB_PATH}
 export GIT_WORK_TREE=${TMP_DIR}
