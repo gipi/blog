@@ -60,6 +60,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'pagination.middleware.PaginationMiddleware',
     # he pingback specs also allow publishing the pingback url
     # via an HTTP X-Header. To enable this feature decomment
     # the following line
@@ -74,6 +75,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.i18n',
     'django.core.context_processors.media',
     'yadb.context_processors.version',
+    'django.core.context_processors.request',
 )
 
 
@@ -100,6 +102,7 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'django.contrib.flatpages',
     'django.contrib.comments',
+    'pagination',
     'trackback',
     'tagging',
     'yadb',

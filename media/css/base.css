@@ -66,6 +66,10 @@ ul.navbar li{
 ul.navbar li a{
 }
 
+.pagination {
+	text-align:center;
+}
+
 #content{
 	width:800px;
 	min-height:400px;

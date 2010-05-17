@@ -3,9 +3,11 @@
 {% load tagging_tags %}
 {% load yadb_tags %}
 {% load comments %}
+{% load pagination_tags %}
 {% block body %}
 <div id="central">
 	{% if blogs %}
+		{% autopaginate blogs %}
 		{% for blog in blogs %}
 		<div class="post">
 			<h2>
@@ -31,11 +33,12 @@
 			({{count}})
 			</div>
 		</div>
-		{% endfor %}
+		{% endfor %}{% comment %} for blog in blogs{% endcomment %}
 	{% else %}
 		<h1>no posts yet</h1>
 	{% endif %}
-	</div>
+	{% paginate %}
+	</div><!-- id="central" -->
 <div id="sidebar">
 	<ul>
 	{% if blogs %}
