@@ -188,6 +188,7 @@ form #id_tags {
 	border-bottom: 1px solid #cccccc;
 	border-top: 1px solid #cccccc;
 	background:#f0f0f0;
+	overflow:auto;
 }
 
 /* COMMENTS */
