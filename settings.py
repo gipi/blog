@@ -90,10 +90,10 @@ PINGBACK_RESOLVERS = (
     'trackback.utils.resolvers.generic_view',
 )
 
-STATS_BLACKLIST = (
-    r'^/media/',
-    r'^/admin/'
-)
+STATS_BLACKLIST = {
+    'path': (r'^/media/', r'^/admin/'),
+    'user agent': (r'Googlebot', r'YandexBot', r'Baiduspider'),
+}
 
 INSTALLED_APPS = (
     # to make 'auth' tests work

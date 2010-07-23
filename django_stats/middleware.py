@@ -12,10 +12,18 @@ class StatsMiddleware(object):
 
     def process_request(self, request):
         # first of all test if the requested page is not in the blacklist
-        for pattern in settings.STATS_BLACKLIST:
+        for pattern in settings.STATS_BLACKLIST['path']:
             c = re.compile(pattern)
             if len(c.findall(request.path)) > 0:
                 return None
+
+        # second for USER AGENT (spiders&bots)
+        # (check if it exists)
+        if request.META.has_key('HTTP_USER_AGENT'):
+            for pattern in settings.STATS_BLACKLIST['user agent']:
+                c = re.compile(pattern)
+                if len(c.findall(request.META['HTTP_USER_AGENT'])) > 0:
+                    return None
 
         # first try to found a session_key otherwise create it
         try:
