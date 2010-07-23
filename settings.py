@@ -61,6 +61,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'pagination.middleware.PaginationMiddleware',
+    'django_stats.middleware.StatsMiddleware',
     # he pingback specs also allow publishing the pingback url
     # via an HTTP X-Header. To enable this feature decomment
     # the following line
@@ -89,6 +90,10 @@ PINGBACK_RESOLVERS = (
     'trackback.utils.resolvers.generic_view',
 )
 
+STATS_BLACKLIST = (
+    r'^/media/',
+    r'^/admin/'
+)
 
 INSTALLED_APPS = (
     # to make 'auth' tests work
@@ -106,6 +111,7 @@ INSTALLED_APPS = (
     'trackback',
     'tagging',
     'yadb',
+    'django_stats',
 )
 
 LOGIN_REDIRECT_URL = '/'
