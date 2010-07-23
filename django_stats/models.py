@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib import admin
 
 """
 TODO: add cron job to schedule clean up of expired session keys.
@@ -17,3 +18,12 @@ class Stats(models.Model):
     page_path = models.CharField(max_length=100)
     session_keys = models.ManyToManyField(StatsSession)
     counter = models.IntegerField()
+
+    def __unicode__(self):
+        return self.page_path
+
+class AdminStats(admin.ModelAdmin):
+    list_display = ('page_path', 'counter')
+
+admin.site.register(Stats, AdminStats)
+admin.site.register(StatsSession)
