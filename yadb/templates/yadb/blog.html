@@ -50,7 +50,7 @@
 	<div class="blog_content">
 		{{blog.content|restructuredtext}}
 	</div>
-	<div>Page visited {% page_counter blog_url %} times</div>
+	<div id="stats">Page visited {% page_counter blog_url %} times</div>
 	<div id="trackback">{% get_trackback_rdf_for blog %}
 		{% get_trackbacks_for blog as trackbacks %}
 		{% if trackbacks %}

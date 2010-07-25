@@ -82,6 +82,13 @@ ul.navbar li a{
 	float:left;
 }
 
+#content #stats {
+	width:500px;
+	text-align:center;
+	margin:auto;
+	font-family:"Delicious SmallCaps";
+}
+
 #content #trackback {
 	width:500px;
 	margin:auto;
