@@ -82,6 +82,14 @@ ul.navbar li a{
 	float:left;
 }
 
+#content .section h1 {
+	font-size:1.1em;
+}
+
+#content .section p {
+	margin-top:0px;
+}
+
 #content #trackback {
 	width:500px;
 	margin:auto;
