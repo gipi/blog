@@ -42,7 +42,10 @@
 
 {% block body %}
 {% if blog %}
-	<h1 class="blog_header">{{blog.title|capfirst}}</h1>
+	<h1 class="blog_header">{{blog.title|capfirst}} 
+		| {% ifequal user blog.user %}
+		<a href="{% url blog-edit blog.pk %}">edit</a>{% endifequal %}
+	</h1>
 	<h3 class="blog_creation_date">
 		{{blog.creation_date|date:"D d M Y"}}
 	</h3>
