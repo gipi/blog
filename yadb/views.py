@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.contrib.comments.models import Comment
 from django.core.urlresolvers import reverse
 from django.core.paginator import Paginator, InvalidPage, EmptyPage
+from django.views.generic.list_detail import object_list
 
 from yadb.forms import BlogForm, UploadFileForm
 from yadb import rst_tex, rst_code, rst_video
@@ -64,7 +65,11 @@ def _blog_general_list(request, template):
         }, context_instance=RequestContext(request))
 
 def blog_archives(request):
-    return _blog_general_list(request, 'yadb/archives_list.html')
+    return object_list(request,
+            queryset=Blog.objects.get_authenticated(user=request.user),
+            template_object_name='blog',
+            extra_context={'title': 'Archives'},
+            template_name='yadb/archives_list.html')
 
 @login_required
 def blog_add(request, id=None):
