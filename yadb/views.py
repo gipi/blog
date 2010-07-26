@@ -59,6 +59,7 @@ def _blog_general_list(request, template):
     blogs = Blog.objects.filter(real_Q).order_by('-creation_date')
     return render_to_response(template, {
         'blogs': blogs,
+	'latest_posts': blogs[:5],
         'comments': Comment.objects.all().order_by('-submit_date')[:5]
         }, context_instance=RequestContext(request))
 

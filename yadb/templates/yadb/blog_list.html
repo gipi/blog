@@ -41,10 +41,10 @@
 	</div><!-- id="central" -->
 <div id="sidebar">
 	<ul>
-	{% if blogs %}
+	{% if latest_posts %}
 	<li><h3>Latest posts</h3></li>
-		{% for blog in blogs|slice:":5" %}
-	<li><a href="{% url blog-post blog.slug %}">{{blog.title}}</a></li>
+		{% for post in latest_posts %}
+	<li><a href="{% url blog-post post.slug %}">{{post.title}}</a></li>
 		{% endfor %}
 	{% endif %}
 	{% if comments %}
