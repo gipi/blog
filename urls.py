@@ -21,7 +21,7 @@ static_patterns = patterns('',
 
 urlpatterns = patterns('',
         (r'^', include(static_patterns)),
-        (r'^admin/(.*)', admin.site.root),
+        (r'^admin/', include(admin.site.urls)),
         url(r'^$', redirect_to, {'url': '/blog/'}, name='home'),
         url(r'^login/$', 'django.contrib.auth.views.login', name='login'),
         url(r'^logout/$', 'django.contrib.auth.views.logout', name='logout'),
