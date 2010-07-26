@@ -40,6 +40,9 @@ class Blog(models.Model):
             signals.send_pingback.send(sender=self.__class__, instance=self)
             signals.send_trackback.send(sender=self.__class__, instance=self)
 
+class AdminBlog(admin.ModelAdmin):
+    list_display = ('title', 'user', 'creation_date', 'modify_date')
+
 
 class BlogCommentModeration(CommentModerator):
     email_notification = True
@@ -47,7 +50,7 @@ class BlogCommentModeration(CommentModerator):
 
 moderator.register(Blog, BlogCommentModeration)
 
-admin.site.register(Blog)
+admin.site.register(Blog, AdminBlog)
 
 signals.send_pingback.connect(handlers.send_pingback, sender=Blog)
 signals.send_trackback.connect(handlers.send_trackback, sender=Blog)
