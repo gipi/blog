@@ -349,6 +349,17 @@ class BlogTests(TestCase):
         url = reverse('blog-list')
         response = self.client.get(url)
         self.assertContains(response, '<div id="sidebar">')
+
+    def test_categories(self):
+        response = self.client.get(reverse('categories', args=['math']))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context[0]['blog_list']), 1)
+
+    def test_categories_in_blog_list(self):
+        response = self.client.get(reverse('blog-list'))
+        self.assertContains(response, '<h3>Categories</h3>')
+        self.assertEqual(len(response.context[0]['categories']), 3)
+
 class AuthTest(TestCase):
     fixtures = ['auth_data.json']
     def test_login(self):

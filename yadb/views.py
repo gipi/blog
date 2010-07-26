@@ -12,6 +12,8 @@ from django.core.urlresolvers import reverse
 from django.core.paginator import Paginator, InvalidPage, EmptyPage
 from django.views.generic.list_detail import object_list
 
+from tagging.models import Tag, TaggedItem
+
 from yadb.forms import BlogForm, UploadFileForm
 from yadb import rst_tex, rst_code, rst_video
 from yadb.utils import slugify
@@ -48,6 +50,7 @@ def blog_list(request):
     extra_context = {
         'latest_posts': query[:5],
         'comments': Comment.objects.all().order_by('-submit_date')[:5],
+        'categories': Tag.objects.usage_for_queryset(query, counts=True),
     }
     return object_list(request,
             queryset=Blog.objects.get_authenticated(user=request.user).order_by('-creation_date'),
@@ -61,6 +64,15 @@ def blog_archives(request):
             template_object_name='blog',
             extra_context={'title': 'Archives'},
             template_name='yadb/archives_list.html')
+
+def blog_categories(request, tags):
+    query = Blog.objects.get_authenticated(user=request.user).order_by('-creation_date')
+    q = TaggedItem.objects.get_by_model(query, tags)
+    return object_list(request, queryset=q,
+            template_object_name='blog',
+            extra_context={'title': 'Categories'},
+            template_name='yadb/archives_list.html')
+
 
 @login_required
 def blog_add(request, id=None):

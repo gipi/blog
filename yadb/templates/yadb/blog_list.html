@@ -59,5 +59,14 @@
 		{% endfor %}
 	</ul>
 	{% endif %}
+	<h3>Categories</h3>
+	{% if categories %}
+	<ul>
+		{% for c in categories %}
+		<li><a href="{% url categories c.name %}">{{ c.name }}</a>:
+		{{ c.count }}</li>
+		{% endfor %}
+	</ul>
+	{% endif %}
 </div>
 {% endblock %}
