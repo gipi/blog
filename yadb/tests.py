@@ -235,25 +235,25 @@ class BlogTests(TestCase):
     def test_blog_list_with_bozza(self):
         url = reverse('blog-list')
         response = self.client.get(url)
-        self.assertEqual(len(response.context[0]['blogs']), 1)
+        self.assertEqual(len(response.context[0]['blog_list']), 1)
 
     def test_blog_view_bozza_when_logged(self):
         url = reverse('blog-list')
 
         # first check there are only published
         response = self.client.get(url)
-        self.assertEqual(len(response.context[0]['blogs']), 1)
+        self.assertEqual(len(response.context[0]['blog_list']), 1)
 
         # second check for unpublished when you are logged
         self.client.login(username='test', password='password')
         response = self.client.get(url)
-        self.assertEqual(len(response.context[0]['blogs']), 2)
+        self.assertEqual(len(response.context[0]['blog_list']), 2)
 
     def test_blog_order(self):
         self.client.login(username='test', password='password')
         url = reverse('blog-list')
         response = self.client.get(url)
-        blogs = response.context[0]['blogs']
+        blogs = response.context[0]['blog_list']
         self.assertEqual(blogs[0].creation_date > blogs[1].creation_date, True)
 
     def _get_uploaded_file_name(self):
@@ -302,12 +302,12 @@ class BlogTests(TestCase):
         url = reverse('blog-archives')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context[0]['blogs']), 1)
+        self.assertEqual(len(response.context[0]['blog_list']), 1)
 
         self.client.login(username='test', password='password')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context[0]['blogs']), 2)
+        self.assertEqual(len(response.context[0]['blog_list']), 2)
 
     def _generate_post_data_for_comment(self, pk, text):
         """Generate a (SHA1) security hash from the provided info.

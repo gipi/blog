@@ -44,7 +44,16 @@ def preview(request):
             context_instance=RequestContext(request))
 
 def blog_list(request):
-    return _blog_general_list(request, 'yadb/blog_list.html')
+    query = Blog.objects.get_authenticated(user=request.user).order_by('-creation_date')
+    extra_context = {
+        'latest_posts': query[:5],
+        'comments': Comment.objects.all().order_by('-submit_date')[:5],
+    }
+    return object_list(request,
+            queryset=Blog.objects.get_authenticated(user=request.user).order_by('-creation_date'),
+            template_object_name='blog',
+            template_name='yadb/blog_list.html',
+            extra_context=extra_context)
 
 # TODO: use generic view
 def _blog_general_list(request, template):

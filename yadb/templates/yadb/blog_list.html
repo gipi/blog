@@ -6,9 +6,9 @@
 {% load pagination_tags %}
 {% block body %}
 <div id="central">
-	{% if blogs %}
-		{% autopaginate blogs %}
-		{% for blog in blogs %}
+	{% if blog_list %}
+		{% autopaginate blog_list %}
+		{% for blog in blog_list %}
 		<div class="post">
 			<h2>
 				<a href="{% url blog-post blog.slug %}">{{blog.title|capfirst}}</a>
@@ -34,10 +34,10 @@
 			</div>
 		</div>
 		{% endfor %}{% comment %} for blog in blogs{% endcomment %}
+	{% paginate %}
 	{% else %}
 		<h1>no posts yet</h1>
 	{% endif %}
-	{% paginate %}
 	</div><!-- id="central" -->
 <div id="sidebar">
 	{% if latest_posts %}
