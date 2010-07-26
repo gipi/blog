@@ -100,8 +100,10 @@ ul.navbar li a{
 }
 
 
-#content #sidebar li {
-	list-style-type: none;
+#content #sidebar ul {
+	list-style-position: inside;
+	list-style-image: url('/media/images/bullet.png');
+	margin:0px 0px 15px 0px;
 }
 
 #sidebar h3 {
