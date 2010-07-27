@@ -82,6 +82,20 @@ ul.navbar li a{
 	float:left;
 }
 
+/* caption under figure directive */
+#content .figure p.caption {
+	text-align:center;
+	font-style:italic;
+}
+
+#content .section h1 {
+	font-size:1.1em;
+}
+
+#content .section p {
+	margin-top:0px;
+}
+
 #content #trackback {
 	width:500px;
 	margin:auto;
