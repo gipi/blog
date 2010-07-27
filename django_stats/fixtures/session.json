@@ -1,0 +1,20 @@
+[
+  {
+    "model": "django_stats.stats",
+    "pk": 1,
+    "fields": {
+      "page_path": "/blog/post/superfici-minimali-e-bolle-di-sapone/",
+      "session_keys": [
+        1
+      ],
+      "counter": 3
+    }
+  },
+  {
+    "model": "django_stats.statssession",
+    "pk": 1,
+    "fields": {
+      "session_key": "a823340efcb27ca41bf0539bf574ead5"
+    }
+  }
+]
