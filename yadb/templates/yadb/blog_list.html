@@ -4,14 +4,16 @@
 {% load yadb_tags %}
 {% load comments %}
 {% load pagination_tags %}
+{% load stats_tags %}
 {% block body %}
 <div id="central">
 	{% if blogs %}
 		{% autopaginate blogs %}
 		{% for blog in blogs %}
+		{% url blog-post blog.slug as blog_url %}
 		<div class="post">
 			<h2>
-				<a href="{% url blog-post blog.slug %}">{{blog.title|capfirst}}</a>
+				<a href="{{blog_url}}">{{blog.title|capfirst}}</a>
 				{% ifequal user blog.user %}
 				| <a href="{% url blog-edit blog.pk %}">edit</a>
 				{% endifequal %}
@@ -28,7 +30,8 @@
 			<h3 class="tag_list"><b>Tagged as: </b>{% tags_for_object blog as tags %}
 			{{ tags|join:", " }}</h3>
 			<div class="comment">
-			{% get_comment_count for blog as count%}
+			Page visitata {% page_counter blog_url %} volte /
+				{% get_comment_count for blog as count%}
 			<a href="{% url blog-post blog.slug %}#comment_container">Comments</a> 
 			({{count}})
 			</div>

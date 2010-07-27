@@ -1,5 +1,5 @@
 {% extends 'site_base.html' %}
-{% load comments markup yadb_tags trackback_tags %}
+{% load comments markup yadb_tags trackback_tags stats_tags %}
 {% block link_trackback %}
 		<link rel="pingback" href="{% get_pingback_url %}"/>
 {% endblock %}
@@ -42,6 +42,7 @@
 
 {% block body %}
 {% if blog %}
+	{% url blog-post blog.slug as blog_url %}
 	<h1 class="blog_header">{{blog.title|capfirst}} 
 		| {% ifequal user blog.user %}
 		<a href="{% url blog-edit blog.pk %}">edit</a>{% endifequal %}
@@ -52,6 +53,7 @@
 	<div class="blog_content">
 		{{blog.content|restructuredtext}}
 	</div>
+	<div id="stats">Page visited {% page_counter blog_url %} times</div>
 	<div id="trackback">{% get_trackback_rdf_for blog %}
 		{% get_trackbacks_for blog as trackbacks %}
 		{% if trackbacks %}
