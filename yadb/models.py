@@ -25,6 +25,9 @@ class BlogAuthenticatedManager(models.Manager):
 
 
 class Blog(models.Model):
+    class Meta:
+        ordering = ['-creation_date']
+
     slug = models.SlugField(unique=True)
     title = models.CharField(max_length=100, unique=True)
     status = models.CharField(max_length=10,

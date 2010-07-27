@@ -46,14 +46,14 @@ def preview(request):
             context_instance=RequestContext(request))
 
 def blog_list(request):
-    query = Blog.objects.get_authenticated(user=request.user).order_by('-creation_date')
+    query = Blog.objects.get_authenticated(user=request.user)
     extra_context = {
         'latest_posts': query[:5],
         'comments': Comment.objects.all().order_by('-submit_date')[:5],
         'categories': Tag.objects.usage_for_queryset(query, counts=True),
     }
     return object_list(request,
-            queryset=Blog.objects.get_authenticated(user=request.user).order_by('-creation_date'),
+            queryset=Blog.objects.get_authenticated(user=request.user),
             template_object_name='blog',
             template_name='yadb/blog_list.html',
             extra_context=extra_context)
@@ -66,7 +66,7 @@ def blog_archives(request):
             template_name='yadb/archives_list.html')
 
 def blog_categories(request, tags):
-    query = Blog.objects.get_authenticated(user=request.user).order_by('-creation_date')
+    query = Blog.objects.get_authenticated(user=request.user)
     q = TaggedItem.objects.get_by_model(query, tags)
     return object_list(request, queryset=q,
             template_object_name='blog',
