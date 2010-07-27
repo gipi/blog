@@ -13,6 +13,7 @@ from django.core.paginator import Paginator, InvalidPage, EmptyPage
 from django.views.generic.list_detail import object_list
 
 from tagging.models import Tag, TaggedItem
+from tagging.utils import get_tag_list
 
 from yadb.forms import BlogForm, UploadFileForm
 from yadb import rst_tex, rst_code, rst_video
@@ -66,11 +67,13 @@ def blog_archives(request):
             template_name='yadb/archives_list.html')
 
 def blog_categories(request, tags):
+    tag_list = get_tag_list(tags)
     query = Blog.objects.get_authenticated(user=request.user)
-    q = TaggedItem.objects.get_by_model(query, tags)
+    q = TaggedItem.objects.get_by_model(query, tag_list)
     return object_list(request, queryset=q,
             template_object_name='blog',
-            extra_context={'title': 'Categories'},
+            extra_context={'title': 'Archives for category \''+ ", ".join(
+                [t.name for t in tag_list]) +'\''},
             template_name='yadb/archives_list.html')
 
 
