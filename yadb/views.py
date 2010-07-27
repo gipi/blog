@@ -10,6 +10,10 @@ from django.contrib.auth.models import User
 from django.contrib.comments.models import Comment
 from django.core.urlresolvers import reverse
 from django.core.paginator import Paginator, InvalidPage, EmptyPage
+from django.views.generic.list_detail import object_list
+
+from tagging.models import Tag, TaggedItem
+from tagging.utils import get_tag_list
 
 from yadb.forms import BlogForm, UploadFileForm
 from yadb import rst_tex, rst_code, rst_video
@@ -43,28 +47,35 @@ def preview(request):
             context_instance=RequestContext(request))
 
 def blog_list(request):
-    return _blog_general_list(request, 'yadb/blog_list.html')
-
-# TODO: use generic view
-def _blog_general_list(request, template):
-    """
-    This show list of all posts pubblished but if you are authenticated
-    let you see also the (yours) unpubblished.
-    """
-    real_Q = Q(status='pubblicato')
-
-    if request.user.is_authenticated():
-        real_Q = real_Q | ( Q(user=request.user) & Q(status='bozza') )
-
-    blogs = Blog.objects.filter(real_Q).order_by('-creation_date')
-    return render_to_response(template, {
-        'blogs': blogs,
-	'latest_posts': blogs[:5],
-        'comments': Comment.objects.all().order_by('-submit_date')[:5]
-        }, context_instance=RequestContext(request))
+    query = Blog.objects.get_authenticated(user=request.user)
+    extra_context = {
+        'latest_posts': query[:5],
+        'comments': Comment.objects.all().order_by('-submit_date')[:5],
+        'categories': Tag.objects.usage_for_queryset(query, counts=True),
+    }
+    return object_list(request,
+            queryset=Blog.objects.get_authenticated(user=request.user),
+            template_object_name='blog',
+            template_name='yadb/blog_list.html',
+            extra_context=extra_context)
 
 def blog_archives(request):
-    return _blog_general_list(request, 'yadb/archives_list.html')
+    return object_list(request,
+            queryset=Blog.objects.get_authenticated(user=request.user),
+            template_object_name='blog',
+            extra_context={'title': 'Archives'},
+            template_name='yadb/archives_list.html')
+
+def blog_categories(request, tags):
+    tag_list = get_tag_list(tags)
+    query = Blog.objects.get_authenticated(user=request.user)
+    q = TaggedItem.objects.get_by_model(query, tag_list)
+    return object_list(request, queryset=q,
+            template_object_name='blog',
+            extra_context={'title': 'Archives for category \''+ ", ".join(
+                [t.name for t in tag_list]) +'\''},
+            template_name='yadb/archives_list.html')
+
 
 @login_required
 def blog_add(request, id=None):

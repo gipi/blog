@@ -3,9 +3,9 @@
 TODO: merge this template with 'snippet/blog_archive_month.html'
 {% endcomment %}
 {% block body %}
-<h1>Archives</h1>
+<h1>{{title}}</h1>
 <ul id="archive_list">
-{% for blog in blogs %}
+{% for blog in blog_list %}
 	{% comment %}
 	TODO: add number of posts for month
 	{% endcomment %}

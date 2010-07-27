@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib import admin
 from django.core.urlresolvers import reverse
 from django.contrib.comments.moderation import CommentModerator, moderator
+from django.db.models import Q
 
 
 from tagging.fields import TagField
@@ -12,8 +13,21 @@ from tagging.fields import TagField
 from trackback import signals
 from trackback.utils import handlers
 
+class BlogAuthenticatedManager(models.Manager):
+    def get_authenticated(self, user=None):
+        real_Q = Q(status='pubblicato')
+
+        if user.is_authenticated():
+            real_Q = real_Q | ( Q(user=user) & Q(status='bozza') )
+
+        return self.filter(real_Q)
+
+
 
 class Blog(models.Model):
+    class Meta:
+        ordering = ['-creation_date']
+
     slug = models.SlugField(unique=True)
     title = models.CharField(max_length=100, unique=True)
     status = models.CharField(max_length=10,
@@ -30,6 +44,8 @@ class Blog(models.Model):
     # eventually this field could enable comments
     #enable_comments = models.BooleanField()
     trackback_content_field_name = 'content'
+
+    objects = BlogAuthenticatedManager()
 
     def get_absolute_url(self):
         return reverse('blog-post', args=[self.slug])
