@@ -44,7 +44,7 @@
 {% if blog %}
 	{% url blog-post blog.slug as blog_url %}
 	<h1 class="blog_header">{{blog.title|capfirst}} 
-		| {% ifequal user blog.user %}
+		{% ifequal user blog.user %} |
 		<a href="{% url blog-edit blog.pk %}">edit</a>{% endifequal %}
 	</h1>
 	<h3 class="blog_creation_date">
