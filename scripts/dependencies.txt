@@ -1,4 +1,4 @@
--e svn+http://code.djangoproject.com/svn/django/trunk/#egg=Django
+django==1.2.1
 Pygments==1.1.1
 django-pagination==1.0.5
 django-tagging==0.3
