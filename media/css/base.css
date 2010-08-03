@@ -84,8 +84,9 @@ ul.navbar li a{
 
 /* caption under figure directive */
 #content .figure p.caption {
-	text-align:center;
 	font-style:italic;
+	width:90%;
+	margin:auto;
 }
 
 #content .section h1 {
