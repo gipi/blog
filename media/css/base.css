@@ -238,3 +238,8 @@ label[for="id_honeypot"], #id_honeypot{
 #comment_container .entry{
 	margin-top:50px;
 }
+
+blockquote {
+	font-family: "Delicious SmallCaps";
+	font-style:italic;
+}
