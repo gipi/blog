@@ -112,7 +112,10 @@ INSTALLED_APPS = (
     'tagging',
     'yadb',
     'django_stats',
+    'captcha_comment',
 )
+
+COMMENTS_APP = 'captcha_comment'
 
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/login/'

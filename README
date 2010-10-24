@@ -3,6 +3,8 @@
   * django <http://djangoproject.com>
   * django-tagging <http://code.google.com/p/django-tagging/>
   * django-trackback <http://code.google.com/p/django-trackback/>
+  * django-math-captcha <http://github.com/justquick/django-math-captcha>
+    Pare non funzionare perfettamente lo script da setup.py.
   * pygments <http://pygments.org/>
   * docutils
   * TeX
