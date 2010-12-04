@@ -3,6 +3,8 @@
   * django <http://djangoproject.com>
   * django-tagging <http://code.google.com/p/django-tagging/>
   * django-trackback <http://code.google.com/p/django-trackback/>
+  * django-math-captcha <http://github.com/justquick/django-math-captcha>
+    Pare non funzionare perfettamente lo script da setup.py.
   * pygments <http://pygments.org/>
   * docutils
   * TeX
@@ -34,7 +36,8 @@ embedded in the pages yu have to execute the following command
 
 
 In order to use alternative settings for your site, you can use
-a 'local_settings.py' file.
+a 'local_settings.py' file. Remember to set DEFAULT_FROM_EMAIL correctly
+otherwise you cannot receive the email when someone comment.
 
 There is a bootstrap script in 'scripts/' you can use to quickly deployment
 and some htaccess and fcgi example.

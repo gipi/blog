@@ -42,7 +42,7 @@ class Blog(models.Model):
     tags = TagField(help_text='separe tags with commas')
     user = models.ForeignKey(User)
     # eventually this field could enable comments
-    #enable_comments = models.BooleanField()
+    enable_comments = models.BooleanField()
     trackback_content_field_name = 'content'
 
     objects = BlogAuthenticatedManager()
@@ -62,7 +62,7 @@ class AdminBlog(admin.ModelAdmin):
 
 class BlogCommentModeration(CommentModerator):
     email_notification = True
-    #enable_field = 'enable_comments'
+    enable_field = 'enable_comments'
 
 moderator.register(Blog, BlogCommentModeration)
 

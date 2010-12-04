@@ -5,4 +5,5 @@ django-tagging==0.3.1
 docutils==0.6
 pyyaml
 -e svn+http://django-trackback.googlecode.com/svn/trunk/#egg=trackback
+-e git+http://github.com/justquick/django-math-captcha.git#egg=math_captcha
 flup
