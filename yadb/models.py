@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.core.urlresolvers import reverse
 from django.contrib.comments.moderation import CommentModerator, moderator
 from django.db.models import Q
+from yadb.utils import slugify
 
 
 from tagging.fields import TagField
@@ -58,6 +59,26 @@ class Blog(models.Model):
 
 class AdminBlog(admin.ModelAdmin):
     list_display = ('title', 'user', 'creation_date', 'modify_date')
+    exclude = ('slug', 'user')
+
+    def save_model(self, request, obj, form, change):
+        obj.user = request.user
+        # TODO: maybe exists a Django function for slugify
+        initial_slug = slugify(obj.title)
+
+        # check for slug existence
+        trailing = ''
+        idx = 0
+        try:
+            while Blog.objects.get(slug=initial_slug + trailing):
+                idx += 1
+                trailing = '-%d' % idx
+        except Blog.DoesNotExist:
+            pass
+
+        obj.slug = initial_slug + trailing
+
+        obj.save()
 
 
 class BlogCommentModeration(CommentModerator):
