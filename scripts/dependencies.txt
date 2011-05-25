@@ -7,3 +7,5 @@ pyyaml
 -e svn+http://django-trackback.googlecode.com/svn/trunk/#egg=trackback
 -e git+http://github.com/justquick/django-math-captcha.git#egg=math_captcha
 flup
+gunicorn
+psycopg2
