@@ -8,3 +8,4 @@
  5 - Find if the strange behaviour showed by django_stats.tests.StatsTests.test_session is normal or not.
  6 - Migrate to normal admin interface for posting.
  7 - use django static management program.
+ 8 - use a Rest javascript editor like the one at http://rst.ninjs.org/
