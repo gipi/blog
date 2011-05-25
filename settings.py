@@ -113,6 +113,7 @@ INSTALLED_APPS = (
     'yadb',
     'django_stats',
     'captcha_comment',
+    'gunicorn',
 )
 
 COMMENTS_APP = 'captcha_comment'
