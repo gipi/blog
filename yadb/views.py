@@ -11,6 +11,7 @@ from django.contrib.comments.models import Comment
 from django.core.urlresolvers import reverse
 from django.core.paginator import Paginator, InvalidPage, EmptyPage
 from django.views.generic.list_detail import object_list
+from django.views.decorators.csrf import csrf_exempt
 
 from tagging.models import Tag, TaggedItem
 from tagging.utils import get_tag_list
@@ -24,6 +25,7 @@ from yadb.decorators import superuser_only, ajax_required
 import os, datetime, operator
 
 
+@csrf_exempt
 @login_required
 def preview(request):
     """
