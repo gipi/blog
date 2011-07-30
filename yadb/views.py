@@ -99,7 +99,8 @@ def blog_add(request, id=None):
             trailing = ''
             idx = 0
             try:
-                while Blog.objects.get(slug=initial_slug + trailing):
+                while Blog.objects.filter(
+                        slug=initial_slug + trailing).exclude(pk=blog.pk):
                     idx += 1
                     trailing = '-%d' % idx
             except Blog.DoesNotExist:

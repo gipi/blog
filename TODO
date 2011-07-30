@@ -9,3 +9,5 @@
  6 - Migrate to normal admin interface for posting.
  7 - use django static management program.
  8 - use a Rest javascript editor like the one at http://rst.ninjs.org/
+ 9 - abandon numbered slug for title with same starting characters: we can't reliably maintain
+     the generated number across editing.

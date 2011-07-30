@@ -158,6 +158,7 @@ class BlogTests(TestCase):
         self.assertEqual(blog.status, 'bozza')
 
         previous_date = blog.creation_date
+        previous_slug = blog.slug
 
         post_data = {
             'title': blog.title,
@@ -177,6 +178,7 @@ class BlogTests(TestCase):
         blog = Blog.objects.get(pk=pk)
         # check that published date is now
         self.assertEqual(previous_date < blog.creation_date, True)
+        self.assertEqual(previous_slug, blog.slug)
 
     def test_trackback(self):
         # OUT
