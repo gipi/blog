@@ -36,7 +36,7 @@ class Blog(models.Model):
             ('pubblicato', 'pubblicato'),
         )
     )
-    content = models.CharField(max_length=50000)
+    content = models.TextField()
     creation_date = models.DateTimeField(auto_now_add=True)
     modify_date = models.DateTimeField(auto_now_add=True)
     tags = TagField(help_text='separe tags with commas')
