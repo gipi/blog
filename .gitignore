@@ -4,3 +4,8 @@ local_settings.py
 *.swp
 media/TeX/
 media/js/jquery.*
+media/uploads/
+env/
+build/
+virtualenv/
+usr/

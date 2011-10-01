@@ -2,6 +2,9 @@
 
   * django <http://djangoproject.com>
   * django-tagging <http://code.google.com/p/django-tagging/>
+  * django-trackback <http://code.google.com/p/django-trackback/>
+  * django-math-captcha <http://github.com/justquick/django-math-captcha>
+    Pare non funzionare perfettamente lo script da setup.py.
   * pygments <http://pygments.org/>
   * docutils
   * TeX
@@ -17,6 +20,11 @@ to install all.
 
 # DEPLOY
 
+To do this, you need a shell account (ssh maybe) so to manage the following
+commands
+
+  $ python manage.py bootstrap
+
   $ mkdir media/js media/TeX media/uploads media/fonts
   $ wget <jquery URL> -O media/js/jquery.js
   $ wget <some URL pointed by link on http://www.josbuivenga.demon.nl/delicious.html>
@@ -28,7 +36,19 @@ embedded in the pages yu have to execute the following command
 
 
 In order to use alternative settings for your site, you can use
-a 'local_settings.py' file.
+a 'local_settings.py' file. Remember to set DEFAULT_FROM_EMAIL correctly
+otherwise you cannot receive the email when someone comment.
+
+There is a bootstrap script in 'scripts/' you can use to quickly deployment
+and some htaccess and fcgi example.
+
+
+# BACKUP
+
+In 'scripts/' there is a script named 'backup.sh' which can save in a local
+GIT repository the blog posts. It needs only a '.backuprc' file with a shell
+variable 'GIT_OBJ_DB_PATH' pointing to the local repository. Eventually a
+post-receive hook can push this changes in a remote repository.
 
 
 # HACKING

@@ -1,0 +1,16 @@
+<html>
+	{% comment %}
+	TODO: use a site_base like template for popups
+	TODO: add delete, upload and preview functionality to this window
+	TODO: add pagination stuffs
+	{% endcomment %}
+	<body>
+		{% if files.object_list %}
+		<ul>
+			{% for file in files.object_list %}
+			<li><a href="{{UPLOAD_URL}}{{file}}">{{file}}</a></li>
+			{% endfor %}
+		</ul>
+		{% endif %}
+	</body>
+</html>

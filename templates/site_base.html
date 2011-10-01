@@ -5,8 +5,17 @@
 		<meta http-equiv="content-type" content="text/html;
 		charset=ISO-8859-1"/>
 		<title>Snippy - {{version}}</title>
-		<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/base.css"/>
-		<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/native.css"/>
+		<link rel="alternate" type="application/rss+xml"
+			title="kTln2 RSS feed"
+			href="/feeds/latest/" />
+
+		<link rel="stylesheet" media="screen"
+			type="text/css" href="{{MEDIA_URL}}css/base.css"/>
+		<link rel="stylesheet" media="screen"
+			type="text/css" href="{{MEDIA_URL}}css/native.css"/>
+		<link rel="stylesheet" media="print"
+			type="text/css" href="{{MEDIA_URL}}/css/print.css"/>
+		{% block link_trackback %}{% endblock %}
 		<style type="text/css">
 		/* A font by Jos Buivenga (exljbris) -> www.exljbris.com */
 		@font-face {
@@ -51,25 +60,29 @@
 	{% endblock%}
 	{% block navbar %}
 		<ul class="navbar">
-			{% if user.is_authenticated %}
-			<li>you are logged as {{user}}</li> 
+		{% if user.is_authenticated %}
+			<li>you are logged as {{user}}</li>
 			<li><a href="{% url logout %}">log out</a></li>
-			<li><a href="{% url blog-add %}"> New post </a>
-			</li>
+			<li><a href="{% url blog-add %}"> New post </a></li>
 			<li>profile</li>
-			{% else %}
-			<li>you are not logged</li>
-			<li><a href="{% url login %}">log in</a></li>
-			{% endif %}
 			<li>|</li>
+		{% endif %}
 			<li><a href="{% url blog-archives %}">archives</a></li>
 			<li><a href="/projects/">projects</a></li>
 			<li><a href="/about/">about</a></li>
+			<li><a href="/contacts/">contacts</a></li>
 			<li><a href="/feeds/latest/">feeds</a></li>
 		</ul>
 	{% endblock %}
 	<div id="loader">Loading...</div>
 	</div>
 	<div id="content">{% block body %}{% endblock %}</div>
+	<div id="footer">
+		<a href="http://djangopony.com/"
+			class="ponybadge"
+			title="Magic! Ponies! Django! Whee!">
+		<img src="http://media.djangopony.com/img/small/badge.png"
+		width="210" height="65" alt="pony powered"></a>
+	</div>
 </body>
 </html>

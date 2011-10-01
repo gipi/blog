@@ -1,7 +1,11 @@
 /* CSS3 valid */
-body{
+*{
 	margin:0px;
 	padding:0px;
+}
+
+p{
+	margin:10px 0px;
 }
 
 a{
@@ -13,12 +17,32 @@ img{
 	border:none;
 }
 
+img.tikz{
+	margin-left:25px;
+	padding:10px;
+}
+
+ul.simple li{
+	margin:10px 30px;
+}
+
+/* TODO: rindondante */
+img.inline{
+	margin:0px;
+	padding:0px;
+}
+
 #header #logo{
 	margin:15px;
 }
 
 #header .validator{
 	float:right;
+}
+
+#footer{
+	clear:both;
+	text-align:center;
 }
 
 #loader{
@@ -42,15 +66,75 @@ ul.navbar li{
 ul.navbar li a{
 }
 
+.pagination {
+	text-align:center;
+}
+
 #content{
-	width:600px;
+	width:800px;
 	min-height:400px;
 	margin:auto;
+	margin-top:50px;
+}
+
+#content #central {
+	width:500px;
+	float:left;
+}
+
+/* caption under figure directive */
+#content .figure p.caption {
+	text-align:center;
+	font-style:italic;
+}
+
+#content .section h1 {
+	font-size:1.1em;
+}
+
+#content .section p {
+	margin-top:0px;
+}
+
+#content #stats {
+	width:500px;
+	text-align:center;
+	margin:auto;
+	font-family:"Delicious SmallCaps";
+}
+
+#content #trackback {
+	width:500px;
+	margin:auto;
+	padding-top:10px;
+	padding-bottom:10px;
+	border-top:1px solid #cccccc;
+}
+
+#content #trackback li {
+	margin-left:40px;
+}
+
+#content #sidebar {
+	float:right;
+	width:250px;
+}
+
+
+#content #sidebar ul {
+	list-style-position: inside;
+	list-style-image: url('/media/images/bullet.png');
+	margin:0px 0px 15px 0px;
+}
+
+#sidebar h3 {
+	background-color:#9090ff;
+	padding:5px 10px 5px;
+	-moz-border-radius:5px;
 }
 
 .post{
-	margin:10px;
-	padding:10px;
+	margin-bottom:40px;
 }
 
 .post h3{
@@ -65,6 +149,10 @@ ul.navbar li a{
 	opacity:0.6;
 }
 
+table.citation {
+	border-top:1px solid black;
+}
+
 .post .tag_list{
 	font-family:"Delicious SmallCaps";
 	text-align:right;
@@ -75,6 +163,16 @@ ul.navbar li a{
 	height:40px;
 }
 
+#drag_zone{
+	text-align:center;
+	padding:5px;
+	border:2px dashed #cccccc;
+	-moz-border-radius:10px;
+}
+
+#drag_zone:-moz-drag-over{
+	background-color:blue;
+}
 
 .blog_header, .blog_creation_date{
 	text-align:center;
@@ -85,13 +183,25 @@ ul.navbar li a{
 	margin:auto;
 }
 
+#archive_list li.date{
+	list-style-type: none;
+}
+
+#archive_list li.bozza a{
+	color:red;
+}
+
 form label{
 	font-weight:bold;
 }
 
 /* the input for post's title */
-input#id_title{
+form input#id_title{
 	width:40em;
+}
+
+form #id_tags {
+	width:100%;
 }
 
 .codeblock{
@@ -101,6 +211,7 @@ input#id_title{
 	border-bottom: 1px solid #cccccc;
 	border-top: 1px solid #cccccc;
 	background:#f0f0f0;
+	overflow:auto;
 }
 
 /* COMMENTS */
@@ -126,4 +237,9 @@ label[for="id_honeypot"], #id_honeypot{
 
 #comment_container .entry{
 	margin-top:50px;
+}
+
+blockquote {
+	font-family: "Delicious SmallCaps";
+	font-style:italic;
 }

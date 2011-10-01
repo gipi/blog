@@ -1,0 +1,75 @@
+{% extends 'site_base.html' %}
+{% load markup %}
+{% load tagging_tags %}
+{% load yadb_tags %}
+{% load comments %}
+{% load pagination_tags %}
+{% load stats_tags %}
+{% block body %}
+<div id="central">
+	{% if blog_list %}
+		{% autopaginate blog_list %}
+		{% for blog in blog_list %}
+		{% url blog-post blog.slug as blog_url %}
+		<div class="post">
+			<h2>
+				<a href="{{blog_url}}">{{blog.title|capfirst}}</a>
+				{% ifequal user blog.user %}
+				| <a href="{% url blog-edit blog.pk %}">edit</a>
+				{% endifequal %}
+			</h2>
+			{% comment %}
+			TODO: insert somewhere the modify_date
+			{% endcomment %}
+			<h3 class="{{blog.status}}">{{blog.status}}
+				by {{blog.user}}
+				at {{blog.creation_date|date:"D d M Y"}}</h3>
+			<div class="post_content">
+				{{blog.content|restructuredtext|truncatewords_html_and_more:blog}}
+			</div>
+			<h3 class="tag_list"><b>Tagged as: </b>{% tags_for_object blog as tags %}
+			{{ tags|join:", " }}</h3>
+			<div class="comment">
+			Page visitata {% page_counter blog_url %} volte /
+				{% get_comment_count for blog as count%}
+			<a href="{% url blog-post blog.slug %}#comment_container">Comments</a> 
+			({{count}})
+			</div>
+		</div>
+		{% endfor %}{% comment %} for blog in blogs{% endcomment %}
+	{% paginate %}
+	{% else %}
+		<h1>no posts yet</h1>
+	{% endif %}
+	</div><!-- id="central" -->
+<div id="sidebar">
+	{% if latest_posts %}
+	<h3>Latest posts</h3>
+	<ul>
+		{% for post in latest_posts %}
+	<li><a href="{% url blog-post post.slug %}">{{post.title}}</a></li>
+		{% endfor %}
+	{% endif %}
+	</ul>
+	{% if comments %}
+	<h3>Latest comments</h3>
+	<ul>
+		{% for comment in comments %}
+			{% with comment.content_object as cblog %}
+	<li>{{comment.user_name}} commented on
+	<a href="{{ cblog.get_absolute_url }}">{{cblog.title}}</a></li>
+			{% endwith %}
+		{% endfor %}
+	</ul>
+	{% endif %}
+	<h3>Categories</h3>
+	{% if categories %}
+	<ul>
+		{% for c in categories %}
+		<li><a href="{% url categories c.name %}">{{ c.name }}</a>:
+		{{ c.count }}</li>
+		{% endfor %}
+	</ul>
+	{% endif %}
+</div>
+{% endblock %}

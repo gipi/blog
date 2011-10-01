@@ -40,6 +40,7 @@ UPLOAD_PATH = MEDIA_ROOT + '/uploads/'
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
 MEDIA_URL = '/media/'
 TEX_MEDIA_URL = MEDIA_URL + '/TeX/'
+UPLOAD_URL = MEDIA_URL + '/uploads/'
 
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
@@ -58,6 +59,13 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'pagination.middleware.PaginationMiddleware',
+    'django_stats.middleware.StatsMiddleware',
+    # he pingback specs also allow publishing the pingback url
+    # via an HTTP X-Header. To enable this feature decomment
+    # the following line
+    #'trackback.middleware.PingbackUrlInjectionMiddleware',
 )
 
 ROOT_URLCONF = 'urls'
@@ -67,7 +75,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.debug',
     'django.core.context_processors.i18n',
     'django.core.context_processors.media',
-    'snippet.context_processors.version',
+    'yadb.context_processors.version',
+    'django.core.context_processors.request',
 )
 
 
@@ -75,17 +84,39 @@ TEMPLATE_DIRS = (
     PROJECT_ROOT + '/templates/',
 )
 
+
+PINGBACK_RESOLVERS = (
+    'trackback.utils.resolvers.decorated',
+    'trackback.utils.resolvers.generic_view',
+)
+
+STATS_BLACKLIST = {
+    'path': (r'^/media/', r'^/admin/'),
+    'user agent': (r'Googlebot', r'YandexBot', r'Baiduspider'),
+}
+
 INSTALLED_APPS = (
+    # to make 'auth' tests work
+    # you have to include 'django.contrib.admin'
+    # http://osdir.com/ml/DjangoUsers/2009-05/msg00972.html
     'django.contrib.auth',
+    'django.contrib.admin',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.markup',
     'django.contrib.flatpages',
     'django.contrib.comments',
+    'pagination',
+    'trackback',
     'tagging',
-    'snippet',
+    'yadb',
+    'django_stats',
+    'captcha_comment',
+    'gunicorn',
 )
+
+COMMENTS_APP = 'captcha_comment'
 
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/login/'
@@ -93,6 +124,8 @@ LOGIN_URL = '/login/'
 DEBUG = False
 
 SNIPPY_GIT_VERSION = '-zer0'
+
+PREVIEW_POST_LENGTH = 150
 
 try:
     from version import SNIPPY_GIT_VERSION
