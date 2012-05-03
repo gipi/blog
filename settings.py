@@ -76,6 +76,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.i18n',
     'django.core.context_processors.media',
     'yadb.context_processors.version',
+    'yadb.context_processors.analytics',
     'django.core.context_processors.request',
 )
 
@@ -139,3 +140,9 @@ except ImportError:
 
 MANAGERS = ADMINS
 TEMPLATE_DEBUG = DEBUG
+
+# FIXME: more reliable controls
+try:
+    locals()["GOOGLE_ANALYTICS_ID"]
+except KeyError:
+    print '*** GOOGLE_ANALYTICS_ID is missing ***'
