@@ -78,12 +78,16 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'yadb.context_processors.version',
     'yadb.context_processors.analytics',
     'django.core.context_processors.request',
+    'django.core.context_processors.static',
 )
 
 
 TEMPLATE_DIRS = (
     PROJECT_ROOT + '/templates/',
 )
+
+STATIC_ROOT = PROJECT_ROOT + '/static/'
+STATIC_URL  = '/static/'
 
 
 PINGBACK_RESOLVERS = (
@@ -108,6 +112,7 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'django.contrib.flatpages',
     'django.contrib.comments',
+    'django.contrib.staticfiles',
     'pagination',
     'trackback',
     'tagging',
