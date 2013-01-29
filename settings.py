@@ -116,6 +116,7 @@ INSTALLED_APPS = (
     'pagination',
     'trackback',
     'tagging',
+    'home',
     'yadb',
     'django_stats',
     'captcha_comment',

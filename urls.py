@@ -1,6 +1,8 @@
 from django.conf.urls.defaults import *
 from django.conf import settings
+# TODO: use generic template view
 from django.views.generic.simple import redirect_to
+from django.views.generic.base import TemplateView
 from django.contrib import admin
 
 admin.autodiscover()
@@ -22,7 +24,7 @@ static_patterns = patterns('',
 urlpatterns = patterns('',
         (r'^', include(static_patterns)),
         (r'^admin/', include(admin.site.urls)),
-        url(r'^$', redirect_to, {'url': '/blog/'}, name='home'),
+        url(r'^$', TemplateView.as_view(template_name='home/index.html'), name='home'),
         url(r'^login/$', 'django.contrib.auth.views.login', name='login'),
         url(r'^logout/$', 'django.contrib.auth.views.logout', name='logout'),
         (r'^preview/$', 'yadb.views.preview'),
