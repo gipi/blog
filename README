@@ -42,6 +42,9 @@ otherwise you cannot receive the email when someone comment.
 There is a bootstrap script in 'scripts/' you can use to quickly deployment
 and some htaccess and fcgi example.
 
+Exists a settings named GOOGLE_VERIFICATION_PAGE that points to the page as
+created by the Google's webmaster tool.
+
 
 # BACKUP
 
