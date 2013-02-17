@@ -121,6 +121,7 @@ INSTALLED_APPS = (
     'django_stats',
     'captcha_comment',
     'gunicorn',
+    'markitup_field',
 )
 
 COMMENTS_APP = 'captcha_comment'

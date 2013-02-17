@@ -33,6 +33,7 @@ urlpatterns = patterns('',
         (r'^comments/', include('django.contrib.comments.urls')),
         (r'^feeds/(?P<url>.*)/$',
             'django.contrib.syndication.views.feed', {'feed_dict': feeds}),
+        url(r'^markitup/', include('markitup_field.urls'))
 )
 
 if settings.DEBUG:

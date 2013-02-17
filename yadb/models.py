@@ -8,7 +8,7 @@ from yadb.utils import slugify
 
 
 from tagging.fields import TagField
-
+from markitup_field.fields import MarkupField
 
 # for trackback stuffs
 from trackback import signals
@@ -37,7 +37,7 @@ class Blog(models.Model):
             ('pubblicato', 'pubblicato'),
         )
     )
-    content = models.TextField()
+    content = MarkupField(markup_format='restructuredtext')
     creation_date = models.DateTimeField(auto_now_add=True)
     modify_date = models.DateTimeField(auto_now_add=True)
     tags = TagField(help_text='separe tags with commas')
