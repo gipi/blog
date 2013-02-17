@@ -122,6 +122,7 @@ INSTALLED_APPS = (
     'captcha_comment',
     'gunicorn',
     'markitup_field',
+    'south',
 )
 
 COMMENTS_APP = 'captcha_comment'
