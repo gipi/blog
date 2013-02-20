@@ -52,7 +52,7 @@
 		{{blog.creation_date|date:"D d M Y"}}
 	</h3>
 	<div class="blog_content">
-		{{blog.content|restructuredtext}}
+		{{blog.content.rendered|safe}}
 	</div>
 	<div id="stats">Page visited {% page_counter blog_url %} times</div>
 	<div id="trackback">{% get_trackback_rdf_for blog %}

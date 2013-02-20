@@ -25,7 +25,7 @@
 				by {{blog.user}}
 				at {{blog.creation_date|date:"D d M Y"}}</h3>
 			<div class="post_content">
-				{{blog.content|restructuredtext|truncatewords_html_and_more:blog}}
+				{{blog.content.rendered|safe|truncatewords_html_and_more:blog}}
 			</div>
 			<h3 class="tag_list"><b>Tagged as: </b>{% tags_for_object blog as tags %}
 			{{ tags|join:", " }}</h3>

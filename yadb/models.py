@@ -5,6 +5,8 @@ from django.core.urlresolvers import reverse
 from django.contrib.comments.moderation import CommentModerator, moderator
 from django.db.models import Q
 from yadb.utils import slugify
+# with this import all the ReST directive can be used
+from . import rst_tex, rst_code, rst_video
 
 
 from tagging.fields import TagField
@@ -37,14 +39,14 @@ class Blog(models.Model):
             ('pubblicato', 'pubblicato'),
         )
     )
-    content = MarkupField(markup_format='restructuredtext')
+    content = MarkupField(markup_format='restructuredtext', escape_html=False)
     creation_date = models.DateTimeField(auto_now_add=True)
     modify_date = models.DateTimeField(auto_now_add=True)
     tags = TagField(help_text='separe tags with commas')
     user = models.ForeignKey(User)
     # eventually this field could enable comments
     enable_comments = models.BooleanField()
-    trackback_content_field_name = 'content'
+    trackback_content_field_name = '_content_rendered'
 
     objects = BlogAuthenticatedManager()
 
