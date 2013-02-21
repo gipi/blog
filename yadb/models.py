@@ -60,7 +60,7 @@ class Blog(models.Model):
             signals.send_trackback.send(sender=self.__class__, instance=self)
 
 class AdminBlog(admin.ModelAdmin):
-    list_display = ('title', 'user', 'creation_date', 'modify_date')
+    list_display = ('title', 'user', 'status', 'creation_date', 'modify_date')
     exclude = ('slug', 'user')
 
     def save_model(self, request, obj, form, change):
