@@ -7,6 +7,7 @@ from django.db.models import Q
 from yadb.utils import slugify
 # with this import all the ReST directive can be used
 from . import rst_tex, rst_code, rst_video
+from adminfiles.admin import FilePickerAdmin
 
 
 from tagging.fields import TagField
@@ -59,9 +60,12 @@ class Blog(models.Model):
             signals.send_pingback.send(sender=self.__class__, instance=self)
             signals.send_trackback.send(sender=self.__class__, instance=self)
 
-class AdminBlog(admin.ModelAdmin):
+class AdminBlog(FilePickerAdmin):
     list_display = ('title', 'user', 'status', 'creation_date', 'modify_date')
     exclude = ('slug', 'user')
+    adminfiles_fields = (
+        'content',
+    )
 
     def save_model(self, request, obj, form, change):
         obj.user = request.user

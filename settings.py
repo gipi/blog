@@ -123,6 +123,8 @@ INSTALLED_APPS = (
     'gunicorn',
     'markitup_field',
     'south',
+    'sorl.thumbnail',
+    'adminfiles',
 )
 
 COMMENTS_APP = 'captcha_comment'
@@ -135,6 +137,11 @@ DEBUG = False
 SNIPPY_GIT_VERSION = '-zer0'
 
 PREVIEW_POST_LENGTH = 150
+THUMBNAIL_EXTENSION = 'png'
+
+ADMINFILES_REF_START = ''
+ADMINFILES_REF_ATTR = 'href'
+ADMINFILES_REF_END = ''
 
 try:
     from version import SNIPPY_GIT_VERSION

@@ -9,6 +9,7 @@
   * docutils
   * TeX
   * JQuery <http://jquery.com/>
+  * pillow
 
 The complete (python) dependencies are indicated in 'scripts/dependencies.txt'
 and can be used by pip with the following command
