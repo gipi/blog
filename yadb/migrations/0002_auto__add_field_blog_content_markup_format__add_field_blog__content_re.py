@@ -23,6 +23,8 @@ class Migration(SchemaMigration):
         db.alter_column('yadb_blog', 'content', self.gf('markitup_field.fields.MarkupField')(rendered_field=True, default_markup_format='restructuredtext'))
 
         if not db.dry_run:
+            # with postgres8 give me problem
+            # in case remove the datamigration and do it after
             # save all the instance otherwise the rendered field will be empty
             for post in orm.Blog.objects.all():
                 post.save()
