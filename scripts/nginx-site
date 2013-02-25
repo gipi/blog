@@ -17,9 +17,8 @@ server {
                 #access_log off;
         }
 
-	# maybe with collectstatic this is useless
-        location ^/admin/media/ {
-                root /var/www/$SITE/env/lib/python2.6/site-packages/django/contrib/admin/media/;
+        location /static {
+                root /var/www/$SITE/;
                 expires 30d;
                 access_log off;
         }
