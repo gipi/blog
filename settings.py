@@ -45,7 +45,7 @@ UPLOAD_URL = MEDIA_URL + '/uploads/'
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
 # Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/admin_media/'
+ADMIN_MEDIA_PREFIX = '/static/admin/'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -76,13 +76,18 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.i18n',
     'django.core.context_processors.media',
     'yadb.context_processors.version',
+    'yadb.context_processors.analytics',
     'django.core.context_processors.request',
+    'django.core.context_processors.static',
 )
 
 
 TEMPLATE_DIRS = (
     PROJECT_ROOT + '/templates/',
 )
+
+STATIC_ROOT = PROJECT_ROOT + '/static/'
+STATIC_URL  = '/static/'
 
 
 PINGBACK_RESOLVERS = (
@@ -107,13 +112,19 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'django.contrib.flatpages',
     'django.contrib.comments',
+    'django.contrib.staticfiles',
     'pagination',
     'trackback',
     'tagging',
+    'home',
     'yadb',
     'django_stats',
     'captcha_comment',
     'gunicorn',
+    'markitup_field',
+    'south',
+    'sorl.thumbnail',
+    'adminfiles',
 )
 
 COMMENTS_APP = 'captcha_comment'
@@ -126,6 +137,11 @@ DEBUG = False
 SNIPPY_GIT_VERSION = '-zer0'
 
 PREVIEW_POST_LENGTH = 150
+THUMBNAIL_EXTENSION = 'png'
+
+ADMINFILES_REF_START = ''
+ADMINFILES_REF_ATTR = 'href'
+ADMINFILES_REF_END = ''
 
 try:
     from version import SNIPPY_GIT_VERSION
@@ -139,3 +155,9 @@ except ImportError:
 
 MANAGERS = ADMINS
 TEMPLATE_DEBUG = DEBUG
+
+# FIXME: more reliable controls
+try:
+    locals()["GOOGLE_ANALYTICS_ID"]
+except KeyError:
+    print '*** GOOGLE_ANALYTICS_ID is missing ***'

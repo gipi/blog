@@ -1,0 +1,68 @@
+html, body {
+    width:100%;
+    margin:0px;
+    padding:0px;
+    //font-family:'Neuton', serif;
+    //font-weight:400;
+}
+
+a {
+    text-decoration:none;
+    color:black;
+}
+a:visited {
+    color:black;
+}
+
+html {
+    margin-top:20%;
+}
+
+header, nav {
+    float:left;
+    width:45%;
+}
+header {
+    text-align:right;
+    padding:0px 20px;
+}
+
+header h1 {
+    font-size:2em;
+}
+
+header span {
+    display:block;
+    font-size:.7em;
+}
+
+nav {
+    border-left:1px solid black;
+}
+
+nav ul {
+    padding:0px 20px;
+    font-family:palatino;
+}
+ul.no-bullet li {
+    list-style-type:none;
+    margin-bottom:1%;
+    margin-top:1%;
+    font-style:serif;
+}
+
+nav > ul > li * {
+    vertical-align:middle;
+}
+
+li.social span {
+    margin-left:5px;
+}
+
+img.icon {
+    width:24px;
+    height:24px;
+}
+
+header, nav ul {
+}

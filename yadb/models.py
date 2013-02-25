@@ -4,10 +4,14 @@ from django.contrib import admin
 from django.core.urlresolvers import reverse
 from django.contrib.comments.moderation import CommentModerator, moderator
 from django.db.models import Q
+from yadb.utils import slugify
+# with this import all the ReST directive can be used
+from . import rst_tex, rst_code, rst_video
+from adminfiles.admin import FilePickerAdmin
 
 
 from tagging.fields import TagField
-
+from markitup_field.fields import MarkupField
 
 # for trackback stuffs
 from trackback import signals
@@ -36,14 +40,14 @@ class Blog(models.Model):
             ('pubblicato', 'pubblicato'),
         )
     )
-    content = models.TextField()
+    content = MarkupField(markup_format='restructuredtext', escape_html=False)
     creation_date = models.DateTimeField(auto_now_add=True)
     modify_date = models.DateTimeField(auto_now_add=True)
     tags = TagField(help_text='separe tags with commas')
     user = models.ForeignKey(User)
     # eventually this field could enable comments
     enable_comments = models.BooleanField()
-    trackback_content_field_name = 'content'
+    trackback_content_field_name = '_content_rendered'
 
     objects = BlogAuthenticatedManager()
 
@@ -56,8 +60,31 @@ class Blog(models.Model):
             signals.send_pingback.send(sender=self.__class__, instance=self)
             signals.send_trackback.send(sender=self.__class__, instance=self)
 
-class AdminBlog(admin.ModelAdmin):
-    list_display = ('title', 'user', 'creation_date', 'modify_date')
+class AdminBlog(FilePickerAdmin):
+    list_display = ('title', 'user', 'status', 'creation_date', 'modify_date')
+    exclude = ('slug', 'user')
+    adminfiles_fields = (
+        'content',
+    )
+
+    def save_model(self, request, obj, form, change):
+        obj.user = request.user
+        # TODO: maybe exists a Django function for slugify
+        initial_slug = slugify(obj.title)
+
+        # check for slug existence
+        trailing = ''
+        idx = 0
+        try:
+            while Blog.objects.get(slug=initial_slug + trailing):
+                idx += 1
+                trailing = '-%d' % idx
+        except Blog.DoesNotExist:
+            pass
+
+        obj.slug = initial_slug + trailing
+
+        obj.save()
 
 
 class BlogCommentModeration(CommentModerator):

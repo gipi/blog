@@ -4,7 +4,7 @@
 	<head>
 		<meta http-equiv="content-type" content="text/html;
 		charset=ISO-8859-1"/>
-		<title>Snippy - {{version}}</title>
+		<title>{% block title %}Snippy - {{version}}{% endblock %}</title>
 		<link rel="alternate" type="application/rss+xml"
 			title="kTln2 RSS feed"
 			href="/feeds/latest/" />
@@ -84,5 +84,20 @@
 		<img src="http://media.djangopony.com/img/small/badge.png"
 		width="210" height="65" alt="pony powered"></a>
 	</div>
+	{% if google_analytics_id %}
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', '{{ google_analytics_id }}']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+{% endif %}
 </body>
 </html>
