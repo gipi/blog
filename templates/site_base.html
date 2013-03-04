@@ -1,10 +1,9 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="it" lang="it">
+<!doctype html>
+<html itemscope itemtype="http://schema.org/Blog">
 	<head>
 		<meta http-equiv="content-type" content="text/html;
 		charset=ISO-8859-1"/>
-		<title>{% block title %}Snippy - {{version}}{% endblock %}</title>
+		<title itemprop="headline">{% block title %}Gianluca Pacchiella's Blog - {{version}}{% endblock %}</title>
 		<link rel="alternate" type="application/rss+xml"
 			title="kTln2 RSS feed"
 			href="/feeds/latest/" />
@@ -76,7 +75,7 @@
 	{% endblock %}
 	<div id="loader">Loading...</div>
 	</div>
-	<div id="content">{% block body %}{% endblock %}</div>
+	<div id="content"{% block content_attrs %}{% endblock %}>{% block body %}{% endblock %}</div>
 	<div id="footer">
 		<a href="http://djangopony.com/"
 			class="ponybadge"

@@ -40,18 +40,24 @@
 </script>
 {% endif %}
 {% endblock %}
-
+{% block content_attrs %} itemprop="blogpost" itemscope itemtype="http://schema.org/BlogPosting"{% endblock %}
 {% block body %}
 {% if blog %}
 	{% url blog-post blog.slug as blog_url %}
-	<h1 class="blog_header">{{blog.title|capfirst}} 
+	<h1 class="blog_header" itemprop="headline">{{blog.title|capfirst}} 
 		{% ifequal user blog.user %} |
 		<a href="{% url blog-edit blog.pk %}">edit</a>{% endifequal %}
 	</h1>
-	<h3 class="blog_creation_date">
+	<h3 class="blog_creation_date" itemprop="dateCreated">
 		{{blog.creation_date|date:"D d M Y"}}
 	</h3>
-	<div class="blog_content">
+    <h3 class="secondary-headline">{{blog.status}}
+        by <div class="inline" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            <span itemprop="name">{{blog.user.first_name}} {{blog.user.last_name}}</span>
+        </div>
+        at <span itemprop="dateCreated">{{blog.creation_date|date:"D d M Y"}}<span>
+    </h3>
+	<div class="blog_content" itemprop="articleBody">
 		{{blog.content.rendered|safe}}
 	</div>
 	<div id="stats">Page visited {% page_counter blog_url %} times</div>

@@ -145,6 +145,21 @@ ul.navbar li a{
 	text-align:center;
 }
 
+/*
+ * This will going to substitute the .post h3 stuff: it's better to
+ * create CSS rules without binding them to elements.
+ */
+.secondary-headline {
+	font-style:italic;
+	font-weight:normal;
+	font-size:1em;
+	text-align:center;
+}
+
+.inline {
+    display: inline;
+}
+
 .post h3.bozza{
 	background-color:rgb(255, 0, 0);
 	opacity:0.6;
