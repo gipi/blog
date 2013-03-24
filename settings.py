@@ -127,6 +127,11 @@ INSTALLED_APPS = (
     'adminfiles',
 )
 
+SITE_BACKUP_APPS = [
+    'yadb',
+    'comments',
+]
+
 COMMENTS_APP = 'captcha_comment'
 
 LOGIN_REDIRECT_URL = '/'
