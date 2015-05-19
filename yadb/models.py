@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.contrib import admin
 from django.core.urlresolvers import reverse
-from django.contrib.comments.moderation import CommentModerator, moderator
+from django_comments.moderation import CommentModerator, moderator
 from django.db.models import Q
 from yadb.utils import slugify
 # with this import all the ReST directive can be used

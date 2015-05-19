@@ -1,8 +1,7 @@
 from django.conf.urls.defaults import *
 from django.conf import settings
-from django.views.generic.simple import redirect_to
 
-from urls import static_patterns
+from core.urls import static_patterns
 
 urlpatterns = patterns('',
         (r'^', include(static_patterns)),

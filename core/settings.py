@@ -68,10 +68,10 @@ MIDDLEWARE_CLASSES = (
     #'trackback.middleware.PingbackUrlInjectionMiddleware',
 )
 
-ROOT_URLCONF = 'urls'
+ROOT_URLCONF = 'core.urls'
 
 TEMPLATE_CONTEXT_PROCESSORS = (
-    'django.core.context_processors.auth',
+    'django.contrib.auth.context_processors.auth',
     'django.core.context_processors.debug',
     'django.core.context_processors.i18n',
     'django.core.context_processors.media',
@@ -109,9 +109,9 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
-    'django.contrib.markup',
+    'markup_deprecated',
     'django.contrib.flatpages',
-    'django.contrib.comments',
+    'django_comments',
     'django.contrib.staticfiles',
     'pagination',
     'trackback',
@@ -119,15 +119,12 @@ INSTALLED_APPS = (
     'home',
     'yadb',
     'django_stats',
-    'captcha_comment',
     'gunicorn',
     'markitup_field',
-    'south',
     'sorl.thumbnail',
     'adminfiles',
 )
 
-COMMENTS_APP = 'captcha_comment'
 
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/login/'

@@ -1,8 +1,8 @@
-from django.conf.urls.defaults import *
+from django.conf.urls import patterns, include, url
 from django.conf import settings
 # TODO: use generic template view
-from django.views.generic.simple import redirect_to
 from django.contrib import admin
+from django.views.generic import RedirectView
 
 admin.autodiscover()
 
@@ -15,10 +15,9 @@ feeds = {
 }
 
 static_patterns = patterns('',
-        (r'^favicon\.ico$', redirect_to ,
-            {'url': settings.MEDIA_URL + 'images/favicon.ico'}),
-        (r'^robots\.txt', redirect_to,
-            {'url': settings.MEDIA_URL + 'robots.txt'}),
+        (r'^favicon\.ico$', RedirectView.as_view(url=settings.MEDIA_URL + 'images/favicon.ico')),
+        (r'^robots\.txt', RedirectView.as_view(
+            url=settings.MEDIA_URL + 'robots.txt')),
 )
 
 urlpatterns = patterns('',
@@ -30,7 +29,7 @@ urlpatterns = patterns('',
         (r'^preview/$', 'yadb.views.preview'),
         (r'^blog/', include('yadb.urls')),
         # comment stuffs
-        (r'^comments/', include('django.contrib.comments.urls')),
+        (r'^comments/', include('django_comments.urls')),
         (r'^feeds/(?P<url>.*)/$',
             'django.contrib.syndication.views.feed', {'feed_dict': feeds}),
         url(r'^markitup/', include('markitup_field.urls')),
