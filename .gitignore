@@ -2,11 +2,8 @@
 db.sqlite
 local_settings.py
 *.swp
-media/TeX/
-media/js/jquery.*
-media/uploads/
-env/
+/media
 build/
-virtualenv/
+.virtualenv/
 usr/
 /static
