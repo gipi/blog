@@ -7,10 +7,10 @@
 {% block content_attrs %} itemprop="blogpost" itemscope itemtype="http://schema.org/BlogPosting"{% endblock %}
 {% block body %}
 {% if blog %}
-	{% url blog-post blog.slug as blog_url %}
+	{% url 'blog-post' blog.slug as blog_url %}
 	<h1 class="blog_header" itemprop="headline">{{blog.title|capfirst}} 
 		{% ifequal user blog.user %} |
-		<a href="{% url blog-edit blog.pk %}">edit</a>{% endifequal %}
+		<a href="{% url 'blog-edit' blog.pk %}">edit</a>{% endifequal %}
 	</h1>
 	<h3 class="blog_creation_date" itemprop="dateCreated">
 		{{blog.creation_date|date:"D d M Y"}}
@@ -44,7 +44,7 @@
 	<form action="{% comment_form_target %}" method="post">
 	{% csrf_token %}
 	{{ cform.as_p }}
-	<input type="hidden" name="next" value="{% url blog-post blog.slug %}"/>
+	<input type="hidden" name="next" value="{% url 'blog-post' blog.slug %}"/>
 
 	<p><input type="submit" value="post comment"/></p>
 	</form>
