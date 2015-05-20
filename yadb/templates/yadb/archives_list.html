@@ -13,7 +13,7 @@ TODO: merge this template with 'snippet/blog_archive_month.html'
 	<li class="date"><h2>{{blog.creation_date|date:"Y M"}}</h2></li>
 	{% endifchanged %}
 	<li{% ifequal blog.status 'bozza' %} class="bozza"{% endifequal %}>
-	<a href="{% url blog-post blog.slug %}">{{blog.title}}</a></li>
+	<a href="{% url 'blog-post' blog.slug %}">{{blog.title}}</a></li>
 {% endfor %}
 </ul>
 {% endblock %}

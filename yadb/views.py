@@ -7,6 +7,7 @@ from django.http import HttpResponseRedirect, HttpResponse, \
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.views.generic.dates import YearArchiveView
 from django.views.generic.list import ListView
 from django_comments.models import Comment
 from django.core.urlresolvers import reverse
@@ -73,9 +74,7 @@ def preview(request):
 
 class BlogArchiveView(ListView):
     model = Blog
-
-    def get_quertyset(self):
-        return Blog.objects.get_authenticated(user=self.request.user)
+    template_name = 'yadb/archives_list.html'
 
 def blog_categories(request, tags):
     tag_list = get_tag_list(tags)
