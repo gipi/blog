@@ -1,0 +1,144 @@
+/* Welcome to Compass.
+ * In this file you should write your main styles. (or centralize your imports)
+ * Import this file using the following HTML or equivalent:
+ * <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css" /> */
+/* line 17, ../../../../../../../../.gem/ruby/1.9.1/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/reset/_utilities.scss */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font: inherit;
+  font-size: 100%;
+  vertical-align: baseline;
+}
+
+/* line 22, ../../../../../../../../.gem/ruby/1.9.1/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/reset/_utilities.scss */
+html {
+  line-height: 1;
+}
+
+/* line 24, ../../../../../../../../.gem/ruby/1.9.1/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/reset/_utilities.scss */
+ol, ul {
+  list-style: none;
+}
+
+/* line 26, ../../../../../../../../.gem/ruby/1.9.1/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/reset/_utilities.scss */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* line 28, ../../../../../../../../.gem/ruby/1.9.1/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/reset/_utilities.scss */
+caption, th, td {
+  text-align: left;
+  font-weight: normal;
+  vertical-align: middle;
+}
+
+/* line 30, ../../../../../../../../.gem/ruby/1.9.1/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/reset/_utilities.scss */
+q, blockquote {
+  quotes: none;
+}
+/* line 103, ../../../../../../../../.gem/ruby/1.9.1/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/reset/_utilities.scss */
+q:before, q:after, blockquote:before, blockquote:after {
+  content: "";
+  content: none;
+}
+
+/* line 32, ../../../../../../../../.gem/ruby/1.9.1/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/reset/_utilities.scss */
+a img {
+  border: none;
+}
+
+/* line 116, ../../../../../../../../.gem/ruby/1.9.1/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/reset/_utilities.scss */
+article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section, summary {
+  display: block;
+}
+
+/* line 9, ../../../y/sass/screen.scss */
+body {
+  width: 800px;
+  margin: auto;
+}
+
+/* line 14, ../../../y/sass/screen.scss */
+body > header {
+  width: 100%;
+  padding: 8px;
+  font-weight: bold;
+  font-size: 2.5em;
+  border-bottom: 1px solid black;
+}
+
+/* line 25, ../../../y/sass/screen.scss */
+.navigation-menu li {
+  display: inline;
+}
+
+/* line 29, ../../../y/sass/screen.scss */
+.stick-to-top {
+  position: absolute;
+  top: 0px;
+}
+
+/* line 34, ../../../y/sass/screen.scss */
+.center {
+  text-align: center;
+}
+
+/* line 38, ../../../y/sass/screen.scss */
+.headline {
+  font-weight: bold;
+  font-size: 2em;
+}
+
+/* line 43, ../../../y/sass/screen.scss */
+.subheadline {
+  font-style: italic;
+}
+
+/* line 47, ../../../y/sass/screen.scss */
+.inline {
+  display: inline;
+}
+
+/* line 51, ../../../y/sass/screen.scss */
+.blog_content {
+  /* I want quote to have some big quotation marks around */
+}
+/* line 53, ../../../y/sass/screen.scss */
+.blog_content p {
+  margin: 4px 0px;
+}
+/* line 57, ../../../y/sass/screen.scss */
+.blog_content h1 {
+  font-weight: bold;
+  font-size: 1.2em;
+  margin: 8px 0px 4px 0px;
+}
+/* line 64, ../../../y/sass/screen.scss */
+.blog_content blockquote {
+  width: 80%;
+  margin: auto;
+  font-family: "Delicious SmallCaps";
+}
+/* line 69, ../../../y/sass/screen.scss */
+.blog_content blockquote:before {
+  content: "<";
+}
+/* line 72, ../../../y/sass/screen.scss */
+.blog_content blockquote:after {
+  content: ">";
+}

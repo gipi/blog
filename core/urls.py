@@ -1,6 +1,7 @@
 from django.conf.urls import patterns, include, url
 from django.conf import settings
 # TODO: use generic template view
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.views.generic import RedirectView
 
@@ -37,9 +38,4 @@ urlpatterns = patterns('',
 )
 
 if settings.DEBUG:
-    urlpatterns += patterns('',
-            # Trick for Django to support static files
-            # (security hole: only for Dev environement!!!!)
-            url(r'^media/(?P<path>.*)$', 'django.views.static.serve',
-                {'document_root': settings.MEDIA_ROOT}),
-    )
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

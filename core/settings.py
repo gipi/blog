@@ -103,6 +103,7 @@ INSTALLED_APPS = (
     'django_comments',
     'django.contrib.staticfiles',
     'pagination',
+    'core.app',
     #'trackback',
     'tagging',
     'home',

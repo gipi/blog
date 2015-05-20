@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html itemscope itemtype="http://schema.org/Blog">
 	<head>
@@ -9,11 +10,11 @@
 			href="/feeds/latest/" />
 
 		<link rel="stylesheet" media="screen"
-			type="text/css" href="{{MEDIA_URL}}css/base.css"/>
+			type="text/css" href="{% static 'css/base.css' %}"/>
 		<link rel="stylesheet" media="screen"
-			type="text/css" href="{{MEDIA_URL}}css/native.css"/>
+			type="text/css" href="{% static 'css/native.css' %}"/>
 		<link rel="stylesheet" media="print"
-			type="text/css" href="{{MEDIA_URL}}/css/print.css"/>
+			type="text/css" href="{% static 'css/print.css' %}"/>
 		{% block link_trackback %}{% endblock %}
 		<style type="text/css">
 		/* A font by Jos Buivenga (exljbris) -> www.exljbris.com */
