@@ -1,9 +1,6 @@
 {% extends 'site_base.html' %}
-{% load comments markup yadb_tags trackback_tags stats_tags %}
+{% load comments markup yadb_tags stats_tags %}
 {% block title %}{{ blog.title }}{% endblock %}
-{% block link_trackback %}
-		<link rel="pingback" href="{% get_pingback_url %}"/>
-{% endblock %}
 {% block content_attrs %} itemprop="blogpost" itemscope itemtype="http://schema.org/BlogPosting"{% endblock %}
 {% block body %}
 {% if blog %}
@@ -25,19 +22,6 @@
 		{{blog.content.rendered|safe}}
 	</div>
 	<div id="stats">Page visited {% page_counter blog_url %} times</div>
-	<div id="trackback">{% get_trackback_rdf_for blog %}
-		{% get_trackbacks_for blog as trackbacks %}
-		{% if trackbacks %}
-		<h3>Trackback</h3>
-		<ol>
-			{% for trackback in trackbacks %}
-			<li>from <a href="{{ trackback.url}}">{{trackback.blog_name}}</a></li>
-			{% endfor %}
-		</ol>
-		{% else %}
-		<b>No trackback yet</b>
-		{% endif %}
-	</div>
 	<div id="comment_container">
 	<h2>Comments</h2>
 	{% get_comment_form for blog as cform %}
