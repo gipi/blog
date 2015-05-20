@@ -46,6 +46,7 @@ class BlogListView(ListView):
 
 class BlogDetailView(DetailView):
     model = Blog
+    template_name = 'yadb/blog.html'
 
 @csrf_exempt
 @login_required
