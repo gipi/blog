@@ -7,11 +7,11 @@ from django.http import HttpResponseRedirect, HttpResponse, \
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.contrib.comments.models import Comment
+from django_comments.models import Comment
 from django.core.urlresolvers import reverse
 from django.core.paginator import Paginator, InvalidPage, EmptyPage
-from django.views.generic.list_detail import object_list
 from django.views.decorators.csrf import csrf_exempt
+from django.views.generic.detail import DetailView
 
 from tagging.models import Tag, TaggedItem
 from tagging.utils import get_tag_list
@@ -24,6 +24,8 @@ from yadb.decorators import superuser_only, ajax_required
 
 import os, datetime, operator
 
+class BlogDetailView(DetailView):
+    model = Blog
 
 @csrf_exempt
 @login_required

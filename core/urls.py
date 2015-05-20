@@ -30,8 +30,8 @@ urlpatterns = patterns('',
         (r'^blog/', include('yadb.urls')),
         # comment stuffs
         (r'^comments/', include('django_comments.urls')),
-        (r'^feeds/(?P<url>.*)/$',
-            'django.contrib.syndication.views.feed', {'feed_dict': feeds}),
+        #(r'^feeds/(?P<url>.*)/$',
+        #    'django.contrib.syndication.views', {'feed_dict': feeds}),
         url(r'^markitup/', include('markitup_field.urls')),
         url(r'^adminfiles/', include('adminfiles.urls')),
 )

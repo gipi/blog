@@ -10,12 +10,12 @@
 	{% if blog_list %}
 		{% autopaginate blog_list %}
 		{% for blog in blog_list %}
-		{% url blog-post blog.slug as blog_url %}
+		{% url 'blog-post' blog.slug as blog_url %}
 		<div class="post">
 			<h2>
 				<a href="{{blog_url}}">{{blog.title|capfirst}}</a>
 				{% ifequal user blog.user %}
-				| <a href="{% url blog-edit blog.pk %}">edit</a>
+				| <a href="{% url 'blog-edit' blog.pk %}">edit</a>
 				{% endifequal %}
 			</h2>
 			{% comment %}
@@ -32,7 +32,7 @@
 			<div class="comment">
 			Page visitata {% page_counter blog_url %} volte /
 				{% get_comment_count for blog as count%}
-			<a href="{% url blog-post blog.slug %}#comment_container">Comments</a> 
+			<a href="{% url 'blog-post' blog.slug %}#comment_container">Comments</a>
 			({{count}})
 			</div>
 		</div>
@@ -47,7 +47,7 @@
 	<h3>Latest posts</h3>
 	<ul>
 		{% for post in latest_posts %}
-	<li><a href="{% url blog-post post.slug %}">{{post.title}}</a></li>
+	<li><a href="{% url 'blog-post' post.slug %}">{{post.title}}</a></li>
 		{% endfor %}
 	{% endif %}
 	</ul>
@@ -66,7 +66,7 @@
 	{% if categories %}
 	<ul>
 		{% for c in categories %}
-		<li><a href="{% url categories c.name %}">{{ c.name }}</a>:
+		<li><a href="{% url 'categories' c.name %}">{{ c.name }}</a>:
 		{{ c.count }}</li>
 		{% endfor %}
 	</ul>

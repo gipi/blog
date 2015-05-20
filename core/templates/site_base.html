@@ -61,12 +61,12 @@
 		<ul class="navbar">
 		{% if user.is_authenticated %}
 			<li>you are logged as {{user}}</li>
-			<li><a href="{% url logout %}">log out</a></li>
-			<li><a href="{% url blog-add %}"> New post </a></li>
+			<li><a href="{% url 'logout' %}">log out</a></li>
+			<li><a href="{% url 'blog-add' %}"> New post </a></li>
 			<li>profile</li>
 			<li>|</li>
 		{% endif %}
-			<li><a href="{% url blog-archives %}">archives</a></li>
+			<li><a href="{% url 'blog-archives' %}">archives</a></li>
 			<li><a href="/projects/">projects</a></li>
 			<li><a href="/about/">about</a></li>
 			<li><a href="/contacts/">contacts</a></li>

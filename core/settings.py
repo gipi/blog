@@ -47,13 +47,6 @@ UPLOAD_URL = MEDIA_URL + '/uploads/'
 # Examples: "http://foo.com/media/", "/media/".
 ADMIN_MEDIA_PREFIX = '/static/admin/'
 
-# List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.load_template_source',
-    'django.template.loaders.app_directories.load_template_source',
-#     'django.template.loaders.eggs.load_template_source',
-)
-
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -71,14 +64,16 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'core.urls'
 
 TEMPLATE_CONTEXT_PROCESSORS = (
-    'django.contrib.auth.context_processors.auth',
-    'django.core.context_processors.debug',
-    'django.core.context_processors.i18n',
-    'django.core.context_processors.media',
+    "django.contrib.auth.context_processors.auth",
+    "django.core.context_processors.debug",
+    "django.core.context_processors.i18n",
+    "django.core.context_processors.media",
     'yadb.context_processors.version',
     'yadb.context_processors.analytics',
-    'django.core.context_processors.request',
-    'django.core.context_processors.static',
+    "django.core.context_processors.static",
+    "django.core.context_processors.tz",
+    "django.contrib.messages.context_processors.messages",
+    "django.core.context_processors.request",
 )
 
 
@@ -88,12 +83,6 @@ TEMPLATE_DIRS = (
 
 STATIC_ROOT = PROJECT_ROOT + '/static/'
 STATIC_URL  = '/static/'
-
-
-PINGBACK_RESOLVERS = (
-    'trackback.utils.resolvers.decorated',
-    'trackback.utils.resolvers.generic_view',
-)
 
 STATS_BLACKLIST = {
     'path': (r'^/media/', r'^/admin/'),
@@ -114,17 +103,19 @@ INSTALLED_APPS = (
     'django_comments',
     'django.contrib.staticfiles',
     'pagination',
-    'trackback',
+    #'trackback',
     'tagging',
     'home',
     'yadb',
     'django_stats',
+    #'captcha_comment',
     'gunicorn',
     'markitup_field',
     'sorl.thumbnail',
     'adminfiles',
 )
 
+#COMMENTS_APP = 'captcha_comment'
 
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/login/'

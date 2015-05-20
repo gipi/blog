@@ -1,7 +1,5 @@
-dotenv==0.0.5
 Pillow==2.8.1
 Pygments==2.0.2
--e git+http://github.com/gipi/django-adminfiles.git@fixes#egg=adminfiles
 django-pagination==1.0.7
 django-tagging==0.3.6
 docutils==0.12
@@ -15,9 +13,9 @@ sorl-thumbnail==12.2
 Django==1.8.1
 django-contrib-comments==1.6.1
 django-getenv==1.3.1
-django-markup-deprecated==0.3.0
+django-markup-deprecated==0.0.3
 PyYAML==3.11
--e git+http://github.com/gipi/django-adminfiles.git@a58216acb21916e263c308b7ac443586eda1b9d7#egg=django_adminfiles-origin/fixes
+-e git+https://github.com/carljm/django-adminfiles.git#egg=django_adminfiles
 -e git+http://github.com/justquick/django-math-captcha.git@6d1b5f55d9587751705b2b4f9abd76fb12ed65e8#egg=django_math_captcha-master
 -e svn+http://django-trackback.googlecode.com/svn/trunk@15#egg=django_trackback-0.1.0-py2.7-dev_r15
 pip-tools==0.3.6
