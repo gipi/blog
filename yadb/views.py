@@ -7,6 +7,7 @@ from django.http import HttpResponseRedirect, HttpResponse, \
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.views.generic.list import ListView
 from django_comments.models import Comment
 from django.core.urlresolvers import reverse
 from django.core.paginator import Paginator, InvalidPage, EmptyPage
@@ -23,6 +24,25 @@ from yadb.models import Blog
 from yadb.decorators import superuser_only, ajax_required
 
 import os, datetime, operator
+
+class BlogListView(ListView):
+    model = Blog
+
+    def get_queryset(self):
+        return Blog.objects.get_authenticated(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get a context
+        context = super(BlogListView, self).get_context_data(**kwargs)
+
+        extra_context = {
+            'comments': Comment.objects.all().order_by('-submit_date')[:5],
+            'categories': Tag.objects.usage_for_queryset(self.get_queryset(), counts=True),
+        }
+
+        context.update(extra_context)
+
+        return context
 
 class BlogDetailView(DetailView):
     model = Blog
@@ -50,25 +70,11 @@ def preview(request):
             {'form': form, 'entry':formula},
             context_instance=RequestContext(request))
 
-def blog_list(request):
-    query = Blog.objects.get_authenticated(user=request.user)
-    extra_context = {
-        'latest_posts': query[:5],
-        'comments': Comment.objects.all().order_by('-submit_date')[:5],
-        'categories': Tag.objects.usage_for_queryset(query, counts=True),
-    }
-    return object_list(request,
-            queryset=Blog.objects.get_authenticated(user=request.user),
-            template_object_name='blog',
-            template_name='yadb/blog_list.html',
-            extra_context=extra_context)
+class BlogArchiveView(ListView):
+    model = Blog
 
-def blog_archives(request):
-    return object_list(request,
-            queryset=Blog.objects.get_authenticated(user=request.user),
-            template_object_name='blog',
-            extra_context={'title': 'Archives'},
-            template_name='yadb/archives_list.html')
+    def get_quertyset(self):
+        return Blog.objects.get_authenticated(user=self.request.user)
 
 def blog_categories(request, tags):
     tag_list = get_tag_list(tags)
