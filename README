@@ -1,23 +1,7 @@
-# DEPENDENCIES
 
-  * django <http://djangoproject.com>
-  * django-tagging <http://code.google.com/p/django-tagging/>
-  * django-trackback <http://code.google.com/p/django-trackback/>
-  * django-math-captcha <http://github.com/justquick/django-math-captcha>
-    Pare non funzionare perfettamente lo script da setup.py.
-  * pygments <http://pygments.org/>
-  * docutils
-  * TeX
-  * JQuery <http://jquery.com/>
-  * pillow
+# Getting started
 
-The complete (python) dependencies are indicated in 'scripts/dependencies.txt'
-and can be used by pip with the following command
-
-  $ pip install -r scripts/dependencies.txt
-
-to install all.
-
+    $ pip install -r requirements.txt
 
 # DEPLOY
 
