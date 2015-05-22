@@ -12,5 +12,4 @@ urlpatterns = patterns('yadb.views',
                 url(r'^upload_popup/$', 'uploaded', name='blog-upload-popup'),
                 url(r'^archives/$', BlogArchiveView.as_view(), name='blog-archives'),
                 url(r'^categories/(?P<tags>.*)/$', 'blog_categories', name='categories'),
-                #(r'pingback/', include('trackback.urls')),
 )

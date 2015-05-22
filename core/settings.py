@@ -55,10 +55,6 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'pagination.middleware.PaginationMiddleware',
     'django_stats.middleware.StatsMiddleware',
-    # he pingback specs also allow publishing the pingback url
-    # via an HTTP X-Header. To enable this feature decomment
-    # the following line
-    #'trackback.middleware.PingbackUrlInjectionMiddleware',
 )
 
 ROOT_URLCONF = 'core.urls'
@@ -104,7 +100,6 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'pagination',
     'core.app',
-    #'trackback',
     'tagging',
     'home',
     'yadb',

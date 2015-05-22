@@ -13,10 +13,6 @@ from adminfiles.admin import FilePickerAdmin
 from tagging.fields import TagField
 from markitup_field.fields import MarkupField
 
-# for trackback stuffs
-from trackback import signals
-from trackback.utils import handlers
-
 class BlogAuthenticatedManager(models.Manager):
     def get_authenticated(self, user=None):
         real_Q = Q(status='pubblicato')
@@ -25,8 +21,6 @@ class BlogAuthenticatedManager(models.Manager):
             real_Q = real_Q | ( Q(user=user) & Q(status='bozza') )
 
         return self.filter(real_Q)
-
-
 
 class Blog(models.Model):
     class Meta:
@@ -47,18 +41,11 @@ class Blog(models.Model):
     user = models.ForeignKey(User)
     # eventually this field could enable comments
     enable_comments = models.BooleanField()
-    trackback_content_field_name = '_content_rendered'
 
     objects = BlogAuthenticatedManager()
 
     def get_absolute_url(self):
         return reverse('blog-post', args=[self.slug])
-
-    def save(self, *args, **kwargs):
-        super(Blog, self).save(*args, **kwargs)
-        if self.status == 'pubblicato': # or some other condition
-            signals.send_pingback.send(sender=self.__class__, instance=self)
-            signals.send_trackback.send(sender=self.__class__, instance=self)
 
 class AdminBlog(FilePickerAdmin):
     list_display = ('title', 'user', 'status', 'creation_date', 'modify_date')
@@ -94,6 +81,3 @@ class BlogCommentModeration(CommentModerator):
 moderator.register(Blog, BlogCommentModeration)
 
 admin.site.register(Blog, AdminBlog)
-
-signals.send_pingback.connect(handlers.send_pingback, sender=Blog)
-signals.send_trackback.connect(handlers.send_trackback, sender=Blog)
