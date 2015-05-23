@@ -7,3 +7,4 @@ to make it work flawless.
 
  - Create a context processor that inject into the template the ``site`` variable.
  - In order to create a general theming *strategy*, impose ``post`` as variable name
+ - setup.py with dependencies (django-pagination)

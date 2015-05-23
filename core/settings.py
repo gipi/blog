@@ -85,7 +85,6 @@ STATS_BLACKLIST = {
     'path': (r'^/media/', r'^/admin/'),
     'user agent': (r'Googlebot', r'YandexBot', r'Baiduspider'),
 }
-
 INSTALLED_APPS = (
     # to make 'auth' tests work
     # you have to include 'django.contrib.admin'
@@ -99,9 +98,9 @@ INSTALLED_APPS = (
     'django.contrib.flatpages',
     'django_comments',
     'django.contrib.staticfiles',
-    'pagination',
-    'hyde_theme',
     'core.app',
+    'hyde_theme',
+    'pagination',
     'tagging',
     'home',
     'yadb',
@@ -112,6 +111,7 @@ INSTALLED_APPS = (
     'sorl.thumbnail',
     'adminfiles',
 )
+
 
 #COMMENTS_APP = 'captcha_comment'
 
