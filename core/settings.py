@@ -70,6 +70,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.tz",
     "django.contrib.messages.context_processors.messages",
     "django.core.context_processors.request",
+    'hyde_theme.context.liquid',
 )
 
 
@@ -99,6 +100,7 @@ INSTALLED_APPS = (
     'django_comments',
     'django.contrib.staticfiles',
     'pagination',
+    'hyde_theme',
     'core.app',
     'tagging',
     'home',

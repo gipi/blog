@@ -2,40 +2,15 @@
 {% load comments markup yadb_tags stats_tags %}
 {% block title %}{{ blog.title }}{% endblock %}
 {% block content_attrs %} itemprop="blogpost" itemscope itemtype="http://schema.org/BlogPosting"{% endblock %}
-{% block body %}
+{% block content %}
 {% if blog %}
-	{% url 'blog-post' blog.slug as blog_url %}
-	<h1 class="blog_header" itemprop="headline">{{blog.title|capfirst}} 
-		{% ifequal user blog.user %} |
-		<a href="{% url 'blog-edit' blog.pk %}">edit</a>{% endifequal %}
-	</h1>
-	<h3 class="blog_creation_date" itemprop="dateCreated">
-		{{blog.creation_date|date:"D d M Y"}}
-	</h3>
-    <h3 class="secondary-headline">{{blog.status}}
-        by <div class="inline" itemprop="author" itemscope itemtype="http://schema.org/Person">
-            <span itemprop="name">{{blog.user.first_name}} {{blog.user.last_name}}</span>
-        </div>
-        at <span itemprop="dateCreated">{{blog.creation_date|date:"D d M Y"}}<span>
-    </h3>
+<div class="post">
+  <h1 class="post-title">{{ blog.title }}</h1>
+  <span class="post-date">{{ page.creation_date|date:"D d M Y" }}</span>
 	<div class="blog_content" itemprop="articleBody">
 		{{blog.content.rendered|safe}}
 	</div>
 	<div id="stats">Page visited {% page_counter blog_url %} times</div>
-	<div id="comment_container">
-	<h2>Comments</h2>
-	{% get_comment_form for blog as cform %}
-	<form action="{% comment_form_target %}" method="post">
-	{% csrf_token %}
-	{{ cform.as_p }}
-	<input type="hidden" name="next" value="{% url 'blog-post' blog.slug %}"/>
-
-	<p><input type="submit" value="post comment"/></p>
-	</form>
-	{% get_comment_list for blog as comments %}
-	{% for comment in comments %}
-		{% comment_entry comment %}
-	{% endfor %}
-	</div>
+</div>
 {% endif %}
-{% endblock %}
+{% endblock content %}
