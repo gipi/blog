@@ -98,8 +98,8 @@ INSTALLED_APPS = (
     'django.contrib.flatpages',
     'django_comments',
     'django.contrib.staticfiles',
+    'hyde_theme',                  # first this in order to use its templates
     'core.app',
-    'hyde_theme',
     'pagination',
     'tagging',
     'home',
