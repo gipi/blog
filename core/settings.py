@@ -90,6 +90,7 @@ INSTALLED_APPS = (
     # you have to include 'django.contrib.admin'
     # http://osdir.com/ml/DjangoUsers/2009-05/msg00972.html
     'django.contrib.auth',
+    'suit',
     'django.contrib.admin',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
