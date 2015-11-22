@@ -11,9 +11,11 @@ from datetime import datetime
 
 from pony import orm
 
-def create_post(title, date, content, slug=None, containing_dir='_posts'):
-    slug = slug or '%s-%s.md' % (date.strftime('%Y-%m-%d'), slugify(title))
-    filepath = os.path.join(containing_dir, slug)
+def build_filepath(post, containing_dir='_posts'):
+    slug = '%s-%s.md' % (post.creation_date.strftime('%Y-%m-%d'), slugify(post.title))
+    return os.path.join(containing_dir, slug)
+
+def create_post(filepath, title, date, content, slug=None, containing_dir='_posts'):
     with open(filepath, 'w+') as f:
         f.write(u'''---
 layout: post
@@ -40,7 +42,9 @@ if __name__ == '__main__':
             print "writing '%s'" % post.title
             try:
                 #print 'content:', post.content
-                create_post(post.title, post.creation_date, post.content)
+                filepath = build_filepath(post)
+                create_post(filepath, post.title, post.creation_date, post.content)
             except Exception as e:
                 print e
+                os.remove(filepath)
 
