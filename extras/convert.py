@@ -19,7 +19,7 @@ def create_post(filepath, title, date, content, slug=None, containing_dir='_post
     with open(filepath, 'w+') as f:
         f.write(u'''---
 layout: post
-title: %(title)s
+title: '%(title)s'
 ---
 %(content)s
 ''' % {'title': title, 'content': content, })
