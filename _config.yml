@@ -9,6 +9,7 @@ permalink:        pretty
 title:            "Gianluca Pacchiella"
 tagline:          'I code for food'
 description:      'I code for food'
+url:              'https://gipi.github.io'
 baseurl:          '/yadb'
 
 author:
