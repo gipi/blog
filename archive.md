@@ -12,5 +12,5 @@ title: Archive
 ## {{ currentdate }}
     {% assign date = currentdate %} 
   {% endif %}
- * [{{ post.title}}]({{ post.url }})
+ * [{{ post.title}}]({{site.baseurl}}{{ post.url }})
 {% endfor %}
