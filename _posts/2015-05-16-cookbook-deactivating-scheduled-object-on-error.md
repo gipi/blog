@@ -81,6 +81,7 @@ we deactivate it indicating that there was an error (probably we should write a 
 
 Since the exception is re-raised, it will be catched by celery that will manage it
 in the way is configured for; in order to not lose the original traceback the ``raise``
-line has a particular form that you can deduce from the `raise  <https://docs.python.org/2.7/reference/simple_stmts.html#raise>`_ and the `sys.exec_info() <https://docs.python.org/2.7/library/sys.html#sys.exc_info>`_ references.
+line has a particular form that you can deduce from the [raise](https://docs.python.org/2.7/reference/simple_stmts.html#raise)
+and the [sys.exec_info()](https://docs.python.org/2.7/library/sys.html#sys.exc_info>) references.
 
 For now is all, bye.
