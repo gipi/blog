@@ -1,1 +1,1 @@
-Future static blogging: https://gipi.github.io/yadb/
+Future static blogging: https://gipi.ktln2.org/
