@@ -43,7 +43,7 @@ if __name__ == '__main__':
             print "writing '%s'" % post.title
             try:
                 #print 'content:', post.content
-                filepath = build_filepath(post)
+                filepath = build_filepath(post, containing_dir='_posts' if post.status == 'pubblicato' else '_drafts')
                 create_post(filepath, post.title, post.creation_date, post.content)
             except Exception as e:
                 print e
