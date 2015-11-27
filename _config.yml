@@ -17,4 +17,4 @@ author:
   url:            https://ktln2.org
 
 paginate:         5
-exclude:          ['extras/',]
+exclude:          ['extras/', 'LICENSE.md', 'README.md', 'CNAME',]
