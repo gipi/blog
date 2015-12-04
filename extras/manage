@@ -1,0 +1,6 @@
+
+function draft2post() {
+    local source="${1:?missing path for draft}"
+    local dst="$(basename ${source})"
+    mv -v ${source} "_posts/$(date --rfc-3339=date)-${dst}"
+}
