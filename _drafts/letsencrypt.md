@@ -15,6 +15,7 @@ The protocol used by the client is [ACME](https://letsencrypt.github.io/acme-spe
 (stands for *Automatic Certificate Management Environment*);
 
 First of all, install the client (in the future will exist a maintained package)
+in the server (all the operations must be done as root)
 
     # git clone https://github.com/letsencrypt/letsencrypt && cd letsencrypt
     # ./letsencrypt-auto
@@ -25,10 +26,13 @@ First of all, install the client (in the future will exist a maintained package)
     No installers seem to be present and working on your system; fix that or try running letsencrypt with the "certonly" command
 
 This creates in the ``$HOME/.local/share/letsencrypt`` a virtualenv with the client, ``letsencrypt-auto`` should
-be a wrapper that checks everytime if updates are available.
+be a wrapper to the main executable named ``letsencrypt``, that checks everytime if updates are available.
+If you want to use ``letsencrypt`` directly you have to activate the virtualenv.
 
 There are several different ways to obtain a certificate and to deploy it,
 I choose a manual method, since I usually I have nginx that is not officially supported.
+If you have ``apache`` all should be completely automated. Exist also other methods,
+if you want to improve your knowledge, read the [documentation](https://letsencrypt.readthedocs.org/en/latest/).
 
 From [this post](https://community.letsencrypt.org/t/using-the-webroot-domain-verification-method/1445/7) I stole
 the configuration for ``nginx`` (to place in ``/etc/nginx/snippets/letsencryptauth.conf``)
@@ -48,7 +52,9 @@ serving the domain for which you want to issue the certificate you can include t
 ```nginx
 server {
 
+        # the include must be placed before any location directive
         include snippets/letsencryptauth.conf;
+
         # other location directives
 }
 ```
