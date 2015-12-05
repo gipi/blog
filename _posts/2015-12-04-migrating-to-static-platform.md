@@ -39,6 +39,12 @@ ok with that.
 
 So probably in the near future I will move the *compiled* pages to a
 server of mine
+
+**P.S:** if you like me have a page that is at the top domain (not, you know, a ``www`` like subdomain)
+you can encounter some problems with the ``DNS`` settings for other services
+like email, in that case you must set a ``A`` entry in the ``DNS`` configuration,
+not a ``CNAME`` one; in this [page](https://help.github.com/articles/tips-for-configuring-an-a-record-with-your-dns-provider/)
+are indicated the IP addresses to use.
 {% comment %}
 After that I moved my ``DNS`` so to make it pointing by ``CNAME``
 to ``gipi.github.io`` (the different domains and how Github choses them
