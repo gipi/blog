@@ -4,3 +4,19 @@ function draft2post() {
     local dst="$(basename ${source})"
     mv -v ${source} "_posts/$(date --rfc-3339=date)-${dst}"
 }
+
+function serve() {
+    jekyll serve --baseurl '' --watch --drafts
+}
+
+function draftnew() {
+    local name="${1:?missing name}"
+    # create template
+cat > "_drafts/${name}" <<EOF
+---
+layout: post
+comments: true
+title: ""
+---
+EOF
+}
