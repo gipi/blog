@@ -1,0 +1,76 @@
+---
+layout: post
+title: "Let's encrypt"
+comments: true
+---
+
+[Let's encrypt](https://letsencrypt.org) is the new thing in town: allow a seamless procedure
+for obtaining ``TLS`` certificates; and it's free ;)
+
+Roughly speaking, it's a certification authority, capable of generating certificates accepted from any major browser;
+it has appositely created an ([open source](https://github.com/letsencrypt/letsencrypt)) client 
+to do that *without human intervention*.
+
+The protocol used by the client is [ACME](https://letsencrypt.github.io/acme-spec/)
+(stands for *Automatic Certificate Management Environment*);
+
+First of all, install the client (in the future will exist a maintained package)
+
+    # git clone https://github.com/letsencrypt/letsencrypt && cd letsencrypt
+    # ./letsencrypt-auto
+    [... installing packages...]
+    Creating virtual environment...
+    Updating letsencrypt and virtual environment dependencies.......
+    Running with virtualenv: /root/.local/share/letsencrypt/bin/letsencrypt
+    No installers seem to be present and working on your system; fix that or try running letsencrypt with the "certonly" command
+
+This creates in the ``$HOME/.local/share/letsencrypt`` a virtualenv with the client, ``letsencrypt-auto`` should
+be a wrapper that checks everytime if updates are available.
+
+There are several different ways to obtain a certificate and to deploy it,
+I choose a manual method, since I usually I have nginx that is not officially supported.
+
+From [this post](https://community.letsencrypt.org/t/using-the-webroot-domain-verification-method/1445/7) I stole
+the configuration for ``nginx`` (to place in ``/etc/nginx/snippets/letsencryptauth.conf``)
+
+```nginx
+location /.well-known/acme-challenge {
+    alias /etc/letsencrypt/webrootauth/.well-known/acme-challenge;
+    location ~ /.well-known/acme-challenge/(.*) {
+        add_header Content-Type application/jose+json;
+    }
+}
+```
+
+then in the ``server`` block
+serving the domain for which you want to issue the certificate you can include this snippet
+
+```nginx
+server {
+
+        include snippets/letsencryptauth.conf;
+        # other location directives
+}
+```
+
+Finally we have to create the authentication directory
+
+    # mkdir /etc/letsencrypt/webrootauth
+
+and execute the last step
+
+    # ./letsencrypt-auto  \
+        --webroot-path /etc/letsencrypt/webrootauth \
+        --domain ohr.lol  \
+        -a webroot certonly
+    [... wait a little bit ...]
+    IMPORTANT NOTES:
+     - Congratulations! Your certificate and chain have been saved at
+       /etc/letsencrypt/live/ohr.lol/fullchain.pem. Your cert will expire
+       on 2016-03-03. To obtain a new version of the certificate in the
+       future, simply run Let's Encrypt again.
+     - If like Let's Encrypt, please consider supporting our work by:
+
+       Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
+       Donating to EFF:                    https://eff.org/donate-le
+
