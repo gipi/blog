@@ -1,6 +1,7 @@
 ---
 layout: post
 title: 'Git statistic'
+comments: true
 ---
 Sometime I'm curious to know how many commits I have done in a repository of mine in order to make a graph with my activity or stuff like that; I searched in the interwebz but seems that an out-of-the-box program with a simple command line tool that outputs data to feed tools like ``gnuplot`` doesn't exist: I mean, it simple to make ``git`` outputs the commit, one for line with only the date
 
