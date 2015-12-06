@@ -38,10 +38,11 @@ The ``DATETIME`` thing make the database parses correctly the date (note the ``%
 The final step is to pipe all the data to ``gnuplot`` in order to create a wonderful(?) plot
 
 ```
- $ git log --no-merges --format=%ct, \
-     | q -d , "select strftime('%Y-%m-%d', DATETIME(c1,'unixepoch')) as day, count(*) from - group by day" -D " " \
-     | gnuplot -p -e 'set xdata time;set timefmt "%Y-%m-%d" ;set boxwidth 0.9;plot "-" using 1:2 with boxes'
+$ git log --no-merges --format=%ct, \
+ | q -d , "select strftime('%Y-%m-%d', DATETIME(c1,'unixepoch')) as day, count(*) from - group by day" -D " " \
+ | gnuplot -p -e 'set xdata time;set timefmt "%Y-%m-%d" ;set boxwidth 0.9;plot "-" using 1:2 with boxes'
+```
 
-![](/media/adminfiles/activity.png)
+![]({{ site.baseurl}}/public/images/activity.png)
 
 Making a graph with the activity of each author is left as exercise for the reader.
