@@ -1,6 +1,7 @@
 ---
 layout: post
 title: 'Mount a partition inside a disk image'
+comments: true
 ---
 This little trick can help you if retrieve contents from a dumped image is needed: let's suppose we have a file named ``dump.img`` obtained by ``dd if=/dev/sdd of=dump.img``
 
