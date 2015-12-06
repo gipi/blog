@@ -1,3 +1,12 @@
+function backup2docker() {
+    docker build -t pg_backup extras/
+    BACKUP_CONTAINER_ID=$(docker run --detach --publish 5432:5432 -it pg_backup)
+    sleep 3
+    echo 'CREATE DATABASE blog' | psql -h localhost -U docker
+    cat backups/unknown.sql | psql -h localhost -U docker blog
+    echo 'BACKUP_CONTAINER_ID: '${BACKUP_CONTAINER_ID}
+    export BACKUP_CONTAINER_ID
+}
 
 function draft2post() {
     local source="${1:?missing path for draft}"
