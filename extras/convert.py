@@ -33,6 +33,7 @@ if __name__ == '__main__':
         _table_       = 'yadb_blog'
         title         = orm.Required(str)
         content       = orm.Required(str)
+        status        = orm.Required(str)
         creation_date = orm.Required(datetime)
 
     db.bind('postgres', user=sys.argv[1], password=sys.argv[2], host=sys.argv[3], port=sys.argv[4], database='blog')
