@@ -80,3 +80,22 @@ and execute the last step
        Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
        Donating to EFF:                    https://eff.org/donate-le
 
+## Security
+
+All is working but someone has (rightly) rised some concerns about security since
+all the scripts are autoupdating and running as root. An alternative way is to [install and run it
+ using docker](https://letsencrypt.readthedocs.org/en/latest/using.html#running-with-docker)
+with the following steps: first of all, pull the image
+
+    $ docker pull quay.io/letsencrypt/letsencrypt:latest
+
+and then run it, mounting the path used to store configuration and certificates by letsencrypt
+
+    $ docker run \
+        -v "/etc/letsencrypt:/etc/letsencrypt" \
+        -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+        --entrypoint=/bin/bash \
+        -it quay.io/letsencrypt/letsencrypt
+    root@d24cd7b4b487:/opt/letsencrypt#
+
+I warn you that [docker](https://docker.io) works only on 64bit machines.
