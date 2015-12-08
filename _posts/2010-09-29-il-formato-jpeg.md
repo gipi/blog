@@ -153,7 +153,7 @@ valore reale), questo procedimento è detto **differential DC encoding**.
 
 Ogni componente ``AC`` invece viene encodata come tripletta \\((cc,zl,m)\\)
 dove il primo valore indica quanti bits sono necessari per encodare in una
-rappresentazione in complemento a 2 il valore di ``AC`` dentro :tex:`m`, mentre
+rappresentazione in complemento a 2 il valore di ``AC`` dentro \\(m\\), mentre
 \\(zl\\) indica quanti valori nulli di ``AC`` precedono questo. Esiste una
 sequenza particolare che indica l'*end of block* (``EOB``) che informa del
 fatto che le rimanenti componenti sono nulle e che il blocco è quindi finito;
