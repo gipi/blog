@@ -160,8 +160,8 @@ fatto che le rimanenti componenti sono nulle e che il blocco è quindi finito;
 questo corrisponde a \\(cc=0\\) e \\(zl=0\\).
 
 C'è da notare che per i valori di ``DC`` si usano 8 bits per rappresentare
-\\(cc\\), mentre ne servono 4 per l'omonimo in ``AC`` e altri 4 per \\(zl\));
-quindi si ha che \\(cc\)) per ``DC`` e la coppia \(((cc,zl)\)) per ``AC``
+\\(cc\\), mentre ne servono 4 per l'omonimo in ``AC`` e altri 4 per \\(zl\\);
+quindi si ha che \\(cc\\) per ``DC`` e la coppia \\((cc,zl)\\) per ``AC``
 vengono memorizzati tramite la codifica di Huffman utilizzando una tabella
 separata.
 
