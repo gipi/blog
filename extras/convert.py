@@ -49,5 +49,7 @@ if __name__ == '__main__':
                 create_post(filepath, post.title, post.creation_date, post.content)
             except Exception as e:
                 print e
+                import traceback
+                traceback.print_tb(sys.exc_info()[2])
                 os.remove(filepath)
 
