@@ -8,6 +8,7 @@ import sys
 import os
 from slugify import slugify
 from datetime import datetime
+import codecs
 
 from pony import orm
 
@@ -16,7 +17,7 @@ def build_filepath(post, containing_dir='_posts'):
     return os.path.join(containing_dir, slug)
 
 def create_post(filepath, title, date, content, slug=None, containing_dir='_posts'):
-    with open(filepath, 'w+') as f:
+    with codecs.open(filepath, 'w+', encoding='utf-8') as f:
         f.write(u'''---
 layout: post
 title: '%(title)s'
