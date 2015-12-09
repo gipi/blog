@@ -211,8 +211,7 @@ Dopo i dettagli implementativi, ecco un piccolo esempio con un semplice file di 
      00000110  00 02 11 03 11 00 3f 00  17 c5 3a fe 1f ff d9     |......?...:....|
      0000011f
 
-Linkografia
------------
+## Linkografia
 
   * [Differenza fra RGB e CYMK](http://graficare.blogspot.com/2007/05/rgb-o-cmyk.html)
   * [RGB-vs-CMYK](http://www.copy-cd.biz/dtp-area/RGB-vs-CMYK.jsp)
@@ -220,6 +219,6 @@ Linkografia
   * [The Scientist and Engineer's Guide to Digital Signal Processing](http://www.dspguide.com/)
   * [Data compression explained](http://mattmahoney.net/dc/dce.html)
   * [Bandwidth Versus Video Resolution](http://www.maxim-ic.com/app-notes/index.mvp/id/750)
-  * [Mia implementazione in C di un parser JPEG](http://gitorious.org/information-theory/information-theory/trees/Jpeg/jpeg)
+  * [Mia implementazione in C di un parser JPEG](https://github.com/gipi/information-theory/tree/master/jpeg)
   * [Digital media primer for geek](http://wiki.xiph.org/A_Digital_Media_Primer_For_Geeks_%28episode_1%29)
   * [FOURCC.org](http://www.fourcc.org/) - your source for video codec and pixel format information.
