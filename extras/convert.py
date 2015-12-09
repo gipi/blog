@@ -42,11 +42,12 @@ if __name__ == '__main__':
     db.generate_mapping(create_tables=False)
     with orm.db_session:
         for post in orm.select(post for post in Blog):
-            print "writing '%s'" % post.title
+            # for each instance, create a post if a file with the same name doesn't exist
             try:
-                #print 'content:', post.content
                 filepath = build_filepath(post, containing_dir='_posts' if post.status == 'pubblicato' else '_drafts')
-                create_post(filepath, post.title, post.creation_date, post.content)
+                if not os.path.exists(filepath):
+                    print "writing '%s'" % post.title
+                    create_post(filepath, post.title, post.creation_date, post.content)
             except Exception as e:
                 print e
                 import traceback
