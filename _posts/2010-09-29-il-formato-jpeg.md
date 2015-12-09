@@ -118,7 +118,7 @@ valori nel punto corrispondente all'angolo alto a sinistra corrisponde alla
 frequenza più bassa (cioé la frequenza nulla). Le formule per questo passaggio
 sono
 $$
-S\_{u,v} = {1\over 4} C\_u C\_v \sum\_{x=0}\^7 \sum\_{y=0}\^7 S\_{xy}\cos{(2x + 1)u\pi\over16}\cos{(2y + 1)v\pi\over16}
+S_{u,v} = {1\over 4} C_u C_v \sum_{x=0}^7 \sum_{y=0}^7 S_{xy}\cos{(2x + 1)u\pi\over16}\cos{(2y + 1)v\pi\over16}
 $$
 
 ## Quantization
@@ -127,7 +127,7 @@ Per diminuire la quantità di informazione necessaria per immagazzinare i valori
 delle componenti, si definisce una matrice di quantizzazione la quale permette
 di definire il valore finale dell'entrata del blocco tramite
 $$
-Sq\_{ij} = \hbox{round} \left(S\_{ij}\over Q\_{ij}\right)
+Sq_{ij} = \hbox{round} \left(S_{ij}\over Q_{ij}\right)
 $$
 Questo passaggio è quello che in pratica determina la qualità dell'immagine (se
 la matrice è composta da elementi tutti uguali all'unità allora la qualità è
