@@ -19,7 +19,7 @@ output delle chiamate: se da un terminale si esegue
 si crea una socket bindato alla porta 8888 che reindirizza sempre in locale
 alla porta 8080, scrivendo però su file ``stdin.txt`` e ``stdout.txt``
 rispettivamente le richieste in entrata e quelle in uscita; sulla porta 8080
-mettiamo in ascolto ''ncat'' in modalità proxy
+mettiamo in ascolto ``ncat`` in modalità proxy
 
     $ ncat -l 8080 --proxy-type http -vvvv
 
