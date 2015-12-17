@@ -12,8 +12,9 @@ import codecs
 
 from pony import orm
 
-def build_filepath(post, containing_dir='_posts'):
-    slug = '%s-%s.md' % (post.creation_date.strftime('%Y-%m-%d'), slugify(post.title))
+def build_filepath(post, containing_dir='_posts', with_date=True):
+    title = slugify(post.title)
+    slug = '%s-%s.md' % (post.creation_date.strftime('%Y-%m-%d'), title) if with_date else '%s.md' % title
     return os.path.join(containing_dir, slug)
 
 def create_post(filepath, title, date, content, slug=None, containing_dir='_posts'):
@@ -44,7 +45,8 @@ if __name__ == '__main__':
         for post in orm.select(post for post in Blog):
             # for each instance, create a post if a file with the same name doesn't exist
             try:
-                filepath = build_filepath(post, containing_dir='_posts' if post.status == 'pubblicato' else '_drafts')
+                is_published = post.status == 'pubblicato'
+                filepath = build_filepath(post, containing_dir='_posts' if  is_published else '_drafts', with_date=is_published)
                 if not os.path.exists(filepath):
                     print "writing '%s'" % post.title
                     create_post(filepath, post.title, post.creation_date, post.content)
