@@ -20,7 +20,7 @@ def create_post(filepath, title, date, content, slug=None, containing_dir='_post
     with codecs.open(filepath, 'w+', encoding='utf-8') as f:
         f.write(u'''---
 layout: post
-title: '%(title)s'
+title: "%(title)s"
 comments: true
 ---
 %(content)s
