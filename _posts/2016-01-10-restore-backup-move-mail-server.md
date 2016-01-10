@@ -91,10 +91,14 @@ but since this want to be a test, without interrupting the normal mail server,
 we can use [SWAKS](https://www.debian-administration.org/article/633/Testing_SMTP_servers_with_SWAKS)
 and its option ``--server`` to direct the connections to the new server,
 otherwise it looks for the ``MX`` DNS's entry of the recipient (i.e. the email address
-indicated in the *to* field)
+indicated in the *to* field); in the following example I used as the
+domain  ``yourdomain.com``
 
 ```
-$ swaks --server ohr.lol --to gp@ktln2.org --from test@example.com
+$ swaks \
+    --server mail.yourdomain.com \
+    --to user@yourdomain.com \
+    --from test@example.com
 ```
 
 Meanwhile you can look at the ``syslog`` on the server: in my case
@@ -105,71 +109,25 @@ into the backup and this below is what the server told me
 Jan  3 12:30:13 miao postfix/smtpd[7337]: error: open database /etc/aliases.db: No such file or directory
 ```
 
-Obviously, we care have the ``TLS`` available, so we can test that also
+Obviously, we care to have the ``TLS`` available, so we can test that also
+with autentication
 
 ```
-$ swaks --server ohr.lol -tls --tls-verify --from gp@ktln2.org --to gianluca.pacchiella@ktln2.org
-=== Trying ohr.lol:25...
-=== Connected to ohr.lol.
-<-  220 miciomiciobaubau.com ESMTP Postfix
- -> EHLO AUAUA
-<-  250-miciomiciobaubau.com
-<-  250-PIPELINING
-<-  250-SIZE 10240000
-<-  250-VRFY
-<-  250-ETRN
-<-  250-STARTTLS
-<-  250-AUTH PLAIN
-<-  250-ENHANCEDSTATUSCODES
-<-  250-8BITMIME
-<-  250 DSN
- -> STARTTLS
-<-  220 2.0.0 Ready to start TLS
-=== TLS started with cipher TLSv1.2:ECDHE-RSA-AES256-GCM-SHA384:256
-=== TLS no local certificate set
-=== TLS peer DN="/C=IT/CN=mail.ktln2.org/emailAddress=info@ktln2.org"
- ~> EHLO AUAUA
-<~  250-miciomiciobaubau.com
-<~  250-PIPELINING
-<~  250-SIZE 10240000
-<~  250-VRFY
-<~  250-ETRN
-<~  250-AUTH PLAIN
-<~  250-ENHANCEDSTATUSCODES
-<~  250-8BITMIME
-<~  250 DSN
- ~> MAIL FROM:<gp@ktln2.org>
-<~  250 2.1.0 Ok
- ~> RCPT TO:<gianluca.pacchiella@ktln2.org>
-<~  250 2.1.5 Ok
- ~> DATA
-<~  354 End data with <CR><LF>.<CR><LF>
- ~> Date: Sun, 03 Jan 2016 19:34:55 +0100
- ~> To: gianluca.pacchiella@ktln2.org
- ~> From: gp@ktln2.org
- ~> Subject: test Sun, 03 Jan 2016 19:34:55 +0100
- ~> X-Mailer: swaks v20130209.0 jetmore.org/john/code/swaks/
- ~> 
- ~> This is a test mailing
- ~> 
- ~> .
-<~  250 2.0.0 Ok: queued as A91687FA3E
- ~> QUIT
-<~  221 2.0.0 Bye
-=== Connection closed with remote host.
+$ swaks \
+    --server mail.yourdomain.com \
+    -tls --tls-verify --tls-protocol tlsv1_2 \
+    --auth plain \
+    --from user@yourdomain.com \
+    --to uptoyou@example.com
 ```
 
-```
-$ swaks --server ohr.lol -tls --tls-verify --tls-protocol tlsv1_2 --auth plain --from gp@ktln2.org --to uptoyou@example.com
-```
-
-check for [SMTP security](https://blog.filippo.io/the-sad-state-of-smtp-encryption/)
-also with [starttls](https://starttls.info).
-check for [blacklist](https://mxtoolbox.com/blacklists.aspx)
+At this point you can also use some online tool to check you mail
+server, like [starttls](https://starttls.info). It's also possible to
+check for [blacklist](https://mxtoolbox.com/blacklists.aspx).
 
 ## Conclusion
 
-If the connectivity tests was great, you are ready to switch your mail server:
+If all it's ok, you are ready to switch your mail server:
 my procedure was to add a [MX record](https://en.wikipedia.org/wiki/MX_record) with lower precedence
 to the one pre-existing, but lowering the [time-to-live](https://en.wikipedia.org/wiki/Time_to_live)
 of both the entries, so to have less time to wait in order to adjust the values. Once
