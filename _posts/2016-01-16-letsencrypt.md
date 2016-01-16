@@ -4,7 +4,7 @@ title: "Let's encrypt"
 comments: true
 ---
 
-[Let's encrypt](https://letsencrypt.org) is the new thing in town: allow a seamless procedure
+[Let's encrypt](https://letsencrypt.org) is the new thing in town: allows a seamless procedure
 for obtaining ``TLS`` certificates; and it's free ;)
 
 Roughly speaking, it's a certification authority, capable of generating certificates accepted from any major browser;
@@ -15,7 +15,7 @@ The protocol used by the client is [ACME](https://letsencrypt.github.io/acme-spe
 (stands for *Automatic Certificate Management Environment*);
 
 First of all, install the client (in the future will exist a maintained package)
-in the server (all the operations must be done as root)
+in the server (all the operations must be done as root, I know, sucks)
 
     # git clone https://github.com/letsencrypt/letsencrypt && cd letsencrypt
     # ./letsencrypt-auto
@@ -67,18 +67,20 @@ and execute the last step
 
     # ./letsencrypt-auto  \
         --webroot-path /etc/letsencrypt/webrootauth \
-        --domain ohr.lol  \
+        --domain yourdomain.com  \
         -a webroot certonly
     [... wait a little bit ...]
     IMPORTANT NOTES:
      - Congratulations! Your certificate and chain have been saved at
-       /etc/letsencrypt/live/ohr.lol/fullchain.pem. Your cert will expire
+       /etc/letsencrypt/live/yourdomain.com/fullchain.pem. Your cert will expire
        on 2016-03-03. To obtain a new version of the certificate in the
        future, simply run Let's Encrypt again.
      - If like Let's Encrypt, please consider supporting our work by:
 
        Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
        Donating to EFF:                    https://eff.org/donate-le
+
+Remember that the certificate generated will expire after just three months.
 
 ## Security
 
