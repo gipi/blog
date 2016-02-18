@@ -76,6 +76,69 @@ use concatenation of the filter() calls then you obtain
 
 ## Permissions migration
 
+```python
+ __future__ import unicode_literals
+
+import logging
+
+from django.core.management.sql import emit_post_migrate_signal
+from django.db import migrations, models
+
+
+logger = logging.getLogger(__name__)
+
+GROUP_NAME = 'whatever'
+
+PERMISSIONS = [
+     [
+        "change_user",
+        "auth",
+        "user"
+      ],
+      [
+        "add_whatever",
+        "whatever",
+        "whatever"
+      ],
+    ]
+
+
+# https://stackoverflow.com/questions/25024795/django-1-7-where-to-put-the-code-to-add-groups-programatically
+def add_group_permissions(apps, schema_editor):
+    # Workarounds a Django bug: https://code.djangoproject.com/ticket/23422
+    db_alias = schema_editor.connection.alias
+    # NOTE: this line below works only for Django 1.8+
+    emit_post_migrate_signal(2, False, 'default', db_alias)
+
+    Group = apps.get_model('auth', 'Group')
+    Permission = apps.get_model('auth', 'Permission')
+    ContentType = apps.get_model('contenttypes', 'ContentType')
+
+    group, group_created = Group.objects.get_or_create(name=GROUP_NAME)
+
+    logger.info('%s Group group_created' % GROUP_NAME)
+
+    if group_created:
+        for codename, app, model in PERMISSIONS:
+            content_type = ContentType.objects.get(app_label=app, model=model)
+            perm, perm_created = Permission.objects.get_or_create(content_type=content_type, codename=codename)
+
+            if perm_created:
+                logger.info('adding %s to %s' % (perm, group))
+                group.permissions.add(perm)
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('auth', '0001_initial'),
+    ]
+
+    operations = [
+        migrations.RunPython(add_group_permissions),
+    ]
+```
+
 ## Proxy permissions
 
  - [Ticket 11154](https://code.djangoproject.com/ticket/11154)
