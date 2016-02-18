@@ -84,4 +84,30 @@ in the way is configured for; in order to not lose the original traceback the ``
 line has a particular form that you can deduce from the [raise](https://docs.python.org/2.7/reference/simple_stmts.html#raise)
 and the [sys.exec_info()](https://docs.python.org/2.7/library/sys.html#sys.exc_info>) references.
 
+## Testing
+
+Obviously the coding is nothin without testing: we need to use the ``mock`` library
+to fake an exception and check that the final result is what we expect
+
+```python
+def test_gracefull_failing(self):
+    obj = ObjectFactory()
+    with mock.patch('my_app.models_tools._manage_object') as mocked_manage_object:
+        class KebabException(ValueError):
+            pass
+
+        mocked_manage_object.side_effect = KebabException('Kebab is not in the house')
+
+        try:
+            manage_object(obj.pk)
+        except KebabException as e:
+            logger.info('test with ' + str(e))
+
+    # refresh the instance
+    obj = Object.objects.get(pk=obj.pk)
+
+    # check something here
+
+```
+
 For now is all, bye.
