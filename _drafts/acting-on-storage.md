@@ -43,3 +43,5 @@ class MyAwesomeS3Tests(TestCase, S3MotoMixin):
 
         # do your things
 ```
+
+ - [Fun with django storage backends](https://tartarus.org/james/diary/2013/07/18/fun-with-django-storage-backends)
