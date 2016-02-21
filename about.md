@@ -8,6 +8,10 @@ Hi, I'm Gianluca Pacchiella and I live in Italy.
 I love to learn, after years studing Physics and Mathematics I code for food
 but I want always to hack all the things.
 
+## Social
+
+ - [Asciinema](https://asciinema.org/~gp) recorderd sessions at the terminal
+
 ## CTF&Challenges
 
 Below some sites where I have fun solving challenges about cryptography, security,
