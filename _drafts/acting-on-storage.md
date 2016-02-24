@@ -14,6 +14,13 @@ def act_on_media_file(instance):
     image = Image.open(f)
 ```
 
+```python
+        with open(os.path.join(settings.SITE_ROOT, 'temp', 'test_image.JPG')) as image_file:
+            v = View()
+            v.image.save('miao/bau/test.jpg', File(image_file))
+            v.save()
+```
+
 ## Testing
 
 ```python
@@ -44,4 +51,5 @@ class MyAwesomeS3Tests(TestCase, S3MotoMixin):
         # do your things
 ```
 
+ - [Django read the docs File Object](https://django.readthedocs.org/en/latest/topics/files.html#the-file-object)
  - [Fun with django storage backends](https://tartarus.org/james/diary/2013/07/18/fun-with-django-storage-backends)
