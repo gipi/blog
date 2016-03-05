@@ -4,6 +4,12 @@ comments: true
 title: "Add unitests to a Django application"
 ---
 
+Suppose you have written a Django app and obviously you want to [test
+it]({% post_url 2012-12-19-the-amazing-world-of-python-testing %}).
+
+This is an example, inspired from other projects like [dj-stripe](https://github.com/pydanny/dj-stripe/blob/master/runtests.py)
+or [cookiecutter-djangopackage](https://github.com/pydanny/cookiecutter-djangopackage/blob/master/%7B%7Bcookiecutter.repo_name%7D%7D/runtests.py)
+
 ```python
 from __future__ import absolute_import
 
@@ -12,7 +18,7 @@ import sys
 from django.conf import settings
 from django.core import management
 
-APP_NAME = 'longerusernameandemail'
+APP_NAME = 'my_django_app'
 
 
 def main():

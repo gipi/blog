@@ -8,6 +8,10 @@ Future static blogging: https://gipi.ktln2.org/
 
 ## Authoring guide
 
+### Link to another post
+
+    {% post_url file-name-wo-md-extension %}
+
 ### Mathematics
 
 Wrap your ``TeX`` inside a ``<div>`` so to avoid the interpretation
