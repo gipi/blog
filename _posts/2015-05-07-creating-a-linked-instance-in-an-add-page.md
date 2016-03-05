@@ -70,7 +70,7 @@ the user is done in the ``save_model()`` method of the ``ProviderAdmin`` class
         super(ProviderAdmin, self).save_model(request, obj, form, change)
 ```
 
-In order to complete the implementation we need some testing (I like [testing]({{site.baseurl}}/2012/12/19/the-amazing-world-of-python-testing/)):
+In order to complete the implementation we need some testing (I like [testing]({% post_url 2012-12-19-the-amazing-world-of-python-testing %})):
 in the code just below we have two tests, in the first we are checking that
 the page doesn't give an error when accessed (i.e. by a simple ``GET``
 request with a logged user) and the needed fields ``username`` and ``password``
