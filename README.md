@@ -20,3 +20,5 @@ of characters like ``_`` in Markdown and their escaping.
 ## Links
 
  - https://adereth.github.io/blog/2013/11/29/colorful-equations/
+ - http://www.minddust.com/post/tags-and-categories-on-github-pages/
+ - [Liquid documentation](https://github.com/Shopify/liquid/wiki/Liquid-for-Designers)

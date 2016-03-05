@@ -2,6 +2,7 @@
 layout: post
 title: 'the amazing world of python: testing'
 comments: true
+tags: [python, unit tests]
 ---
 Python is my primary language of choice when I want to program something (I'm also a fan of C but this is a sort of foolness of mine).
 Between the things that make me choose python there is the way it manages to make easy to maintain our code, in this case **testing** it.

@@ -2,6 +2,7 @@
 layout: post
 comments: true
 title: "Add unitests to a Django application"
+tags: [python,django,unit tests]
 ---
 
 Suppose you have written a Django app and obviously you want to [test
