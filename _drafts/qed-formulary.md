@@ -2,6 +2,7 @@
 layout: post
 comments: true
 title: "QED formulary"
+tags: [physics,mathematics]
 ---
 
 This post is personal: I found some notes taken more than 10 years ago

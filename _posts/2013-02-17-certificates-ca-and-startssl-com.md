@@ -2,6 +2,7 @@
 layout: post
 title: 'certificates, CA and startssl.com'
 comments: true
+tags: [crypto]
 ---
 Today knowing the technology on which our sites are built is serious business; a
 thing that you as informed developer must know is the

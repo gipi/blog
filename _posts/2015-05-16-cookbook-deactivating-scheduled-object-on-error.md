@@ -2,6 +2,7 @@
 layout: post
 title: 'Cookbook: deactivating scheduled object on error'
 comments: true
+tags: [django, python, unit tests, celery]
 ---
 Suppose we have an object that has a scheduled action on it (do you know celery?)
 and suppose that we are far-sighted people and we know that shit happens and we 

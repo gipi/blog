@@ -2,6 +2,7 @@
 layout: post
 title: 'Creating a linked instance in an add page'
 comments: true
+tags: [django, python]
 ---
 Suppose we have a model named ``Provider`` having a foreign key to an instance of
 ``User`` needed in order to allow a human to login and do stuff in the backoffice.

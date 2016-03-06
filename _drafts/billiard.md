@@ -2,6 +2,7 @@
 layout: post
 comments: true
 title: "Physics of billiard pool"
+tags: [physics,]
 ---
 <style>
 

@@ -2,6 +2,7 @@
 layout: post
 comments: true
 title: "Manage processes in a web application"
+tags: [sysadmin, deploy, webapp]
 ---
 Suppose we have the following architecture for our web application:
 a standard python web application (can be anything, Django, Flask or a

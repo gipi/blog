@@ -2,6 +2,7 @@
 layout: post
 comments: true
 title: "Restore backup and move mail server"
+tags: [sysadmin, postfix,backup]
 ---
 
 We all know that backup are essential, but your backup procedure
