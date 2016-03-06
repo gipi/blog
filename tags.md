@@ -45,7 +45,7 @@ The purpose of this snippet is to list all your posts posted with a certain tag.
 <h2 id="{{ tag | slugify }}">{{ tag }}</h2>
     {% for post in site.posts %}
         {% if post.tags contains tag %}
-* [{{ post.title }}]({{ site.baseurl }}{{ post.url }}) | {{ post.date | date_to_string }}
+ * [{{ post.title }}]({{ site.baseurl }}{{ post.url }}) / {{ post.date | date_to_string }}
 {% comment %}
             {% for tag in post.tags %}
 <a class="tag" href="#{{ tag | slugify }}">{{ tag }}</a>

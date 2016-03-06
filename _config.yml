@@ -1,9 +1,11 @@
 # Dependencies
 highligther:         pygments
 
-markdown: redcarpet
-redcarpet:
-  extensions: ["no_intra_emphasis", "fenced_code_blocks", "autolink", "tables", "strikethrough", "with_toc_data"]
+markdown: kramdown
+kramdown:
+  input: GFM
+  auto_ids: true
+  syntax_highlighter: rouge
 
 # Permalinks
 permalink:        pretty
