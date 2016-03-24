@@ -22,7 +22,7 @@ def act_on_media_file(instance):
 ```
 
 Remember that to use the correct storage with the ``static`` template tag you have
-to do a ``{% load staticfiles %}`` as indicated by the [documentation](https://docs.djangoproject.com/en/1.8/ref/contrib/staticfiles/#static).
+to do a ``{{% load staticfiles %}}`` as indicated by the [documentation](https://docs.djangoproject.com/en/1.8/ref/contrib/staticfiles/#static).
 
 ## Testing
 
