@@ -88,9 +88,16 @@ and the [sys.exec_info()](https://docs.python.org/2.7/library/sys.html#sys.exc_i
 ## Testing
 
 Obviously the coding is nothin without testing: we need to use the ``mock`` library
-to fake an exception and check that the final result is what we expect
+to fake an exception and check that the final result is what we expect (you have to
+set some django's settings in a particular way to make this works like in the
+``override_settings`` just below)
 
 ```python
+@override_settings(
+    CELERY_ALWAYS_EAGER=True,
+    CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
+    BROKER_BACKEND='memory', # avoid error for missing redis
+)
 def test_gracefull_failing(self):
     obj = ObjectFactory()
     with mock.patch('my_app.models_tools._manage_object') as mocked_manage_object:
