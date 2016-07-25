@@ -1,0 +1,37 @@
+
+server {
+       listen         80;
+       server_name    {{ site_domain }};
+       include snippets/letsencryptauth.conf;
+       # https://gist.github.com/renchap/c093702f06df69ba5cac
+       location / {
+           return       301 https://$server_name$request_uri;
+       }
+}
+
+server {
+        listen 443 ssl;
+        server_name {{ site_domain }};
+
+        access_log /var/log/nginx/{{ site_domain }}.access.log;
+        error_log /var/log/nginx/{{ site_domain }}.error.log;
+
+        # this below are certificates to be substituted
+        {% if snakeoil %}
+        #ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
+        #ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+        {% else %}
+        ssl_certificate /etc/letsencrypt/live/{{ site_domain }}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/{{ site_domain }}/privkey.pem;
+        {% endif %}
+
+        # allow for 2M upload
+        client_max_body_size 2M;
+
+        location / {
+            # TODO: add header
+            # TODO: improve ciphers (use <https://www.ssllabs.com> for testing)
+            alias {{ site_web_root }}/app/;
+        }
+}
+

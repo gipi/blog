@@ -1,0 +1,10 @@
+---
+- hosts: all
+  roles:
+    - { role: common, tags: common }
+    - { role: webapp, tags: webapp }
+    - { role: nginx, tags: nginx }
+
+
+
+
