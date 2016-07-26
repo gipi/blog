@@ -1,4 +1,5 @@
 import hashlib
+import tempfile
 import shlex
 import tarfile
 import subprocess
@@ -54,8 +55,8 @@ def get_release_filename():
 def get_release_filepath():
     return os.path.join(PROJECT_ROOT_DIR, RELEASES_RELATIVE_PATH_DIR, get_release_filename())
 
-def get_generated_webroot():
-    return os.path.join(PROJECT_ROOT_DIR, '_site')
+def get_generated_webroot(base_dir):
+    return os.path.join(base_dir, '_site')
 
 @task
 def dump_db_snapshot(db_name, user):
@@ -79,20 +80,17 @@ def load_db_snapshot(db_name, username):
 @task
 def create_release_archive(head='HEAD'):
     with lcd(PROJECT_ROOT_DIR):
+        tempdir = tempfile.mkdtemp()
+        local('git --work-tree=%s checkout -f %s' % (
+            tempdir,
+            head,
+        ))
+        local('cd %s && jekyll build' % tempdir)
         local('mkdir -p %s' % RELEASES_RELATIVE_PATH_DIR)
         local('tar czf %s -C %s .' % (
             get_release_filepath(),
-            get_generated_webroot(),
+            get_generated_webroot(tempdir),
         ))
-
-def sync_virtualenv(virtualenv_path, requirements_path):
-    if not files.exists(virtualenv_path):
-        erun('virtualenv --no-site-packages %s' % virtualenv_path)
-
-    erun('source %s/bin/activate && pip install -r %s' % (
-        virtualenv_path,
-        requirements_path,
-    ))
 
 # https://stackoverflow.com/questions/3431825/generating-a-md5-checksum-of-a-file
 def hashfile(afile, hasher, blocksize=65536):
