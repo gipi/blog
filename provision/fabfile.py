@@ -91,6 +91,7 @@ def create_release_archive(head='HEAD'):
             get_release_filepath(),
             get_generated_webroot(tempdir),
         ))
+        local('rm -fr %s && echo removed temporary directory' % tempdir)
 
 # https://stackoverflow.com/questions/3431825/generating-a-md5-checksum-of-a-file
 def hashfile(afile, hasher, blocksize=65536):
