@@ -8,6 +8,12 @@ Future static blogging: https://gipi.ktln2.org/
 
 ## Authoring guide
 
+### Images
+
+```
+![]({{ site.baseurl }}/public/images/certificates/certificates-wizard.png)
+```
+
 ### Link to another post
 
     {% post_url file-name-wo-md-extension %}
