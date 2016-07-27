@@ -6,6 +6,7 @@ kramdown:
   input: GFM
   auto_ids: true
   syntax_highlighter: rouge
+  hard_wrap: false # https://stackoverflow.com/questions/25418399/jekyll-converting-every-newline-as-line-break
 
 # Permalinks
 permalink:        pretty
