@@ -36,8 +36,11 @@ server {
         client_max_body_size 2M;
 
         location / {
-            # TODO: add header
-            # TODO: improve ciphers (use <https://www.ssllabs.com> for testing)
+            # https://gist.github.com/plentz/6737338
+            add_header X-Frame-Options SAMEORIGIN;
+            add_header X-Content-Type-Options nosniff;
+            add_header X-XSS-Protection "1; mode=block";
+
             alias {{ site_web_root }}/app/;
         }
 }
