@@ -43,6 +43,11 @@ correct pinout naming and [here](http://www.xilinx.com/support/documentation/use
 
 ![Mojo V3 pinout]({{ site.baseurl }}/public/images/mojo-pinout.png)
 
+The pins used in a design must be indicated in a file with extension ``ucf`` (stands for **user constraints file**) that
+pratically indicate to the design which signals are exposed and where.
+
+Like any other documentation is a big [pdf](http://www.xilinx.com/itp/xilinx10/books/docs/cgd/cgd.pdf).
+
 ## Development environment
 
 The bad side of writing code for this technology is that the toolsets are pratically only proprietary, with all the
