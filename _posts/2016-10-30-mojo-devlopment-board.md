@@ -2,6 +2,7 @@
 layout: post
 comments: true
 title: "Mojo FPGA development board"
+tags: [electronics, FPGA, Mojo]
 ---
 
 I have a new shiny toy, a [Mojo V3](https://embeddedmicro.com/mojo-v3.html) development board: it's primarly intended as **FPGA**
