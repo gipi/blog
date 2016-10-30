@@ -79,6 +79,7 @@ def load_db_snapshot(db_name, username):
 
 @task
 def create_release_archive(head='HEAD'):
+    # TODO: add VERSION file
     with lcd(PROJECT_ROOT_DIR):
         tempdir = tempfile.mkdtemp()
         local('git --work-tree=%s checkout -f %s' % (
