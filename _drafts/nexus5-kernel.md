@@ -143,6 +143,17 @@ Date:   Thu Jan 17 14:25:55 2013 -0800
 
 [Someone tried](https://lwn.net/Articles/560018/) to introduce this in the regular kernel.
 
+## UART
+
+The ``UART`` is accessible from the audio jack: the jack to use is the one having 4 poles (starting from the tip):
+
+ - left (``TX``)
+ - right (``RX``)
+ - ``GND``
+ - ``MIC``
+
+The last one is the signal that allows to activate the serial console with a voltage level of 3.3 volts
+
 ## Links
 
  - [Building and booting Nexus 5 kernel](http://marcin.jabrzyk.eu/posts/2014/05/building-and-booting-nexus-5-kernel)
