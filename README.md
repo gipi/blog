@@ -1,4 +1,4 @@
-Future static blogging: https://gipi.ktln2.org/
+Future static blogging: https://ktln2.org/
 
 ## Testing
 
