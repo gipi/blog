@@ -9,6 +9,8 @@ This is a standard thing to do with an **ATMega328p**, the core of
 the Arduino development board: burn a bootloader into it and then
 use a ``UART`` over ``USB`` connection to flash code into it.
 
+![]({{ site.baseurl }}/public/images/atmega328p.png)
+
 There a lot of posts about this procedure, but are scattered
 all over the internet, without precise schematics and
 the _low level_ stuffs.
@@ -25,38 +27,75 @@ little explanation of what's going on.
 
 For more informations read the [datasheet](http://www.atmel.com/images/doc8161.pdf).
 
-First of all we are using an ``AVR`` chip that has an **Harvard architecture**
-i.e. the memory addressies for ``RAM`` and executable code are separated: in
+First of all this chip is the family called **ATMega**; there are a lot
+of chips in this family, with different features (Wikipedia has a [list](https://en.wikipedia.org/wiki/Atmel_AVR#Basic_families) of these
+families).
+
+All of them are ``AVR`` chips, implementing an **Harvard architecture**
+i.e. the memory addresses for ``RAM`` and executable code are separated: in
 particular the flash (where the code you write will live after the uploading),
 technically named **program memory**, it's divided in two sections
 
  - Boot loader section located in the upper part of the program memory
  - Application program section located at the start of the program memory
 
-the start of the bootloader part is not fixed but can be configured via the fuses.
+The important fact is that the start of the bootloader part is not fixed but can be configured.
+
+The ATMega328p is pretty famous because is the microcontroller used
+with the [Arduino](https://www.arduino.cc/en/Main/ArduinoBoardUno): it has
+28 pins with GPIO pins and a builtin ADC.
+
+I want to replicate with a breadbord the development workflow of an Arduino:
+flash a new program into the Application program section after connecting via
+a serial connection to the bootloader.
+
+A thing to note here is that the bootloader is not always running
+(there is not an OS into the microcontroller, the system is *real time*), so in order
+to access the bootloader you have to reset the board and this can be achieved
+using the ``DTR`` pin of the ``UART`` interface.
+
+Now I want to configure what I just described.
+
 
 ### Fuses
 
-**Fuses** are special registers that contains persistent configuration values;
-in my case I need to set the dimension for the boot section to be 256 words
-(with a boot address equal to ``0x3F00``) and I need the **reset vector** to
-point at the boot address (i.e. at reset the first code executed will be
-the bootloader one).
+**Fuses** are special one byte registers that contains persistent configuration values
+used to tell the microcontroller howto behave; in this case I need the following settings:
 
-In the table below we have the default fuses for a pristine chip and for
-an Arduino Uno:
+ - the dimension for the boot section to be 256 words (in the  ``AVR`` world ``words`` are 16 bit values); moreover the boot address will be ``0x3F00``
+ - when reset the microcontroller must start at the boot address (technically speaking we need to configure the **reset vector** address)
 
-|           |Low  | High | Extended |
-|-----------|------|------|----------|
-| ATMega328   | 0x62 | 0xd9 |  0xff    |
-| Arduino Uno |0xff | 0xde |  0x05    |
+There is a configuration regarding the clock that I don't need to change
+since is the value that is different from a standard Arduino setup: the table below
+show the default fuses for a pristine chip and for an Arduino Uno:
+
+|           |Low   | High | Extended | Clock frequency |
+|-----------|------|------|----------|-----------------|
+| ATMega328   | 0x62 | 0xd9 |  0xff    | 1MHz          |
+| Arduino Uno |0xff | 0xde |  0x05    |  16MHz      |
+
+Each fuse comprehends a set of single bit values as showed
+in the following table (more informations can be found in
+the section ``Memory Programming`` of the datasheet)
+
+| **Extended** | BODLEVEL2 | BODLEVEL1 | BODLEVEL0 | - | - | - | - |
+| **High** | RSTDISBL | DWEN | SPIEN | WDTON | EESAVE | BOOTSZ1 | BOOTSZ0 | BOOTRST |
+| **Low** | CKDIV8 | CKOUT | SUT1 | SUT0 | CKSEL3 | CKSEL2 | CKSEL1 | CKSEL0 |
+
+The most significant bits are the left ones.
 
 **Note:** fuses are weird, each bit is a boolean but programmed is assigned
 to 0 and unprogrammed to 1 and moreover some bits of extended fuses are undefined
-so some programmers fail to validate because return the wrong (but equivalent) value.
+so some programmers fail to validate because returns the wrong (but equivalent) value.
 **Extended fuse: FD is equivalent to 05 (only bottom 3 bits are significant, and 
 Avrdude complains if the top 
 bits are nonzero)**
+
+Once we are sure of the values we can use
+
+```
+$ avrdude  -c buspirate -p atmega328p -P /dev/ttyUSB0 -U hfuse:w:0xDE:m
+```
 
 By the way for a more direct calculation of the fuses you can use this [page](http://www.engbedded.com/fusecalc/).
 
@@ -67,7 +106,7 @@ This is a common bootloader that can be used with the Arduino IDE
 
 Before to compile we need to download the source code
 
-```text
+```
 $ git clone https://github.com/optiboot/optiboot && cd optiboot
 ```
 
@@ -91,10 +130,32 @@ atmega168_isp          atmega328_pro8_isp     atmega8_isp            diecimila_i
 ```
 
 Before to finally compile it I have two issues with respect to a standard system:
-I'm using the [bus pirate]() as ``ISP`` programmer and my chip has not an external
-crystal and this cause problem with the default baud rate.
+I'm using the [bus pirate]() as ``ISP`` programmer and my setup doesn't include an external
+crystal and this cause problem with the default ``UART`` baud rate: given a frequency not all
+the baud rates are possible because of sampling errors so if we launch the compilation
+without changing the default baud rate (115200) the process fails
 
-Luckily we can configure that using some variables
+```
+$ make atmega328 ISPTOOL=buspirate ISPPORT=/dev/ttyUSB0 AVR_FREQ=1000000L ISPSPEED=-b115200 
+avr-gcc (GCC) 4.9.2
+Copyright (C) 2014 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+BAUD RATE CHECK: Desired: 115200, Real: 125000, UBRRL = 0, Error=8.5%
+avr-gcc -g -Wall -Os -fno-split-wide-types -mrelax -mmcu=atmega328p -DF_CPU=1000000L  -DBAUD_RATE=115200 -DLED_START_FLASHES=3        -c -o optiboot.o optiboot.c
+optiboot.c:303:6: error: #error BAUD_RATE error greater than 5%
+     #error BAUD_RATE error greater than 5%
+      ^
+optiboot.c:314:2: error: #error Unachievable baud rate (too fast) BAUD_RATE
+ #error Unachievable baud rate (too fast) BAUD_RATE 
+  ^
+<incorporato>: set di istruzioni per l'obiettivo "optiboot.o" non riuscito
+make: *** [optiboot.o] Errore 1
+```
+
+Luckily we can configure that using ``BAUD_RATE`` (in this case I use the minimal value that
+I can come up with)
 
 ```
 $ make atmega328 ISPTOOL=buspirate ISPPORT=/dev/ttyUSB0 AVR_FREQ=1000000L BAUD_RATE=9600 ISPSPEED=-b115200
@@ -119,6 +180,9 @@ Two connectors are initialy needed: the ``ISP`` to flash
 the bootloader and the ``UART`` to communicate with the bootloader.
 The first can be removed once the bootloader is in place and works ok.
 
+Personally I created a [breakout](https://github.com/gipi/AVR-experiments/tree/master/stuffs/ATMegaProgrammer) that exposes the 6 ``ISP`` related pins
+and then flash using some [pogo pins](https://www.tindie.com/products/FemtoCow/pogo-pin-icsp-spi-programmer-adapter/).
+
 The thing important to note is the capacitor between ``DTR`` and ``RESET``,
 without it the chip won't be reset and won't enter the bootloader. I don't
 understand why: someone says that "[the level on this signal line changes when
@@ -129,15 +193,18 @@ a differentiator](http://forum.arduino.cc/index.php?topic=26877.0)".
 
 ## Programming
 
+Now it's time to try to flash some application using the bootloader:
 ``Optiboot`` declares that uses the [stk500v1](https://github.com/Optiboot/optiboot/wiki/HowOptibootWorks) protocol
-so it's possible to flash something using ``arduino`` as programmer type
+corresponding to the ``arduino`` programmer type (flag ``-c`` of ``avrdude``).
+
+First of all I'll try to comunicate with the board
 
 ```
 $ avrdude -c arduino -p m328p -P /dev/ttyUSB0 -b 9600
 ```
 
-A minimal snippet of code that toggle the logic level
-of pin ``PB5`` is the following (save it in a file named ``main.c``)
+Now we can try to write a minimal snippet of code that toggle the logic level
+of pin ``PB5`` (save it in a file named ``main.c``)
 
 ```c
 #include <avr/io.h>
@@ -167,7 +234,7 @@ set correctly and we haven't screw up the fuses.
 We can use the Arduino build system to save time (save the lines
 below in a ``Makefile``)
 
-```
+```Makefile
 BOARD_TAG    = uno
 F_CPU        = 1000000L
 MONITOR_PORT = /dev/ttyUSB0
