@@ -16,19 +16,19 @@ all over the internet, without precise schematics and
 the _low level_ stuffs.
 
 In particular I want to install a bootloader into a pristine
-chip without external crystal and with a prescaler of 8 (i.e.
-the chip is running at 1MHz). This last condition is problematic
+chip: its default configuration  is different with respect to a
+standard Arduino setup: this is without external crystal and with a prescaler of 8 (i.e.
+the chip is running at 1MHz). These conditions are problematic
 if you want your bootloader to work with the correct baud rate.
 
-This is intended as notes to use as quick reminder to myself with a
+What follow is intended as notes to use as quick reminder to myself with a
 little explanation of what's going on.
 
-## AVR
+## What's an ATMega?
 
-For more informations read the [datasheet](http://www.atmel.com/images/doc8161.pdf).
-
-First of all this chip is the family called **ATMega**; there are a lot
-of chips in this family, with different features (Wikipedia has a [list](https://en.wikipedia.org/wiki/Atmel_AVR#Basic_families) of these
+First of all the ATMega328p is a microcontroller of the family **ATMega** (O 'RLY); there are a lot
+of chips in this family, with different features but take into account that it's not the only
+family (Wikipedia has a [list](https://en.wikipedia.org/wiki/Atmel_AVR#Basic_families) of these
 families).
 
 All of them are ``AVR`` chips, implementing an **Harvard architecture**
@@ -43,7 +43,9 @@ The important fact is that the start of the bootloader part is not fixed but can
 
 The ATMega328p is pretty famous because is the microcontroller used
 with the [Arduino](https://www.arduino.cc/en/Main/ArduinoBoardUno): it has
-28 pins with GPIO pins and a builtin ADC.
+28 pins, 23 of which are GPIO and 6 of which are for a 10 bit ADC.
+
+For more informations read the [datasheet](http://www.atmel.com/images/doc8161.pdf).
 
 I want to replicate with a breadbord the development workflow of an Arduino:
 flash a new program into the Application program section after connecting via
@@ -51,11 +53,11 @@ a serial connection to the bootloader.
 
 A thing to note here is that the bootloader is not always running
 (there is not an OS into the microcontroller, the system is *real time*), so in order
-to access the bootloader you have to reset the board and this can be achieved
-using the ``DTR`` pin of the ``UART`` interface.
+to access the bootloader you have to reset the board and the bootloader must start
+after the reset.
 
-Now I want to configure what I just described.
-
+Let see how to configurate the microcontroller and connect the components
+on the breadboard.
 
 ### Fuses
 
@@ -78,7 +80,7 @@ Each fuse comprehends a set of single bit values as showed
 in the following table (more informations can be found in
 the section ``Memory Programming`` of the datasheet)
 
-| **Extended** | BODLEVEL2 | BODLEVEL1 | BODLEVEL0 | - | - | - | - |
+| **Extended** | - | - | - | - | - | BODLEVEL2 | BODLEVEL1 | BODLEVEL0 |
 | **High** | RSTDISBL | DWEN | SPIEN | WDTON | EESAVE | BOOTSZ1 | BOOTSZ0 | BOOTRST |
 | **Low** | CKDIV8 | CKOUT | SUT1 | SUT0 | CKSEL3 | CKSEL2 | CKSEL1 | CKSEL0 |
 
@@ -86,12 +88,16 @@ The most significant bits are the left ones.
 
 **Note:** fuses are weird, each bit is a boolean but programmed is assigned
 to 0 and unprogrammed to 1 and moreover some bits of extended fuses are undefined
-so some programmers fail to validate because returns the wrong (but equivalent) value.
-**Extended fuse: FD is equivalent to 05 (only bottom 3 bits are significant, and 
-Avrdude complains if the top 
-bits are nonzero)**
+so some programmers fail to validate because returns the wrong (but equivalent) value:
+for example for the extended fuse: ``0xFD`` is equivalent to ``0x05`` (only bottom 3 bits are significant, and 
+Avrdude complains if the top bits are nonzero).
 
-Once we are sure of the values we can use
+**It's important to be sure what values you are modifing since in some cases
+it's possible to brick a microcontroller.**
+
+In my case I need only to change the bootloader section size and
+the boot reset vector, a value of ``0xDE`` is fine (basically I'm using
+the Arduino setup for the high fuse):
 
 ```
 $ avrdude  -c buspirate -p atmega328p -P /dev/ttyUSB0 -U hfuse:w:0xDE:m
@@ -104,7 +110,8 @@ By the way for a more direct calculation of the fuses you can use this [page](ht
 This is a common bootloader that can be used with the Arduino IDE
 (the page for the standard Arduino bootloader is [here](https://www.arduino.cc/en/Hacking/Bootloader)).
 
-Before to compile we need to download the source code
+Normally you can download a precompiled version but in my situation
+I need to recompile it to fit my setup. Before to compile we need to download the source code
 
 ```
 $ git clone https://github.com/optiboot/optiboot && cd optiboot
@@ -130,13 +137,13 @@ atmega168_isp          atmega328_pro8_isp     atmega8_isp            diecimila_i
 ```
 
 Before to finally compile it I have two issues with respect to a standard system:
-I'm using the [bus pirate]() as ``ISP`` programmer and my setup doesn't include an external
+I'm using the [bus pirate](http://dangerousprototypes.com/docs/Bus_Pirate) as ``ISP`` programmer and my setup doesn't include an external
 crystal and this cause problem with the default ``UART`` baud rate: given a frequency not all
 the baud rates are possible because of sampling errors so if we launch the compilation
 without changing the default baud rate (115200) the process fails
 
 ```
-$ make atmega328 ISPTOOL=buspirate ISPPORT=/dev/ttyUSB0 AVR_FREQ=1000000L ISPSPEED=-b115200 
+$ make atmega328
 avr-gcc (GCC) 4.9.2
 Copyright (C) 2014 Free Software Foundation, Inc.
 This is free software; see the source for copying conditions.  There is NO
@@ -158,13 +165,25 @@ Luckily we can configure that using ``BAUD_RATE`` (in this case I use the minima
 I can come up with)
 
 ```
-$ make atmega328 ISPTOOL=buspirate ISPPORT=/dev/ttyUSB0 AVR_FREQ=1000000L BAUD_RATE=9600 ISPSPEED=-b115200
+$ make atmega328 BAUD_RATE=9600 AVR_FREQ=1000000L
 ```
 
-**Note:** I should use the ``atmega328_isp`` target but the weird behaviour for the
-extended fuses causes the ``ISP`` to fail when it tries to validate the changed fuses
+The ``AVR_FREQ`` value is **super important**: it tells what frequency the microcontroller
+runs at, if this is wrong all the timing-related functionalities are not gonna to work.
 
-To finally flash the bootloader we use ``avrdude``
+**Note:** I should have used the ``atmega328_isp`` target but the weird behaviour for the
+extended fuses causes the ``ISP`` to fail when it tries to validate the changed fuse since
+some bits are undefined and if the programmer writes this as 1 is possible that reads back
+zero when verifies it, making the process fail.
+
+In case it's possible to use directly the ``_isp`` target is possible to indicate
+some parameters for the programmer like
+
+```
+$ make atmega328_isp ISPTOOL=buspirate ISPPORT=/dev/ttyUSB0 AVR_FREQ=1000000L BAUD_RATE=9600 ISPSPEED=-b115200
+```
+
+By the way, I flashed it with ``avrdude`` directly in a separate step
 
 ```
 $ avrdude -c buspirate -p m328p -P /dev/ttyUSB0 -U flash:w:optiboot_atmega328.hex
@@ -183,7 +202,9 @@ The first can be removed once the bootloader is in place and works ok.
 Personally I created a [breakout](https://github.com/gipi/AVR-experiments/tree/master/stuffs/ATMegaProgrammer) that exposes the 6 ``ISP`` related pins
 and then flash using some [pogo pins](https://www.tindie.com/products/FemtoCow/pogo-pin-icsp-spi-programmer-adapter/).
 
-The thing important to note is the capacitor between ``DTR`` and ``RESET``,
+The thing important to note is the connection between ``DTR`` and ``RESET`` that
+allows the board to be reset when uploading the code and
+in particular the capacitor between them:
 without it the chip won't be reset and won't enter the bootloader. I don't
 understand why: someone says that "[the level on this signal line changes when
 the serial bridge is connected (enabled in software).
