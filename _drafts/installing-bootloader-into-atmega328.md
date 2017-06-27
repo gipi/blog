@@ -17,7 +17,7 @@ the _low level_ stuffs.
 
 In particular I want to install a bootloader into a pristine
 chip: its default configuration  is different with respect to a
-standard Arduino setup: this is without external crystal and with a prescaler of 8 (i.e.
+standard Arduino setup, it works without external crystal and with a prescaler of 8 (i.e.
 the chip is running at 1MHz). These conditions are problematic
 if you want your bootloader to work with the correct baud rate.
 
@@ -96,8 +96,11 @@ Avrdude complains if the top bits are nonzero).
 it's possible to brick a microcontroller.**
 
 In my case I need only to change the bootloader section size and
-the boot reset vector, a value of ``0xDE`` is fine (basically I'm using
-the Arduino setup for the high fuse):
+the boot reset vector so a value of ``0xDE`` for the high fuse will do
+the job. And that is the only fuse that is **necessary** in order to
+make the bootloader work.
+
+Now I can set the high fuse with the following command:
 
 ```
 $ avrdude  -c buspirate -p atmega328p -P /dev/ttyUSB0 -U hfuse:w:0xDE:m
@@ -136,14 +139,13 @@ atmega168              atmega328_pro8         atmega88p_isp          diecimila  
 atmega168_isp          atmega328_pro8_isp     atmega8_isp            diecimila_isp          lilypad_resonator_isp  pro16                  sanguino_isp           wildfirev3
 ```
 
-Before to finally compile it I have two issues with respect to a standard system:
-I'm using the [bus pirate](http://dangerousprototypes.com/docs/Bus_Pirate) as ``ISP`` programmer and my setup doesn't include an external
-crystal and this cause problem with the default ``UART`` baud rate: given a frequency not all
-the baud rates are possible because of sampling errors so if we launch the compilation
-without changing the default baud rate (115200) the process fails
+Before to finally compile it I have to indicate that my setup doesn't include an external
+crystal, i.e. the clock frequency is 1MHz; bad enough this cause a problem with the default ``UART`` baud rate: given a frequency not all
+the baud rates are possible because of sampling errors, so if we launch the compilation
+with the custom frequency but without changing the default baud rate (115200) the process fails
 
 ```
-$ make atmega328
+$ make atmega328 AVR_FREQ=1000000L
 avr-gcc (GCC) 4.9.2
 Copyright (C) 2014 Free Software Foundation, Inc.
 This is free software; see the source for copying conditions.  There is NO
@@ -161,26 +163,26 @@ optiboot.c:314:2: error: #error Unachievable baud rate (too fast) BAUD_RATE
 make: *** [optiboot.o] Errore 1
 ```
 
-Luckily we can configure that using ``BAUD_RATE`` (in this case I use the minimal value that
+The ``AVR_FREQ`` value is **super important**: it tells what frequency the microcontroller
+runs at, if this is wrong all the timing-related functionalities are not gonna to work.
+
+Luckily we can configure the correct value for the baud rate using ``BAUD_RATE`` (in this case I use the minimal value that
 I can come up with)
 
 ```
 $ make atmega328 BAUD_RATE=9600 AVR_FREQ=1000000L
 ```
 
-The ``AVR_FREQ`` value is **super important**: it tells what frequency the microcontroller
-runs at, if this is wrong all the timing-related functionalities are not gonna to work.
-
 **Note:** I should have used the ``atmega328_isp`` target but the weird behaviour for the
 extended fuses causes the ``ISP`` to fail when it tries to validate the changed fuse since
 some bits are undefined and if the programmer writes this as 1 is possible that reads back
 zero when verifies it, making the process fail.
 
-In case it's possible to use directly the ``_isp`` target is possible to indicate
-some parameters for the programmer like
+By the way, if you want to use the [bus pirate](http://dangerousprototypes.com/docs/Bus_Pirate) as ``ISP`` programmer 
+it's possible to call directly the ``_isp`` target like indicated below
 
 ```
-$ make atmega328_isp ISPTOOL=buspirate ISPPORT=/dev/ttyUSB0 AVR_FREQ=1000000L BAUD_RATE=9600 ISPSPEED=-b115200
+$ make atmega328_isp BAUD_RATE=9600 AVR_FREQ=1000000L ISPTOOL=buspirate ISPPORT=/dev/ttyUSB0 ISPSPEED=-b115200
 ```
 
 By the way, I flashed it with ``avrdude`` directly in a separate step
@@ -205,7 +207,7 @@ and then flash using some [pogo pins](https://www.tindie.com/products/FemtoCow/p
 The thing important to note is the connection between ``DTR`` and ``RESET`` that
 allows the board to be reset when uploading the code and
 in particular the capacitor between them:
-without it the chip won't be reset and won't enter the bootloader. I don't
+without it the chip won't reset and won't enter the bootloader. I don't
 understand why: someone says that "[the level on this signal line changes when
 the serial bridge is connected (enabled in software).
 However on the reset you only want a pulse. The capacitor acts as
@@ -224,7 +226,7 @@ First of all I'll try to comunicate with the board
 $ avrdude -c arduino -p m328p -P /dev/ttyUSB0 -b 9600
 ```
 
-Now we can try to write a minimal snippet of code that toggle the logic level
+If all is ok we can try to write a minimal snippet of code that toggle the logic level
 of pin ``PB5`` (save it in a file named ``main.c``)
 
 ```c
@@ -252,8 +254,9 @@ int main() {
 This is also very good to check that the clock is
 set correctly and we haven't screw up the fuses.
 
-We can use the Arduino build system to save time (save the lines
-below in a ``Makefile``)
+We can use the Arduino build system to save time : create a file named
+``Makefile`` and place in the same directory as ``main.c`` with the
+following content:
 
 ```Makefile
 BOARD_TAG    = uno
@@ -265,10 +268,11 @@ AVRDUDE_ARD_BAUDRATE   = 9600
 include /usr/share/arduino/Arduino.mk
 ```
 
-and compile and upload with
+Now it's possible to compile and upload with the simple command
 
 ```
 $ make -C source_dir/ upload
 ```
 
-**Note that the source file and the Makefile must be in the same directory.**
+**NB:** the Arduino build system is installable in a Debian-like system
+with the package ``arduino-mk``.
