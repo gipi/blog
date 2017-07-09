@@ -86,17 +86,19 @@ set _FLASHNAME $_CHIPNAME.flash
 flash bank $_FLASHNAME cfi 0xbe000000 0x1000000 2 2 $_TARGETNAME
 ```
 
-Now it's possible to start OpenOCD with the following command:
+Now it's possible to start OpenOCD from the command line:
 
 ```
 $ openocd -f vodafone.cfg
  ...
 ```
 
-To enter commands you need to connect via ``telnet`` to the port 4444
+However it's not possible to issue commands directly but
+you need to connect via ``telnet`` to the port 4444
 
 ```
 $ telnet localhost 4444
+Open On-Chip Debugger
 >
 ```
 
@@ -121,6 +123,15 @@ image and write to a specific address in memory, the address must be an address 
 where the flash lives. In my case I used the following line
 
 ```
+> flash write_image erase HG553/cfe.bin 0xbe000000 bin
+auto erase enabled
+No working memory available. Specify -work-area-phys to target.
+not enough working area available(requested 140)
+Programming at 0xbe000000, count 0x00040000 bytes remaining
+Programming at 0xbe000100, count 0x0003ff00 bytes remaining
+ ...
+Programming at 0xbe03ff00, count 0x00000100 bytes remaining
+wrote 262144 bytes from file HG553/cfe.bin in 34213.093750s (0.007 KiB/s)
 ```
 
 With the Bus Pirate this procedure elapsed for 5 hours! In a near future I'll probably
