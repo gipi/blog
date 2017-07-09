@@ -140,6 +140,11 @@ quicker.
 
 ## Epilogue
 
+At the end of the day I flashed the bootloader but in order to upgrade the
+OS I needed to start the router holding the reset button for several seconds:
+after that connecting a computer to it and going to ``http://192.168.1.1``
+a confortable interface is shown from where it's possible to upload a file.
+
 By the way, if you are interested in stuff that I tear down in my spare time, there
 is a [repo](https://github.com/gipi/teardown) for that. It's an infinite work in progress.
 
