@@ -11,16 +11,16 @@ A friend of mine gave to me a couple of years ago an old _Vodafone Station_, a f
 home router for ADSL used in Italy.
 
 He asked to me to install OpenWRT on it; He tried to follow the standard procedure
-but without success and knowning that I have some fancy gadget told me to
-use ``JTAG`` for do magic.
+but without success and knowning that I have some fancy electronics gadgets told me to
+use ``JTAG`` to do magic.
 
-``JTAG`` is an interface (but not a protocol) used by manufacturer in order to
+``JTAG`` is an interface (but not a protocol) used by manufacturers in order to
 physically test the well functioning of a board: it allows to access pins and
 devices attached to this interface. If you want to know more this [post](http://blog.senr.io/blog/jtag-explained) is
 enough.
 
-The standard tool to interact with it is [OpenOCD](), a software client that allows the user
-to read/write the cpu's register, memory and flash and also to single step the cpu.
+The standard open source tool to interact with it is [OpenOCD](), a software client that allows the user
+to read/write the cpu's register, memory and flash and also to single step the cpu (and much more).
 There are only two things to configure: the **adapter** and the **target**.
 
 The first is the device that you use to connect your computer to the ``JTAG`` interface,
@@ -32,7 +32,7 @@ and reading all over the fucking internet I discovered that ``MIPS`` SOCs implem
 a proprietary extension of ``JTAG``, called **EJTAG**.
 
 Without going to deep into explanation of the differences between the two interfaces,
-the thing you need to know is that in order to make the interface work you have to pull-up
+the thing you need to know is that in order to make it work you have to pull-up
 the ``TRST`` pin with a 300 Ohm resistor; **it's so fucking simple**.
 
 What puzzles me is that fact that is indicated as optional signal but without it doesn't
@@ -42,6 +42,7 @@ the bus pirate where is indicated this connection.
 ## Present
 
 After introduced the scenario, follow me in the procedure: first of all the pinout of the ``JTAG`` header is the following
+on the router
 
 ```
         GND  10  9  TDI (orange)
@@ -52,7 +53,7 @@ After introduced the scenario, follow me in the procedure: first of all the pino
 ```
 
 where the colors are of the [Bus Pirate cable](https://electronics-notes.readthedocs.io/en/latest/buspirate/#pinouts).
-The only difference is that I have put a a jumper between ``VCC`` and ``nTRST`` with a 300 Ohm resistor in it.
+The only difference is that I have put a jumper between ``VCC`` and ``nTRST`` with a 300 Ohm resistor in it.
 
 OpenOCD needs a configuration file, doesn't exist one for this router, but you can
 create easily one: below the file used by me
@@ -111,11 +112,18 @@ the first command is ``targets``, it shows what OpenOCD sees with the ``JTAG``
 Now I can try to solve my friend's problem: in order to install OpenWRT you have
 to somehow write it in the flash, usually is done by the bootloader but this version
 has it locked down; to overcome this limitation I need to overwrite the bootloader
-with an unlocked one with OpenOCD.
+with an unlocked one with OpenOCD. I could write directly the OpenWRT image but
+the operation is so slow that is preferable to write a 128Kb bootloader that an
+image of a couple of Mb.
 
-Exists a command called ``write_flash``
+The writing is done via a command called ``write_flash``, it takes an ``elf``, ``ihex`` or binary
+image and write to a specific address in memory, the address must be an address of memory
+where the flash lives. In my case I used the following line
 
-With the Bus Pirate this procedure elapsed for 5 hours! In a near future I probably
+```
+```
+
+With the Bus Pirate this procedure elapsed for 5 hours! In a near future I'll probably
 write a post about configuring a raspberry pi as a ``JTAG`` adapter, it's like ten times
 quicker.
 
