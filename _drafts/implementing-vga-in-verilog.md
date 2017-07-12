@@ -7,10 +7,14 @@ tags: [electronics, VGA, verilog, FPGA]
 
 **VGA** stands for **Video graphics array** and it's one of the most
 diffuse standard for video transmission; it roots its definition from
-the way old catodic tube worked: an electron beam travel horizontally
-for each line and at the end the beam passes to the next one.
+the way old catodic tubes work: the image is constructed one lines at times,
+starting from the top and each line is displayed from the left to the right
+(by the way this is the reason for the ``Y`` axes orientation in graphics
+programming); physically this is done
+by an electron beam guided from some electromagnets internal to the screen that hit the
+pixels (?).
 
-The signals of this interface are the following
+Following this scheme is easy enough imagine that the signals of this interface are the following
 
 | Signal | Logic level | Description |
 |--------|-------------|-------------|
@@ -20,17 +24,30 @@ The signals of this interface are the following
 | G | 0.7V | green color channel |
 | B | 0.7V | blue color channel |
 
-Below a time diagram stolen from this [page of the VGA](https://eewiki.net/pages/viewpage.action?pageId=15925278)
+To be a little more clear, below a time diagram stolen from this [page](https://eewiki.net/pages/viewpage.action?pageId=15925278)
+that implements a similar concept in ``VHDL``.
 
 ![stolen VGA timing diagram](https://eewiki.net/download/attachments/15925278/signal_timing_diagram.jpg?version=1&modificationDate=1368220404290&api=v2)
 
-There are a lot of possibilities for a VGA signal, we can change its
-resolution, its refresh rate but I choosen to stick with 640x480@60Hz
+The **front porch** and **back porch** are _safety timing_ around the **sync pulse**
+(I think) to allow the old circuitery to have time to move the beam. During these periods
+the beam is not in condition to generate images.
 
-This is the verilog code, it simply uses two counters ``CounterX`` and ``CounterY``
-in order to assign the logic level of ``vga_h_sync`` and ``vga_v_sync``; moreover
-when ``inDisplayArea`` is true, then the counters are also the coordinates
-of the pixel being draw:
+These signals can vary a lot based on resolution/refresh time of the
+screen, but in my case I choosen to stick with the pretty standard 640x480@60Hz.
+
+With this resolution I'll use the following value in **pixel clock** for the front, back porch
+and sync pulse
+
+| | front | sync | back |
+|-|-|-|
+| HSYNC |  16pc | 96pc | 48pc |
+| VSYNC |  10pc | 2pc | 33pc |
+
+In my case I use a 25MHz clock as a pixel clock.
+
+Now we can talk about its implementation with an hardware description language: I choose
+to use verilog because is the one that I know the most; the code is the following
 
 ```verilog
 module hvsync_generator(
@@ -81,12 +98,49 @@ assign vga_v_sync = ~vga_VS;
 endmodule
 ```
 
-This code suppose that ``clk`` is a clock with a frequency of 25MHz.
+it simply uses two counters ``CounterX`` and ``CounterY``
+in order to assign the logic level of ``vga_h_sync`` and ``vga_v_sync``; moreover
+when ``inDisplayArea`` is true, then the counters are also the coordinates
+of the pixel being draw; no pixel data is created in this module, here
+we are interested only to the sync signals generation.
+
+
+To show a simple pattern you can use the following module the uses the
+``x`` coordinate and each 32 pixels change color (it uses the three most
+significant bits to choose it):
+
+```verilog
+wire inDisplayArea;
+wire [9:0] CounterX;
+
+hvsync_generator hvsync(
+  .clk(clk_25),
+  .vga_h_sync(hsync_out),
+  .vga_v_sync(vsync_out),
+  .CounterX(CounterX),
+  //.CounterY(CounterY),
+  .inDisplayArea(inDisplayArea)
+);
+
+always @(posedge clk_25)
+begin
+  if (inDisplayArea)
+    pixel <= CounterX[9:6];
+  else // if it's not to display, go dark
+    pixel <= 3'b000;
+end
+```
 
 From the hardware side of the interface you have to know that the monitor
 has an impedance of 75 Ohm for each color channel, so to obtain a 0.7V from
 a 3V3 logic level you have to use a serie resistor of 270 Ohm.
 
-To note here that without using a DAC you can have only 8 colors.
-
 ![vga schematics]({{ site.baseurl }}/public/images/vga-schematics.png)
+
+To note here that without using a DAC you can have only 8 colors as
+you can see in this image of my monitor
+
+![](https://github.com/gipi/electronics-notes/raw/master/fpga/mojo/VGA/monitor-rainbow.png)
+
+If you are interested in the complete project, exists a [github repo](https://github.com/gipi/electronics-notes/tree/master/fpga/mojo/VGA)
+with also other projects.
