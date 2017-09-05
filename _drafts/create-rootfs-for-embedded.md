@@ -20,7 +20,7 @@ Debian's wiki
 > Its main limitation compared to debootstrap is that it uses apt and dpkg directly so can only work on a debian system - debootstrap depends on nothing but shell, wget, binutils and thus can run pretty-much anywhere.
 
 ```
-$ sudo apt-get install qemu multistrap qemu-user-static libguestfs-tools
+$ sudo apt-get install qemu multistrap qemu-user-static
 ```
 
 Then we can create a root fs, since I am corageous I choose to create one
@@ -62,16 +62,22 @@ $ sudo cp /usr/bin/qemu-ppc-static /tmp/rootfs-ppc/usr/bin/
 $ sudo LC_ALL=C LANGUAGE=C LANG=C chroot /tmp/rootfs-ppc/ dpkg --configure -a
 ```
 
+select ``NO`` when asked to use ``dash`` as default shell.
+
 ```
 $ sudo chroot /tmp/rootfs-ppc/ /bin/bash
 root@host:/# uname -a
 Linux antani 4.9.0-3-amd64 #1 SMP Debian 4.9.30-2 (2017-06-12) ppc GNU/Linux
 ```
 
-If you want to create a real root filesystem for QEMU you can use the
-following command
+If you want an internet connection remember to ``mount --bind`` the
+``resolv.conf`` file inside the ``chroot``.
+
+If you want to create a real root filesystem for QEMU (or whatever )you can use the
+following command after installing the ``libguestfs-tools`` package:
 
 ```
 $ sudo virt-make-fs --format=qcow2 --size=+200M /tmp/rootfs-ppc/ /tmp/rootfs.img
 ```
 (see [virt-make-fs](http://libguestfs.org/virt-make-fs.1.html) ``man`` page for more informations).
+
