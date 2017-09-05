@@ -20,6 +20,13 @@ Debian's wiki
 > Its main limitation compared to debootstrap is that it uses apt and dpkg directly so can only work on a debian system - debootstrap depends on nothing but shell, wget, binutils and thus can run pretty-much anywhere.
 
 ```
+$ sudo apt-get install qemu multistrap qemu-user-static libguestfs-tools
+```
+
+Then we can create a root fs, since I am corageous I choose to create one
+for the PowerPC architecture
+
+```
 [General]
 directory=target-rootfs
 cleanup=true
@@ -30,21 +37,19 @@ aptsources=Grip
 #tarballname=rootfs.tar
 #
 [Grip]
+noauth=true
 packages=apt kmod lsof
-#keyring=emdebian-archive-keyring
-#source=http://www.emdebian.org/grip
 source=http://emdebian.bytesatwork.ch/mirror/grip
-suite=wheezy-grip
+keyring=emdebian-archive-keyring
+suite=stable-grip
 
 [Net]
 #Basic packages to enable the networking
 packages=netbase net-tools udev iproute iputils-ping ifupdown isc-dhcp-client ssh
-source=http://emdebian.bytesatwork.ch/mirror/grip
 
 [Utils]
 #General purpose utilities
 packages=locales adduser nano less wget dialog usbutils
-source=http://emdebian.bytesatwork.ch/mirror/grip
 ```
 
 Then we can create a root fs, since I am corageous I choose to create one
@@ -62,3 +67,11 @@ $ sudo chroot /tmp/rootfs-ppc/ /bin/bash
 root@host:/# uname -a
 Linux antani 4.9.0-3-amd64 #1 SMP Debian 4.9.30-2 (2017-06-12) ppc GNU/Linux
 ```
+
+If you want to create a real root filesystem for QEMU you can use the
+following command
+
+```
+$ sudo virt-make-fs --format=qcow2 --size=+200M /tmp/rootfs-ppc/ /tmp/rootfs.img
+```
+(see [virt-make-fs](http://libguestfs.org/virt-make-fs.1.html) ``man`` page for more informations).
