@@ -1,12 +1,11 @@
-.highlighter-rouge {
+div.highlighter-rouge {
     unicode-bidi: embed;
     font-family: monospace;
     white-space: pre;
-}
-*[class*='language-'] {
-   display: block;
-   padding: 1rem;
+    padding: 1rem 0em;
+    display: block;
    background-color: #f9f9f9;
+    overflow: overlay;
 }
 
 .highlighter-rouge .hll { background-color: #ffffcc }
