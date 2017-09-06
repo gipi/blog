@@ -19,12 +19,21 @@ Debian's wiki
 > 
 > Its main limitation compared to debootstrap is that it uses apt and dpkg directly so can only work on a debian system - debootstrap depends on nothing but shell, wget, binutils and thus can run pretty-much anywhere.
 
+This is not a complete replacement for the images linked above since at the end
+of the procedure won't have a linux kernel to use to start ``QEMU`` but I think
+it's useful for someone with already a running instance.
+
+
+## Create the filesystem
+
+The dependencies on a Debian system are
+
 ```
 $ sudo apt-get install qemu multistrap qemu-user-static
 ```
 
-Then we can create a root fs, since I am corageous I choose to create one
-for the PowerPC architecture
+since I am corageous I choose to create one root filesystem for the PowerPC architecture:
+save the content below as ``multistrap.conf``
 
 ```
 [General]
@@ -52,17 +61,18 @@ packages=netbase net-tools udev iproute iputils-ping ifupdown isc-dhcp-client ss
 packages=locales adduser nano less wget dialog usbutils
 ```
 
-Then we can create a root fs, since I am corageous I choose to create one
-for the PowerPC architecture
+Then we can create a root fs using ``multistrap`` (the ``-a`` flag is what
+sets the architecture)
 
 ```
-$ sudo multistrap -a powerpc -f multistrap-embed.conf -d /tmp/rootfs-ppc
+$ sudo multistrap -a powerpc -f multistrap.conf -d /tmp/rootfs-ppc
 $ sudo mount -o bind /dev/ /tmp/rootfs-ppc/dev
 $ sudo cp /usr/bin/qemu-ppc-static /tmp/rootfs-ppc/usr/bin/
 $ sudo LC_ALL=C LANGUAGE=C LANG=C chroot /tmp/rootfs-ppc/ dpkg --configure -a
 ```
 
-select ``NO`` when asked to use ``dash`` as default shell.
+select ``NO`` when asked to use ``dash`` as default shell. Now we can enter
+inside the system and how can see now you have a PowerPC architecture
 
 ```
 $ sudo chroot /tmp/rootfs-ppc/ /bin/bash
@@ -73,7 +83,7 @@ Linux antani 4.9.0-3-amd64 #1 SMP Debian 4.9.30-2 (2017-06-12) ppc GNU/Linux
 If you want an internet connection remember to ``mount --bind`` the
 ``resolv.conf`` file inside the ``chroot``.
 
-If you want to create a real root filesystem for QEMU (or whatever )you can use the
+If you want to create a real root filesystem for QEMU (or whatever) you can use the
 following command after installing the ``libguestfs-tools`` package:
 
 ```
@@ -81,3 +91,5 @@ $ sudo virt-make-fs --format=qcow2 --size=+200M /tmp/rootfs-ppc/ /tmp/rootfs.img
 ```
 (see [virt-make-fs](http://libguestfs.org/virt-make-fs.1.html) ``man`` page for more informations).
 
+Probably in a following up post I will write about using projects like [OpenEmbedded](https://www.openembedded.org) or
+[buildroot](https://buildroot.org/) to have a complete and customizable running systems.
