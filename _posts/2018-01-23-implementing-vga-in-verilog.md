@@ -46,8 +46,12 @@ and sync pulse
 
 In my case I use a 25MHz clock as a pixel clock.
 
+## HDL
+
 Now we can talk about its implementation with an hardware description language: I choose
-to use verilog because is the one that I know the most; the code is the following
+to use verilog because is the one that I know the most; in the following code, using the pixel clock,
+I increment the counters connected to the horizontal and vertical signals; when they reach
+their maximum values they are reset.
 
 ```verilog
 module hvsync_generator(
@@ -58,78 +62,86 @@ module hvsync_generator(
     output reg [9:0] CounterX,
     output reg [8:0] CounterY
   );
-reg vga_HS, vga_VS;
+    reg vga_HS, vga_VS;
 
-wire CounterXmaxed = (CounterX == 800); // 16 + 48 + 96 + 640
-wire CounterYmaxed = (CounterY == 525); // 10 + 2 + 33 + 480
+    wire CounterXmaxed = (CounterX == 800); // 16 + 48 + 96 + 640
+    wire CounterYmaxed = (CounterY == 525); // 10 + 2 + 33 + 480
 
-  // Module get from <http://www.fpga4fun.com/PongGame.html>
-always @(posedge clk)
-if (CounterXmaxed)
-  CounterX <= 0;
-else
-  CounterX <= CounterX + 1;
-
-always @(posedge clk)
-begin
-  if (CounterXmaxed)
-  begin
-    if(CounterYmaxed)
-      CounterY <= 0;
+    always @(posedge clk)
+    if (CounterXmaxed)
+      CounterX <= 0;
     else
-      CounterY <= CounterY + 1;
-  end
-end
+      CounterX <= CounterX + 1;
 
-always @(posedge clk)
-begin
-  vga_HS <= (CounterX > (640 + 16) && (CounterX < (640 + 16 + 96)));   // active for 96 clocks
-  vga_VS <= (CounterY > (480 + 10) && (CounterY < (480 + 10 + 2)));   // active for 2 clocks
-end
+    always @(posedge clk)
+    begin
+      if (CounterXmaxed)
+      begin
+        if(CounterYmaxed)
+          CounterY <= 0;
+        else
+          CounterY <= CounterY + 1;
+      end
+    end
 
-always @(posedge clk)
-begin
-	inDisplayArea <= (CounterX < 640) && (CounterY < 480);
-end
+    always @(posedge clk)
+    begin
+      vga_HS <= (CounterX > (640 + 16) && (CounterX < (640 + 16 + 96)));   // active for 96 clocks
+      vga_VS <= (CounterY > (480 + 10) && (CounterY < (480 + 10 + 2)));   // active for 2 clocks
+    end
 
-assign vga_h_sync = ~vga_HS;
-assign vga_v_sync = ~vga_VS;
+    always @(posedge clk)
+    begin
+        inDisplayArea <= (CounterX < 640) && (CounterY < 480);
+    end
+
+    assign vga_h_sync = ~vga_HS;
+    assign vga_v_sync = ~vga_VS;
 
 endmodule
 ```
 
-it simply uses two counters ``CounterX`` and ``CounterY``
-in order to assign the logic level of ``vga_h_sync`` and ``vga_v_sync``; moreover
-when ``inDisplayArea`` is true, then the counters are also the coordinates
-of the pixel being draw; no pixel data is created in this module, here
-we are interested only to the sync signals generation.
+when the signal ``inDisplayArea`` is logic true then the screen
+is being drawn and the counters correspond to the pixel coordinate
+on the screen.
 
-
-To show a simple pattern you can use the following module the uses the
-``x`` coordinate and each 32 pixels change color (it uses the three most
-significant bits to choose it):
+No pixel data is created in this module, here
+we are interested only to the sync signals generation. To generate a ``RGB``
+signal we need to couple this module with one that derive the pixel color
+values from the counters: in the following module I use the last four
+most significant bits of the ``x`` coordinate so to obtain a change of colour every 32 pixels:
 
 ```verilog
-wire inDisplayArea;
-wire [9:0] CounterX;
-
-hvsync_generator hvsync(
-  .clk(clk_25),
-  .vga_h_sync(hsync_out),
-  .vga_v_sync(vsync_out),
-  .CounterX(CounterX),
-  //.CounterY(CounterY),
-  .inDisplayArea(inDisplayArea)
+module VGADemo(
+    input clk_25,
+    output reg [2:0] pixel,
+    output hsync_out,
+    output vsync_out
 );
+    wire inDisplayArea;
+    wire [9:0] CounterX;
 
-always @(posedge clk_25)
-begin
-  if (inDisplayArea)
-    pixel <= CounterX[9:6];
-  else // if it's not to display, go dark
-    pixel <= 3'b000;
-end
+    hvsync_generator hvsync(
+      .clk(clk_25),
+      .vga_h_sync(hsync_out),
+      .vga_v_sync(vsync_out),
+      .CounterX(CounterX),
+      //.CounterY(CounterY),
+      .inDisplayArea(inDisplayArea)
+    );
+
+    always @(posedge clk_25)
+    begin
+      if (inDisplayArea)
+        pixel <= CounterX[9:6];
+      else // if it's not to display, go dark
+        pixel <= 3'b000;
+    end
+
+endmodule
 ```
+
+## Hardware interface
 
 From the hardware side of the interface you have to know that the monitor
 has an impedance of 75 Ohm for each color channel, so to obtain a 0.7V from
