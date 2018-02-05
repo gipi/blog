@@ -16,7 +16,9 @@ layout: default
         {{ tags_html | split:"|" | join:", " }}
     </span>
     {% endif %}
+    {% if page.date %}
   <span class="post-date">{{ page.date | date_to_string }}</span>
+    {% endif %}
   {{ content }}
 </div>
 
@@ -27,7 +29,7 @@ layout: default
       <li>
         <h3>
           <a href="{{ post.url }}">
-            <small>{{ post.date | date_to_string }}</small>
+            {% if page.date %}<small>{{ post.date | date_to_string }}</small>{% endif %}
             {{ post.title }}
           </a>
         </h3>
