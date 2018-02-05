@@ -26,3 +26,7 @@ img.icon {
 .avatar-container {
     text-align: center;
 }
+
+.post img {
+    margin: auto;
+}
