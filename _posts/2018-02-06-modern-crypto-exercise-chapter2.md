@@ -5,6 +5,13 @@ title: "Modern cryptography: exercises chapter 2"
 tags: [cryptography, exercises]
 ---
 
+These are some solved exercises of chapter 2 of the book ["Introduction to
+modern cryptography"](http://www.cs.umd.edu/~jkatz/imc.html) by Jonathan Katz and Yehuda Lindell.
+
+I'm not sure are correct but if anyone find any error let me know. It's a work in progress
+and more exercises will follow in future, when I finally find time to solve more. Also,
+enjoy my hand made diagrams :).
+
 ## Definitions
 
 An encryption scheme \\((\hbox{Gen}, \hbox{Enc}, \hbox{Dec})\\) with message space \\(M\\)
@@ -12,7 +19,7 @@ is **perfectly secret** if for every probability distribution over \\(M\\), ever
 \\(m\in M\\), and every ciphertext \\(c\in C\\) for which \\(\hbox{Pr}\left[C = c\right] > 0\\):
 
 $$
-\hbox{Pr}\left[M = m\,|\, C= C\right] = \hbox{Pr}\left[M = m\right]
+\hbox{Pr}\left[M = m\,|\, C = c\right] = \hbox{Pr}\left[M = m\right]
 $$
 
 This is equivalent to **a prior indistinguishibility**:
@@ -20,6 +27,8 @@ This is equivalent to **a prior indistinguishibility**:
 $$
 \hbox{Pr}\left[\hbox{Enc}_K(m) = c\right] = \hbox{Pr}\left[\hbox{Enc}_K(m^\prime) = c\right]
 $$
+
+i.e. the ciphertext's probability distribution is independent from the message's probability distribution.
 
 For notation purpose take in mind this way of writing:
 
@@ -39,17 +48,33 @@ The encryption scheme can be described using the following diagram:
 
 ![]({{ site.baseurl }}/public/images/redefining-key-space-as-random.png)
 
-where the \\(\hbox{Gen}\\) algorithm creates a key using a random tape \\(r\\). Redefining
-\\(\hbox{Enc}\\) to include \\(\hbox{Gen}\\) and using \\(r\\) as new key we can verify
+where the \\(\hbox{Gen}\\) algorithm creates a key using a random tape \\(r\\) from the
+space \\(R\\). Redefining
+\\(\hbox{Enc}\\) to include \\(\hbox{Gen}\\) and using \\(r\\) as new key we have
 that
 
 $$
 \eqalign{
-\hbox{Pr}^\prime\left[C = c\,|\,M=m \right] &= \hbox{Pr}\left[\hbox{Enc}^\prime_k(m)\right]       \cr
-  &= \sum_k\hbox{Pr}\left[\hbox{Enc}_k(m) \,|\, \hbox{Gen}(r) = k \right]\cdot\hbox{Pr}\left[\hbox{Gen}(r) = k\right] \cr
-  &= \sum_k\hbox{Pr}\left[\hbox{Enc}_k(m) \,|\, K = k \right]\cdot\hbox{Pr}\left[K = k\right] \cr
-  &= \hbox{Pr}\left[\hbox{Enc}_k(m) = c\right] \cr
-  &= \hbox{Pr}\left[ C = c \,|\, M = m\right] \cr
+\hbox{Pr}\left[K=k\right] &= \hbox{Pr}\left[\hbox{Gen}(R)=k\right] \cr
+  &= \sum_r\hbox{Pr}\left[\hbox{Gen}(R)=k\,|\,R = r\right]\hbox{Pr}\left[R = r\right]
+}
+$$
+
+This means that we simply shift the key to be the random tape that provides
+random values to the Turing machine implementing the probabilistic algorithm \\(\hbox{Gen}\\).
+
+we can verify
+
+$$
+\eqalign{
+\hbox{Pr}\left[ C = c \,|\, M = m\right] &= \hbox{Pr}\left[\hbox{Enc}_K(m) = c\right] \cr
+  &= \sum_k\hbox{Pr}\left[\hbox{Enc}_K(m) \,|\, K = k \right]\cdot\hbox{Pr}\left[K = k\right] \cr
+  &= \sum_k\hbox{Pr}\left[\hbox{Enc}_K(m) \,|\, K = k \right]\cdot\sum_r\hbox{Pr}\left[\hbox{Gen}(R) = k\,|\,R = r\right]\cdot\hbox{Pr}\left[R = r\right] \cr
+  &= \sum_{k, r}\hbox{Pr}\left[\hbox{Enc}_K(m) \,|\, K = k \right]\cdot\hbox{Pr}\left[\hbox{Gen}(R) = k\,|\,R = r\right]\cdot\hbox{Pr}\left[R = r\right] \cr
+  &= \sum_{k, r}\hbox{Pr}\left[\hbox{Enc}_K(m) \,|\, K = k \right]\cdot\hbox{Pr}\left[K = k\,|\,R = r\right]\cdot\hbox{Pr}\left[R = r\right] \cr
+  &= \sum_r\hbox{Pr}\left[\hbox{Enc}^\prime_R(m) \,|\, R = r \right]\cdot\hbox{Pr}\left[R = r\right] \cr
+  &= \hbox{Pr}\left[\hbox{Enc}^\prime_R(m) = m \right] \cr
+  &= \hbox{Pr}^\prime\left[ C = c \,|\, M = m\right] \cr
 }
 $$
 
@@ -95,25 +120,9 @@ we have \\(\hbox{Pr}\left[C = c_0\right] = \hbox{Pr}\left[C = c_1\right]\\).
 
 ### solution
 
-\\(\Rightarrow\\)) If the encryption scheme is perfectly secret we know from the a prior indistinguishibility
-
-$$
-\eqalign{
-\hbox{Pr}\left[C = c\right] &= \sum_m\hbox{Pr}\left[C = c\,|\, M = m\right]\cdot\hbox{Pr}\left[M = m\right] \cr
-  &= \sum_m \Delta\cdot\hbox{Pr}\left[M = m\right] \cr
-  &= \Delta\sum_m \hbox{Pr}\left[M = m\right] \cr
-  &= \Delta
-}
-$$
-
-that doesn't depend on the cyphertext.
-
-\\(\Leftarrow\\)) The hypothesis means that \\(\forall c\in C,\,\hbox{Pr}\left[C = c\right]\\) is equal to a
-constant independent from the ciphertext so that for properties of a probability distribution
-
-$$
-\sum_c\hbox{Pr}\left[ C = c\right] = 1\, \Rightarrow\, \hbox{Pr}\left[C = c\right] = {1\over|C|}
-$$
+For this one I have not yet a solution but I think has to do with the dimension of the
+cipher and message space: the ``iff`` holds if we take the conditions from the Shannon's theorem,
+i.e. if the all the spaces have the same dimensions.
 
 <hr/>
 
@@ -176,3 +185,15 @@ $$
 $$
 
 <hr />
+
+**2.6:** For each of the following encryption schemes, state wheter the scheme is perfectly secret. Justify your answer in each case.
+
+ - (a) The message space is \\(M = \left\\{0,\dots, 4\right\\}\\). Algorithm \\(\hbox{Gen}\\) chooses a uniform key from the key space \\(\\{0,\dots, 5\\}\\).
+    \\(\hbox{Enc}_k(m)\\) returns \\(\left[k + m \mod 5 \right]\\), and \\(\hbox{Dec}_k(c)\\) returns \\(\left[c - k \mod 5\right]\\).
+ - (b) The message space is \\(M=\\{m\in\\{0,1\\}^l\,|\,\hbox{the last bit of m is 0}\\}\\). \\(\hbox{Gen}\\) chooses an uniform key from \\(\\{0,1\\}^l\\).
+    \\(\hbox{Enc}_k(m)\\) returns ciphertext \\(m\oplus\left(k\|0\right)\\), and \\(\hbox{Dec}_k(c)\\) returns \\(c\oplus\left(k\|0\right)\\).
+
+### solution
+
+For the (a) part I can start saying that because of the particular that the value \\(0\\) and \\(5\\) under the module operation
+give the same result, when we use these keys the ciphertext is equal to the original message we can have perfect secrecy
