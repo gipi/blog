@@ -19,6 +19,6 @@ author:
   name:           'Gianluca Pacchiella'
   url:            https://ktln2.org
 
-plugins:          [jekyll-paginate,rouge]
+plugins:          [jekyll-paginate,rouge,jekyll_github_sample]
 paginate:         5
 exclude:          ['extras/', 'LICENSE.md', 'README.md', 'CNAME', 'provision', 'releases']

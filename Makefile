@@ -2,5 +2,5 @@ serve:
 	jekyll serve --baseurl '' --watch --drafts
 
 install_dependencies:
-	gem install --user kramdown rouge jekyll jekyll-paginate
+	gem install --user kramdown rouge jekyll jekyll-paginate jekyll_github_sample
 
