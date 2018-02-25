@@ -2,6 +2,7 @@
 layout: post
 comments: true
 title: "Attach images to a Django model without using database backed fields"
+tags: [Django, python, imagekit, wip]
 ---
 
 Let's start with a model that has a field where an image will be uploaded;
@@ -147,3 +148,5 @@ class MyModel(models.Model):
     ...
     cubes = CubeManager()
 ```
+
+but bad enough I haven't had time for complete this post, in future I will return to complete it.
