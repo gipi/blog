@@ -2,7 +2,7 @@
 layout: post
 comments: true
 title: "Implementing VGA interface with verilog"
-tags: [electronics, VGA, verilog, FPGA]
+tags: [electronics, programming, VGA, verilog, FPGA]
 ---
 
 **VGA** stands for **Video graphics array** and it's one of the most

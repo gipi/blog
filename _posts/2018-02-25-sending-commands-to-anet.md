@@ -2,7 +2,7 @@
 layout: post
 comments: true
 title: "Sending command to an Anet A8 3d printer by the serial port with python"
-tags: [serial, python, Anet, DIY]
+tags: [serial, programming, python, Anet, DIY]
 ---
 
 Since last year I have an Anet A8, a 3d printer received from China as a kit
