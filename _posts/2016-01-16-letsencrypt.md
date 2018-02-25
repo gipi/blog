@@ -2,7 +2,7 @@
 layout: post
 title: "Let's encrypt"
 comments: true
-tags: [crypto,sysadmin]
+tags: [cryptography, sysadmin]
 ---
 
 [Let's encrypt](https://letsencrypt.org) is the new thing in town: allows a seamless procedure
