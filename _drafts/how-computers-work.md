@@ -1,0 +1,106 @@
+---
+layout: post
+comments: true
+title: "How computers work"
+tags: [electronics, computer science, transistors]
+---
+
+In this post I'll try to unravel the complex layers by which
+an electronics computing device is made of.
+
+## Transistors
+
+I have to start somewhere so I decided to start from the way transistors are
+used as **switch**: transistors are amazing piece of technology with an enormous
+range of applications and explaining how they work would be a task too long.
+
+This is a **NPN transistor**
+
+![]({{ site.baseurl }}/public/images/computers/npn.png)
+
+Let's start with a transistor in a configuration such that when it's connected
+to ground the collector has a voltage equal to ``VCC`` and when is connected
+to ``VCC`` causes the collector to drop to ground. This is the most common
+configuration to drive high voltage load for example with an arduino.
+
+![]({{ site.baseurl }}/public/images/computers/switch.png)
+
+You notice that if we define ``VCC`` to be logic level 1 (or true) and
+``GND`` to be 0 (or false) this device implements a logic operator ``NOT``
+i.e. it inverts the logic signal at its input.
+
+![]({{ site.baseurl }}/public/images/computers/switch.gif)
+
+
+Obviously there are limits to the velocity to which the signal can change
+and they effect the layer above it.
+
+
+## Logic operators, Boolean logic and combinational logic
+
+Is it possible to implement other logic operator using only transistors?
+the answer is positive: below you can see using only NPN transistors.
+Take in mind that this only one typology of them, modern processor can
+use other incarnation but the basic principles are the same.
+
+For logic the following properties are valid (the product is the ``AND``
+operator, the sum is the ``OR`` operator)
+
+$$
+\eqalign{
+ABC &= \left(AB\right)C = A\left(BC\right)\cr
+AB  &= BA \cr
+AA  &= A \cr
+A1  &= A \cr
+A0  &= A \cr
+A + 1 &= 1 \cr
+A\left(B + C\right) &= AB + AC \cr
+A + AB &= A \cr
+A + B + C &= \left(A + B\right) + C = A + \left(B + C \right) \cr
+\overline{\left(AB\right)} = \overline A + \overline B \cr
+}
+$$
+
+The important point here is that any boolean function than be represented
+as sum of subfunctions represented as only products of its inputs.
+This represents the [minterm canonical form](https://en.wikipedia.org/wiki/Canonical_normal_form).
+What does it mean? It means that all the digital circuits that you can create,
+operating on whatever number of inputs is buildable using boolean algebra and since
+transistors are an implementation of this, then we can create all with them.
+
+Obviously we need circuits able to have more than one output, but I think
+is obvious how to extend this reasoning.
+
+This circuits that have output effected immediately from the input are
+called **combinational circuits**. In order to build useful circuits
+we need something that has memory and hence the concept of **time**.
+
+## Latch and Flip-Flop
+
+If we come back to transistor for an experiment: look at this circuit
+
+using the analogy with the ``NOT`` operator we can represent it in the following
+way
+
+AoE pg 728.
+
+## Tristate, Open collector and Bus
+
+A last thing before leaving transistors and start to utilize logic operators
+and flip-flop as building block: how we can connect digital circuits that need to talk
+without connecting directly each to all the other ones? An idea is to use a **bus**,
+i.e. a line of a certain number of signals to which all the circuits are connected
+to read and write data.
+
+The problem is, how we avoid that one device "talks over the other"? With a transistor
+we can use the configuration called **open collector**
+
+A better solution is the **three state logic**: it doesn't add a new logic state other
+than true and false but add a new signal named **enable** that indicate if the output
+is seen as open from the outside
+
+For more information AoE pg 721.
+
+## Sequential circuits
+
+Thanks to flip-flops we can circuits that have memory, the first example of it is a counter
