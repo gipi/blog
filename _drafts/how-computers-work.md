@@ -38,8 +38,11 @@ and they effect the layer above it.
 
 ## Logic operators, Boolean logic and combinational logic
 
-Is it possible to implement other logic operator using only transistors?
+Is it possible to implement other logic operators using only transistors?
 the answer is positive: below you can see using only NPN transistors.
+
+![]({{ site.baseurl }}/public/images/computers/and-or.gif)
+
 Take in mind that this only one typology of them, modern processor can
 use other incarnation but the basic principles are the same.
 
@@ -79,8 +82,29 @@ we need something that has memory and hence the concept of **time**.
 
 If we come back to transistor for an experiment: look at this circuit
 
-using the analogy with the ``NOT`` operator we can represent it in the following
+![]({{ site.baseurl }}/public/images/computers/latch-sr.gif)
+
+is called **latch** and represents a metastable circuit: has two
+stable configurations that maintains if the switch arent' operated.
+Using the analogy with the ``NOT`` operator we can represent it in the following
 way
+
+![]({{ site.baseurl }}/public/images/computers/latch-not.gif)
+
+Well, this could be used as a memory but is missing some input
+signals, so if we re-elaborate it using logic gates we can produce
+the following circuit
+
+![]({{ site.baseurl }}/public/images/computers/latch-not.gif)
+
+What is missing from the picture is the representation of time: we can
+synchronize the operations using a periodic alternating signal that we
+represents as a square wave and we call **clock**. The moment in time when
+the clock passes from low to high is called **raising edge**, the opposite
+is called **falling edge**.
+
+In order to make the synchronous operations less dependent from varying signals
+the flip-flops take they inputs only during the rising edge.
 
 AoE pg 728.
 
