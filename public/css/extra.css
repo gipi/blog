@@ -37,6 +37,15 @@ img.icon {
     padding:    .5em;
 }
 
+.github-sample-reference .author-info {
+    background: #ccc;
+    padding-left: .4em;
+}
+.github-sample-reference .meta-info {
+    background: #aaa;
+    padding-left: .4em;
+}
+
 .post figure.highlight {
     margin: 0px;
 }
