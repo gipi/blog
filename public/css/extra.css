@@ -30,3 +30,7 @@ img.icon {
 .post img {
     margin: auto;
 }
+
+.post figure.highlight {
+    margin: 0px;
+}
