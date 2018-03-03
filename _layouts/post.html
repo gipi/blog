@@ -19,7 +19,15 @@ layout: default
     {% if page.date %}
   <span class="post-date">{{ page.date | date_to_string }}</span>
     {% endif %}
+    {% if  page.tags contains 'WIP' %}
+    <div class="WIP">This post is a <b>work in progress</b>, so if you find it imcomplete and not readable probably
+    it's not finished yet. I prefer to publish a little before than leave a post to rust in my drafts.</div>
+    {% endif %}
   {{ content }}
+    {% if  page.tags contains 'WIP' %}
+    <div class="WIP">Do you find this post incomplete? probably because it's a <b>work in progress</b>.
+    Let me know how do you want this to be completed</div>
+    {% endif %}
 </div>
 
 <div class="related">

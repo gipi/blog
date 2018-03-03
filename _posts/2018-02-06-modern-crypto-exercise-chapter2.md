@@ -2,7 +2,7 @@
 layout: post
 comments: true
 title: "Modern cryptography: exercises chapter 2"
-tags: [cryptography, exercises]
+tags: [cryptography, exercises, WIP]
 ---
 
 These are some solved exercises of chapter 2 of the book ["Introduction to

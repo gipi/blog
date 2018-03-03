@@ -31,6 +31,12 @@ img.icon {
     margin: auto;
 }
 
+.post .WIP {
+    background: #ccc;
+    font-size:  .8em;
+    padding:    .5em;
+}
+
 .post figure.highlight {
     margin: 0px;
 }

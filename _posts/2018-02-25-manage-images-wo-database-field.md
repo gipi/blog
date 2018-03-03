@@ -2,7 +2,7 @@
 layout: post
 comments: true
 title: "Attach images to a Django model without using database backed fields"
-tags: [django, programming, python, imagekit, wip]
+tags: [django, programming, python, imagekit, WIP]
 ---
 
 Let's start with a model that has a field where an image will be uploaded;

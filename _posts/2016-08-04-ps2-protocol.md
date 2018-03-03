@@ -1,7 +1,7 @@
 ---
 layout: post
 comments: true
-tags: [keyboard, PS/2, electronics, protocol, wip]
+tags: [keyboard, PS/2, electronics, protocol, WIP]
 title: "PS/2 protocol"
 ---
 

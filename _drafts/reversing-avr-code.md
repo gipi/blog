@@ -2,7 +2,7 @@
 layout: post
 comments: true
 title: "Getting started to reverse AVR code"
-tags: [reversing, AVR]
+tags: [reversing, AVR, WIP]
 ---
 
 ## Registers

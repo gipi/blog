@@ -8,6 +8,11 @@ Future static blogging: https://ktln2.org/
 
 ## Authoring guide
 
+### Work in progress
+
+Posts with the tag ``WIP`` are uncomplete posts, the show a message to the top
+indicating this state.
+
 ### Images
 
 ```
