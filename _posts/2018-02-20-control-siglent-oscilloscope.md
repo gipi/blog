@@ -20,7 +20,7 @@ Bus 003 Device 030: ID f4ec:ee3a Atten Electronics / Siglent Technologies
 ```
 
 
-Reading the [Programming guide](https://www.siglentamerica.com/wp-content/uploads/dlm_uploads/2017/10/ProgrammingGuide_foroSDS-1-1.pdf)
+Reading the [Programming guide](https://www.siglentamerica.com/wp-content/uploads/dlm_uploads/2017/10/ProgrammingGuide_forSDS-1-1.pdf)
 the interested hacker can found that using [VISA](https://en.wikipedia.org/wiki/Virtual_instrument_software_architecture) i.e.
 **Virtual instrument software architecture** it's possible to command this device.
 
