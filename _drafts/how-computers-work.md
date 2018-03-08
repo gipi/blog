@@ -127,4 +127,27 @@ For more information AoE pg 721.
 
 ## Sequential circuits
 
-Thanks to flip-flops we can circuits that have memory, the first example of it is a counter
+Thanks to flip-flops we can circuits that have memory, the first example of it is a counter:
+we want to design a circuit that has two input signals: **clock** and **enable**, the first
+is what keep the time and the second tells when to add one to the circuit. We start with
+a single stage, i.e. one bit having two output: **the digit** and the **carry**.
+
+To describe the circuit we can us this table
+
+| EN | A previous | A next | C |
+|----|----|---|---|
+| 0  | 0  | 0 | 0 |
+| 1  | 0  | 1 | 0 |
+| 0  | 1  | 1 | 0 |
+| 1  | 1  | 0 | 1 |
+
+Looking for the digit entry we see that using minterms we can describe the relation
+using the following formula
+
+$$
+A_{\hbox{next}} = A_{\hbox{previous}}\cdot\overline{EN} + \overline{A_{\hbox{previous}}}\cdot EN = A_{\hbox{previous}}\oplus EN
+$$
+
+where the \\(\oplus\\) operation means ``XOR`` i.e. **exclusive OR**.
+
+![]({{ site.baseurl }}/public/images/computers/counter-single-stage.gif)
