@@ -151,3 +151,8 @@ $$
 where the \\(\oplus\\) operation means ``XOR`` i.e. **exclusive OR**.
 
 ![]({{ site.baseurl }}/public/images/computers/counter-single-stage.gif)
+
+Take in mind that the value is taken exclusively at the edge of the clock so the carry
+is working as expected, if you want it to maintain its value you need another flip-flop,
+for this reason is very important make a circuit synchronous as much as possible (I'm
+not an expert but seems reasonable to me).
