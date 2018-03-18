@@ -213,6 +213,12 @@ the serial bridge is connected (enabled in software).
 However on the reset you only want a pulse. The capacitor acts as
 a differentiator](http://forum.arduino.cc/index.php?topic=26877.0)".
 
+Also important are the values: experimentally I found that a resistor
+of 10K and a capacitor of 0.1uF work well.
+
+**Also remember to place a big capacitor between power rails in order to
+make the system more stable: if you are experiencing random resets or odd
+behaviours probably the chip suffers from an unstable power line.**
 
 ## Programming
 
