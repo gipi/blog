@@ -88,5 +88,8 @@ However to start as beginner you can use the [mojo ide](https://embeddedmicro.co
  - [Mojo page](https://embeddedmicro.com/tutorials/mojo/)
  - [Mojo schematics](https://embeddedmicro.com/media/wysiwyg/mojo/v3-sch.pdf)
  - [Mojo Eagle files](https://embeddedmicro.com/media/wysiwyg/mojo/mojo-eagle-v3.zip)
+ - [Spartan-6 FPGA Clocking Resources](https://www.xilinx.com/support/documentation/user_guides/ug382.pdf)
+ - [Spartan-6 FPGA SelectIO Resources](https://www.xilinx.com/support/documentation/user_guides/ug381.pdf)
+ - [Spartan-6 Libraries Guide for HDL Designs](https://www.xilinx.com/support/documentation/sw_manuals/xilinx11/spartan6_hdl.pdf)
  - [Altering the FPGA clock frequency of the Mojo](http://www.smolloy.com/2016/01/altering-the-fpga-clock-frequency-of-the-mojo/)
  - [Controlling A Seven Segment Display Using Mojo](https://coolcapengineer.wordpress.com/2013/06/03/controlling-seven-segment-display-using-mojo/)
