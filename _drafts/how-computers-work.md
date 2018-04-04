@@ -8,6 +8,8 @@ tags: [electronics, computer science, transistors]
 In this post I'll try to unravel the complex layers by which
 an electronics computing device is made of.
 
+ - [Padraic Edgington's channel](https://www.youtube.com/channel/UC4ls2cPrXHfEO_oTHZcCclA)
+
 ## Transistors
 
 I have to start somewhere so I decided to start from the way transistors are
