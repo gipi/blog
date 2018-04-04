@@ -20,7 +20,8 @@ for any kind of microcontroller.
 ## Available options
 
 This device allows for different sources as clock, the selection is
-done by setting the fuse bits ``CKSEL 3..0`` (contained into the **low fuse**)
+done by setting the fuse bits ``CKSEL 3..0``
+
 
 | | Fuse ``CKSEL3..0`` | Note |
 |-|------|------|
@@ -32,6 +33,10 @@ done by setting the fuse bits ``CKSEL 3..0`` (contained into the **low fuse**)
 
 Note that the ``CKSEL0`` and ``SUT1..0`` bits configure the startup time, i.e.
 the number of stable clock cycles needed to successfully start-up the device.
+
+Just as reminder, these are all bits from the **low fuse**:
+
+| CKDIV8 | CKOUT | SUT1 | SUT0 | CKSEL3 | CKSEL2 | CKSEL1 | CKSEL0 |
 
 For all but internal RC oscillator the pin to use to connect the oscillator
 are ``XTAL1`` and ``XTAL2`` (pin ``PB6`` and ``PB7`` respectively). They
