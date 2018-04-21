@@ -19,6 +19,10 @@ indicating this state.
 ![]({{ site.baseurl }}/public/images/certificates/certificates-wizard.png)
 ```
 
+### Video
+
+    {% include video.html video_url=https://www.video.com %}
+
 ### Link to another post
 
     {% post_url file-name-wo-md-extension %}
@@ -27,6 +31,13 @@ indicating this state.
 
 Wrap your ``TeX`` inside a ``<div>`` so to avoid the interpretation
 of characters like ``_`` in Markdown and their escaping.
+
+### Include Github code
+
+{% github_sample_ref gipi/anet-scanner/blob/cdab1597b5c753efa4afe278b54f1ae806002d57/anet/serial.py %}
+{% highlight python %}
+{% github_sample gipi/anet-scanner/blob/cdab1597b5c753efa4afe278b54f1ae806002d57/anet/serial.py %}
+{% endhighlight %}
 
 ## Links
 
