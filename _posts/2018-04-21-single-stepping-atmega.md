@@ -2,7 +2,7 @@
 layout: post
 comments: true
 title: "Simple stepping an ATmega with a FPGA"
-tags: [electronics, atmega, FPGA, mojo]
+tags: [electronics, atmega, FPGA, mojo, WIP]
 ---
 
 As continuation of the post about the internals of the [clock]({% post_url 2018-03-15-clock-atmega %})
@@ -16,67 +16,80 @@ to a manual pulse to create a **single step** atmega.
 The process included the use of a FPGA, a minimal circuit with a microcontroller
 and some ``C`` code.
 
+All can be summarised with the following (fantastic) hand drawn diagram
+
+![diagram]({{ site.baseurl }}/public/images/fpga-clock-device.png)
+
 ## FPGA
 
-### PLL
+The FPGA is used to create and manage the clock and then to output it to an external pin of a microcontroller.
+This operation of getting a clock in an output pin is called **clock forwarding**.
 
-First of all we need to generate a 16MHz clock to feed into the ``XTAL1`` pin,
-for a Spartan-6 FPGA we have available the ``DCM_SP`` primitive
+The spartan-6 has special internal network for lines that handle clock signals, it's called
+**clock network**: it provides a low capacitance, low skew interconnect lines that are well
+suited to carrying high frequencies. All you want to know about clock for the Spartan-6 is documented into the
+[Spartan-6 FPGA Clocking Resources](https://www.xilinx.com/support/documentation/user_guides/ug382.pdf)
 
-Internally it uses a **Phase Locked Loop**: it's a system that allows to
+In our experiment we need to create the clock, route it into the clock network and then
+output it from an external pin.
+
+### DCM
+
+First of all we need to generate a 16MHz clock; in a Spartan-6 FPGA we have available the ``DCM_SP`` primitive,
+**DCM** stands for **Digital Clock Management**, it's a building block available into the FPGA
+to manage clock related signals. Internally it uses a **Phase Locked Loop**: it's a system that allows to
 create a suitable frequency starting from a source clock; the explanation
 of its functioning is out of scope of this post, there are a ton of resources
 on the internet that can explain better than me this stuff.
 
-The primitive ``DCM_SP`` allows to indicate the ratio of the new clock
-with respect to the source clock: since we need an output clock of 16MHz from the
-50MHz clock of the mojo we need to apply a factor of \\({8\over 25}\\).
+The primitive ``DCM_SP`` has a lot of signals, as you can see from the schematic
 
-Generally you can use ``Coregen`` to create an appropriate clock but since
-I want to learn a little more about primitives of Xilinx's FPGA this is the
-code needed: (some parameters and pins have been removed for clarity)
+![DCM_SP]({{ site.baseurl }}/public/images/dcm_sp.png)
 
-```
-  DCM_SP
-  #(.CLKDV_DIVIDE          (2.000),
-    .CLKFX_DIVIDE          (25),
-    .CLKFX_MULTIPLY        (8),
-    .CLKIN_DIVIDE_BY_2     ("FALSE"),
-    .CLKIN_PERIOD          (20.0),
-    .CLKOUT_PHASE_SHIFT    ("NONE"),
-    .CLK_FEEDBACK          ("1X"),
-    .DESKEW_ADJUST         ("SYSTEM_SYNCHRONOUS"),
-    .PHASE_SHIFT           (0),
-    .STARTUP_WAIT          ("FALSE"))
-  dcm_sp_inst
-    // Input clock
-   (.CLKIN                 (clkin1),
-    .CLKFB                 (clkfb),
-    // Output clocks
-    .CLK0                  (clk0),
-    .CLK90                 (),
-    .CLK180                (),
-    .CLK270                (),
-    .CLK2X                 (),
-    .CLK2X180              (),
-    .CLKFX                 (CLK_OUT1),
-    .CLKFX180              (CLK_OUT1pi),
-    .CLKDV                 (),
-    // Other control and status signals
-    .LOCKED                (locked_int),
-    .STATUS                (status_int),
-    .RST                   (RESET));
-```
+but there are also a few parameters, in particular ``CLKFX_MULTIPLY`` and ``CLKFX_DIVIDE``
+that allow to indicate the output clock with a integer ratio: in our case we need an output clock of 16MHz from the
+50MHz clock of the mojo so we need to apply a factor of \\({8\over 25}\\).
 
-### BUFGMUX
+Generally you can use ``Coregen`` to create an appropriate module with the desired clock
+so to have all the value set automagically.
 
-[Spartan-6 FPGA Clocking Resources](https://www.xilinx.com/support/documentation/user_guides/ug382.pdf)
+However, instantiating a ``DCM_SP`` is not enough, we have to route the clock signal inside
+the clock network with appropriate buffers.
+
+### Buffers
+
+The BUFG clock buffer primitive drives a single clock signal onto the clock network.
+
+The ``CLKIN`` input of ``DCM_SP`` must belong to the clock network and indeed we get the
+clock from the mojo's crystal and use the ``IBUFG`` primitive to do that.
+
+It's not a big deal but sometimes ``ISE`` complains about clock stuffs if you generate
+the clock using ``Coregen`` and use the same input signal for something else.
 
 The second step included the adding of a multiplexer for the clock signal: a FPGA usually has
 dedicated resources to deal with the particular kind of signals that are the clocks; in our case
 we need to switch from a continous clock to a pulse one.
 
-In order to do that I used the ``BUFGMUX``
+In order to do that I used the ``BUFGMUX``, it has three signals: ``I0`` and ``I1`` for the inputs, ``O``
+for the unique output and ``S`` a signal to indicate which input to enable. Using this primitive
+garantee that the input and output signal are correctly in phase.
+
+### ODDR2
+
+There is the problem to get signals in and out of a FPGA: a lot of the job depends on which
+kind of signal, is it differential, what level, etc...
+
+To manage this you have to refer to the [Spartan-6 FPGA SelectIO Resources](https://www.xilinx.com/support/documentation/user_guides/ug381.pdf).
+
+https://forums.xilinx.com/t5/Spartan-Family-FPGAs/how-to-instantiate-ODDR-block/td-p/232589
+https://forums.xilinx.com/t5/Spartan-Family-FPGAs/How-to-use-input-clock-signal-without-DCM-PLL/td-p/233055
+
+The final form of the top module is the following
+
+{% github_sample_ref gipi/electronics-notes/blob/ec9707cda4dacfdd0210cd27555bbbd00d1c561a/fpga/mojo/GlitchGen/mojo_top.v %}
+{% highlight verilog %}
+{% github_sample gipi/electronics-notes/blob/ec9707cda4dacfdd0210cd27555bbbd00d1c561a/fpga/mojo/GlitchGen/mojo_top.v %}
+{% endhighlight %}
 
 ## Circuit
 
@@ -89,8 +102,7 @@ To riduce parassitic signals I soldered a protoboard with only the ``UART``, ``V
 and the ``XTAL1`` pins connected externally. If you want the schematics is pratically equal
 to the circuit described in [this old post]({% post_url 2017-06-27-installing-bootloader-into-atmega328 %})
 
-At that point the system worked flawlessy.
-
+To complete the device a simple keypad to control the switching from continous clock to a manual one is added.
 
 ## Code
 
@@ -100,17 +112,17 @@ without delay
 
 ```
 /*
- * A simple sketch that blink a led on pin A5 (port PC5)
+ * A simple sketch that blinks a led on pin A5 (port PC5)
  */
 #include <avr/io.h>
 #include <util/delay.h>
 
 int main() {
-    DDRC  = (1 << PC5);       //Sets the direction of the PC7 to output
+    DDRC  = (1 << PC5);       //Sets the direction of the PC5 to output
 
-    PORTC |= (1 << PC5);       //Sets PC7 high
+    PORTC |= (1 << PC5);       //Sets PC5 high
     _delay_ms(5000);
-    PORTC &= ~(1 << PC5);       //Sets PC7 low
+    PORTC &= ~(1 << PC5);       //Sets PC5 low
     _delay_ms(1000);
 
     cli();
@@ -159,7 +171,7 @@ $ r2 -AA -a avr fpga/mojo/GlitchGen/avr/build-uno/avr.elf
 |       .-> 0x000000a0      2150           subi r18, 0x01
 |       :   0x000000a2      8040           sbci r24, 0x00
 |       :   0x000000a4      9040           sbci r25, 0x00
-|       `=< 0x000000a6      e1f7           brne 0xa0       ; loop for 0x30d3
+|       `=< 0x000000a6      e1f7           brne 0xa0       ; loop for 0x30d3 cycles
 |       ,=< 0x000000a8      00c0           rjmp 0xaa
 |       |      ; JMP XREF from 0x000000a8 (sym.main)
 |       `-> 0x000000aa      0000           nop
@@ -183,4 +195,16 @@ as reference for the number of clock cycles for instruction we have the followin
 | cbi | 2 |
 | rjmp | 2 |
 
+So if this experiment is working we should observe two steps from the led on to off and a
+complete loop should take six steps.
 
+## Demo
+
+I put a simple live demo with the demostration of what is described in this post,
+it's a bit lagging but I think gives an idea of what's happening
+
+{% include video.html video_url="https://www.youtube.com/embed/XqdkaUqgpao" %}
+
+The code for all this stuff is on my github, in particular at this
+[repo and revision](https://github.com/gipi/electronics-notes/tree/ec9707cda4dacfdd0210cd27555bbbd00d1c561a/fpga/mojo/GlitchGen)
+(something could be slighty different).
