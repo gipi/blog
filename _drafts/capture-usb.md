@@ -7,7 +7,8 @@ tags: [Arduino, USB, wireshark, stk500]
 
 For some reason my 3d printer, one day, didn't want to update its firmware
 so I tried to debug the process that at end of the day is the same process
-all the Arduinos use for the same thing.
+all the Arduinos use for the same thing, indeed the processing unit of my device
+is an ATMega2560 ([datasheet](http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-2549-8-bit-AVR-Microcontroller-ATmega640-1280-1281-2560-2561_datasheet.pdf)).
 
 All happens via ``USB`` but in reality the underlying protocol is the ``stk500``,
 a serial protocol that normally would be spoken via ``UART``.
@@ -16,7 +17,7 @@ a serial protocol that normally would be spoken via ``UART``.
 
 In Linux is possible to intercept the ``USB`` packets using the device file ``usbmon``
 that is not active by default but must be enabled mounting the ``debugfs`` and
-loading the ``usbmon`` module. The easy copy&paste instruction (also to allow
+loading the ``usbmon`` module. These are the easy copy&paste instructions (also to allow
 a normal user to access it):
 
 ```
@@ -178,6 +179,34 @@ Device Status:     0x0000
 
 ## STK500
 
+| Command name | Value |
+|--------------|-------|
+| CMD_SIGN_ON                          | 0x01 |
+| CMD_SET_PARAMETER                    | 0x02 |
+| CMD_GET_PARAMETER                    | 0x03 |
+| CMD_SET_DEVICE_PARAMETERS            | 0x04 |
+| CMD_OSCCAL                           | 0x05 |
+| CMD_LOAD_ADDRESS                     | 0x06 |
+| CMD_FIRMWARE_UPGRADE                 | 0x07 |
+| CMD_CHECK_TARGET_CONNECTION          | 0x0D |
+| CMD_LOAD_RC_ID_TABLE                 | 0x0E |
+| CMD_LOAD_EC_ID_TABLE                 | 0x0F |
+| CMD_ENTER_PROGMODE_ISP               | 0x10 |
+| CMD_LEAVE_PROGMODE_ISP               | 0x11 |
+| CMD_CHIP_ERASE_ISP                   | 0x12 |
+| CMD_PROGRAM_FLASH_ISP                | 0x13 |
+| CMD_READ_FLASH_ISP                   | 0x14 |
+| CMD_PROGRAM_EEPROM_ISP               | 0x15 |
+| CMD_READ_EEPROM_ISP                  | 0x16 |
+| CMD_PROGRAM_FUSE_ISP                 | 0x17 |
+| CMD_READ_FUSE_ISP                    | 0x18 |
+| CMD_PROGRAM_LOCK_ISP                 | 0x19 |
+| CMD_READ_LOCK_ISP                    | 0x1A |
+| CMD_READ_SIGNATURE_ISP               | 0x1B |
+| CMD_READ_OSCCAL_ISP                  | 0x1C |
+| CMD_SPI_MULTI                        | 0x1D |
+
+
 ## Analyze captured data
 
 Interesting query on the captured data
@@ -188,7 +217,76 @@ Interesting query on the captured data
         -e usb.capdata \
         -Y usb.capdata | xxd -r -p | xxd | less
 
+This below is an annotated hexdump
+
 ![]({{ site.baseurl }}/public/images/usb-stk500.png)
+
+take in mind that the ``CMD_LOAD_ADDRESS`` has as argument an address expressed
+as word (if you work with ``AVR`` you will learn that in the hard way),
+so is right to ask for ``0x100`` bytes from address ``0x80000000`` and then
+ask for ``0x100`` bytes from address ``0x80000080`` as  is performed in the dump around
+address ``0x140`` and then ``0x260``.
+
+## Dissector
+
+```
+$ git clone && cd
+$ mkdir build && cd build && cmake ..
+$ make
+$ cmake -DCUSTOM_PLUGIN_SRC_DIR=plugins/stk500 ..
+$ make -C plugins/stk500
+```
+
+```
+usb.bus_id == 3 && usb.device_address == 7 && usb.transfer_type == 0x03 && usb.data_len > 0 && usb.endpoint_address.direction == 1
+```
+
+Example
+
+```
+#include <epan/reassemble.h>
+   ...
+save_fragmented = pinfo->fragmented;
+flags = tvb_get_guint8(tvb, offset); offset++;
+if (flags & FL_FRAGMENT) { /* fragmented */
+    tvbuff_t* new_tvb = NULL;
+    fragment_data *frag_msg = NULL;
+    guint16 msg_seqid = tvb_get_ntohs(tvb, offset); offset += 2;
+    guint16 msg_num = tvb_get_ntohs(tvb, offset); offset += 2;
+
+    pinfo->fragmented = TRUE;
+    frag_msg = fragment_add_seq_check(msg_reassembly_table,
+        tvb, offset, pinfo,
+        msg_seqid, NULL, /* ID for fragments belonging together */
+        msg_num, /* fragment sequence number */
+        tvb_captured_length_remaining(tvb, offset), /* fragment length - to the end */
+        flags & FL_FRAG_LAST); /* More fragments? */
+
+    new_tvb = process_reassembled_data(tvb, offset, pinfo,
+        "Reassembled Message", frag_msg, &msg_frag_items,
+        NULL, msg_tree);
+
+    if (frag_msg) { /* Reassembled */
+        col_append_str(pinfo->cinfo, COL_INFO,
+                " (Message Reassembled)");
+    } else { /* Not last packet of reassembled Short Message */
+        col_append_fstr(pinfo->cinfo, COL_INFO,
+                " (Message fragment %u)", msg_num);
+    }
+
+    if (new_tvb) { /* take it all */
+        next_tvb = new_tvb;
+    } else { /* make a new subset */
+        next_tvb = tvb_new_subset_remaining(tvb, offset);
+    }
+} else { /* Not fragmented */
+    next_tvb = tvb_new_subset_remaining(tvb, offset);
+}
+
+.....
+pinfo->fragmented = save_fragmented;
+```
+
 
 it's possible to dump only the "Leftover data", this is
 a special kind of data that is defined for generic USB packets (see ``packet-usb.c``); in the same
@@ -254,7 +352,9 @@ https://ask.wireshark.org/questions/45944/decode-usb-interface-class-correctly
  - https://technolinchpin.wordpress.com/2016/01/11/usb-tracing-in-linux
  - https://github.com/DIGImend/usbhid-dump
  - [AVR068: STK500 Communication Protocol](http://www.atmel.com/images/doc2591.pdf)
- - Avrdude's [code](https://github.com/sigmike/avrdude/blob/master/usb_libusb.c) where it handles USB communications
+ - Avrdude's 
+   - [code](https://github.com/sigmike/avrdude/blob/master/usb_libusb.c) where it handles USB communications
+   - [CMD_*](https://github.com/sigmike/avrdude/blob/master/stk500v2_private.h) codes
  - [Everything You Always Wanted to know about Arduino Bootloading but Were Afraid to Ask](http://baldwisdom.com/bootloading/)
  - [pyreshark](https://github.com/ashdnazg/pyreshark) A Wireshark plugin providing a simple interface for [writing](https://github.com/ashdnazg/pyreshark/wiki/Writing-Dissectors) dissectors in Python
  - [Dump packet 'Leftover Data Capture' field only?](https://ask.wireshark.org/questions/43330/dump-packet-leftover-data-capture-field-only)
