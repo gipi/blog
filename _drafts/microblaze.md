@@ -13,4 +13,4 @@ tags: [fpga, mojo, microblaze]
  - https://www.xilinx.com/support/documentation/white_papers/wp469-microblaze-for-cost-sensitive-apps.pdf
  - https://wiki.trenz-electronic.de/display/PD/MicroBlaze+Linux
  - http://www.xess.com/static/media/appnotes/FpgasNowWhatBook.pdf
-
+ - https://embeddedmicro.com/blogs/tutorials/embedded-processors

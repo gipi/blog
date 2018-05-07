@@ -359,5 +359,9 @@ https://ask.wireshark.org/questions/45944/decode-usb-interface-class-correctly
  - [pyreshark](https://github.com/ashdnazg/pyreshark) A Wireshark plugin providing a simple interface for [writing](https://github.com/ashdnazg/pyreshark/wiki/Writing-Dissectors) dissectors in Python
  - [Dump packet 'Leftover Data Capture' field only?](https://ask.wireshark.org/questions/43330/dump-packet-leftover-data-capture-field-only)
  - [Maybe USB doesn't support desegmentation](https://stackoverflow.com/questions/38630416/wireshark-lua-dissector-reassembly-dissector-not-called-with-previous-tvbs-da)
-
+ - https://www.wireshark.org/docs/wsdg_html_chunked/ChDissectAdd.html
+ - https://www.wireshark.org/docs/wsdg_html_chunked/ChDissectReassemble.html
+ - [Thread](https://www.wireshark.org/lists/wireshark-dev/200808/msg00252.html) about heuristic dissector
+ - [USB Descriptors](https://beyondlogic.org/usbnutshell/usb5.shtml)
+ - [The Linux driver implementer’s API guide » Linux USB API](https://01.org/linuxgraphics/gfx-docs/drm/driver-api/usb/index.html)
 
