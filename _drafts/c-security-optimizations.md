@@ -5,6 +5,8 @@ title: "Go home C you are drunk"
 tags: [C, programming, security, compiler]
 ---
 
+![]({{ site.baseurl }}/public/images/undefined-behaviour.jpg)
+
 This post is the result of this [tweet](https://twitter.com/andreasdotorg/status/992290533585256449)
 at the end the claim was erroneus but the spark continues
 
