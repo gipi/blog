@@ -47,10 +47,11 @@ The complicated thing that happens with this device is that the ``start.elf`` pr
 already the ``fdt`` at a specific address and doesn't need to be loaded from the
 SD card. The address is passed as environment variable in ``u-boot``.
 
-Take in mind that some documents uses ``fdt_addr_r`` instead of the mainline's ``fdt_addr``.
+Take in mind that some document uses ``fdt_addr_r`` instead of the mainline's ``fdt_addr``.
 
  - [RPi Boot flow](https://www.raspberrypi.org/documentation/hardware/raspberrypi/bootmodes/bootflow.md)
  - [DEVICE TREES, OVERLAYS, AND PARAMETERS](https://www.raspberrypi.org/documentation/configuration/device-tree.md)
+ - [Zero Client: Boot kernel and root filesystem from network with a Raspberry Pi2 or Pi3](https://michaelfranzl.com/2017/03/21/zero-client-boot-kernel-root-filesystem-network-raspberry-pi2-pi3/)
  - https://www.denx.de/wiki/view/DULG/UBootEnvVariables
  - https://www.denx.de/wiki/DULG/UBootCmdFDT
  - https://elinux.org/RPi_U-Boot#Test_U-Boot

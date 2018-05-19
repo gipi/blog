@@ -17,5 +17,18 @@ tags: [embedded, yocto, linux]
  - https://community.nxp.com/docs/DOC-94953
  - https://elinux.org/Bitbake_Cheat_Sheet
  - https://a4z.bitbucket.io/docs/BitBake/guide.html
+ - http://www.embeddedlinux.org.cn/oemanual/recipes_examples.html#recipes_helloworld_example
  - http://www.embeddedlinux.org.cn/oemanual/recipes_syntax.html
- - 
+ - http://www.embeddedlinux.org.cn/OEManual/recipes_versioning.html
+ - https://stackoverflow.com/questions/26003402/how-to-add-global-cxx-compiler-flag-to-yocto-build
+ - https://stackoverflow.com/questions/42538230/how-to-add-preprocessor-definition-in-cmake-projet-build-by-yocto?rq=1
+ - https://www.toradex.com/community/questions/7401/can-i-run-full-screen-qt-application-with-lxde-dis.html
+ - [qemu-kvm screen resolution](https://bbs.archlinux.org/viewtopic.php?id=153526)
+ - https://doc.qt.io/qt-5.10/scalability.html
+ - https://git.yoctoproject.org/cgit/cgit.cgi/poky/tree/meta/classes/update-alternatives.bbclass
+ - https://www.yoctoproject.org/docs/current/ref-manual/ref-manual.html#ref-classes-update-alternatives
+ - https://stackoverflow.com/questions/7373349/qt-shadow-building
+ - https://stackoverflow.com/questions/17305374/qt-5-0-built-in-logging
+ - https://developer.toradex.com/knowledge-base/board-support-package/openembedded-(core)#Adding_the_Qt5_Layer
+ - https://medium.com/@shigmas/yocto-pi-and-qt-e9f2df38a610
+
