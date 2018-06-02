@@ -18,9 +18,10 @@ that are
 
 The wires of interest here are ``DATA`` and ``CLK`` obviously: are two data lines that
 are usually implemented with an open collector circuit with a pullup resistor. The
-logic level is 5V.
+logic level is 5V with ``DATA`` and ``CLK`` pulled high when idle. I found out that
+an original ``PS/2`` keyboard works just fine with 3V3.
 
-The connector has the following pinout (courtesy of wikipedia)
+The board connector has the following pinout (courtesy of wikipedia)
 
 ![]({{ site.baseurl }}/public/images/ps2-connector.png)
 
