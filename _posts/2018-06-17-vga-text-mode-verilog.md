@@ -203,6 +203,28 @@ is simpler to "slow down" the signals; it's not probably a solution for all the
 use cases, but this particular one, where the signal data is generated continuosly,
 I think is a good situation.
 
+By the way, the implementation of the delay uses the following block of code
+
+```
+always@(posedge clk) begin
+	hsync_delayed1 <= hsync_out_original;
+	hsync_delayed2 <= hsync_delayed1;
+	hsync_delayed3 <= hsync_delayed2;
+	
+	vsync_delayed1 <= vsync_out_original;
+	vsync_delayed2 <= vsync_delayed1;
+	vsync_delayed3 <= vsync_delayed2;
+
+	inDisplayAreaDelayed1 <= inDisplayArea;
+	inDisplayAreaDelayed2 <= inDisplayAreaDelayed1;
+end
+
+assign hsync_out = hsync_delayed3;
+assign vsync_out = vsync_delayed3;
+```
+
+inside the ``VGA`` module.
+
 ## Summary
 
 My advice, when some issue arises from a design, is to draw explicitely a diagram
@@ -215,3 +237,4 @@ At the end it seems to work just fine :)
 
 ![](https://github.com/gipi/electronics-notes/raw/master/fpga/mojo/VGAGlyph/monitor-glyph.png)
 
+If you are interested in the project, the source code can be found on [github](https://github.com/gipi/electronics-notes/tree/master/fpga/mojo/VGAGlyph).
