@@ -21,7 +21,7 @@ are usually implemented with an open collector circuit with a pullup resistor. T
 logic level is 5V with ``DATA`` and ``CLK`` pulled high when idle. I found out that
 an original ``PS/2`` keyboard works just fine with 3V3.
 
-The board connector has the following pinout (courtesy of wikipedia)
+The board connector (of type ``Mini-DIN-6``) has the following pinout (courtesy of wikipedia)
 
 ![]({{ site.baseurl }}/public/images/ps2-connector.png)
 
