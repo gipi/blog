@@ -62,9 +62,26 @@ A + 1 &= 1 \cr
 A\left(B + C\right) &= AB + AC \cr
 A + AB &= A \cr
 A + B + C &= \left(A + B\right) + C = A + \left(B + C \right) \cr
-\overline{\left(AB\right)} = \overline A + \overline B \cr
+\overline{\left(AB\right)} &= \overline A + \overline B \cr
 }
 $$
+
+Using these operations we can build so called **boolean functions**:
+a boolean function that takes \\(n\\) binary inputs and gives \\(m\\) binary outputs
+can be represented with \\(2^n\cdot m\\) binary values
+
+$$
+f_j(i_0,\dots, i_{n - 1}) = o_j\> j\in\left\{0,\dots,m - 1\right\}
+$$
+
+We can build each component as a sum of all combinations of the inputs
+
+$$
+f_j(i_0,\dots, i_{n - 1}) = f_{ji_0\cdots i_{n - 1}} + f_{ji_0\cdots i_{n - 2} \bar i_{n - 1}} + f_{j\bar i_0\cdots \bar i_{n - 1}}
+$$
+
+Obviously you don't need for any functions all the terms: for example the function
+that maps all the input to all zero has only one term, that is zero.
 
 The important point here is that any boolean function than be represented
 as sum of subfunctions represented as only products of its inputs.
@@ -72,9 +89,6 @@ This represents the [minterm canonical form](https://en.wikipedia.org/wiki/Canon
 What does it mean? It means that all the digital circuits that you can create,
 operating on whatever number of inputs is buildable using boolean algebra and since
 transistors are an implementation of this, then we can create all with them.
-
-Obviously we need circuits able to have more than one output, but I think
-is obvious how to extend this reasoning.
 
 This circuits that have output effected immediately from the input are
 called **combinational circuits**. In order to build useful circuits
@@ -118,18 +132,30 @@ without connecting directly each to all the other ones? An idea is to use a **bu
 i.e. a line of a certain number of signals to which all the circuits are connected
 to read and write data.
 
-The problem is, how we avoid that one device "talks over the other"? With a transistor
-we can use the configuration called **open collector**
+The problem is, how we avoid that one device "talks over the other"? there are several
+possibilities here, each one with pros and cons.
 
-A better solution is the **three state logic**: it doesn't add a new logic state other
-than true and false but add a new signal named **enable** that indicate if the output
-is seen as open from the outside
+Let's start with the simpler: as said at the beginning, a transistor not activated
+has the output floating: this configuration is called **open collector**; when in the
+same bus more than one chip is connected using this way we have what is called a **OR-wired bus**.
+
+This name derives from the fact that is sufficient that just one of the chip switches on, then
+the corresponding line on the bus will be pull down to ground; this mode is used into
+certain interrupt controllers.
+
+A better solution is the **three state logic**: it adds a new signal named **enable** to
+an output signal of a digital circuit that indicates when one or more of its signals
+are to be put into **high impedance mode**.
+
+In reality for more complex integrated circuit (like memories) there are two separated
+signals: **chip select** and **output enable** that in practice respectively activate
+the input and output signal of that integrated circuit.
 
 For more information AoE pg 721.
 
 ## Sequential circuits
 
-Thanks to flip-flops we can circuits that have memory, the first example of it is a counter:
+Thanks to flip-flops we can build circuits that have memory, the first example of it is a counter:
 we want to design a circuit that has two input signals: **clock** and **enable**, the first
 is what keep the time and the second tells when to add one to the circuit. We start with
 a single stage, i.e. one bit having two output: **the digit** and the **carry**.
