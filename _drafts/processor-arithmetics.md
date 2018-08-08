@@ -53,7 +53,18 @@ set is composed of the following
 
 ### Zero flag
 
+## Programmation errors
+
+### Out of bounds
+
+### Signedness
+
+### Overflow
+
+### Wrap
+
 ## Links
 
  - [The CARRY flag and OVERFLOW flag in binary arithmetic](http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt)
  - [Intel x86 JUMP quick reference](http://unixwiz.net/techtips/x86-jumps.html)
+ - [SEI CERT C Coding Standard](https://wiki.sei.cmu.edu/confluence/display/c/SEI+CERT+C+Coding+Standard)

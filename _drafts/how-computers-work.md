@@ -9,6 +9,7 @@ In this post I'll try to unravel the complex layers by which
 an electronics computing device is made of.
 
  - [Padraic Edgington's channel](https://www.youtube.com/channel/UC4ls2cPrXHfEO_oTHZcCclA)
+ - Chapter [Crash Course in Electronics](http://bob.cs.sonoma.edu/IntroCompOrg-x64/bookch4.html#x15-480004.4) of the book "Introduction to Computer Organization"
 
 ## Transistors
 

