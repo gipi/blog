@@ -1,7 +1,7 @@
 ---
 layout: post
 comments: true
-title: "Simple stepping an ATmega with a FPGA"
+title: "Single stepping an ATmega with a FPGA"
 tags: [electronics, atmega, FPGA, mojo, WIP]
 ---
 
