@@ -11,7 +11,7 @@ that I use to, you know, 3d print stuffs. In the near future I would like to mod
 and make it a little milling machine or a laser engraver and in order to do that I need to
 find some extra pins to drive these devices.
 
-By the way, in order to have these functionalities I need to activate it via recompiling
+By the way, in order to have these functionalities I need to activate it recompiling
 the firmware, and since the original firmware obtained with the printer is pretty
 outdated I tought to use the original Marlin firmware so to have bug fixes and new
 functionalities.
@@ -49,16 +49,16 @@ printer if you set it wrong: until you are sure all is working right, **stay ver
 to the printer with a finger on the power switch**, in particular if you have intention
 to move the head, calling the home procedure for example.
 
-The first important options are
+The first important options are related to the endstops:
 
  - ``X_MIN_ENDSTOP_INVERTING``
  - ``Y_MIN_ENDSTOP_INVERTING``
  - ``Z_MIN_ENDSTOP_INVERTING``
 
 that in my case were not correct: the default configuration for my printer
-caused it to think that the head was always at triggering the endstops.
+caused it to think that the head was always triggering the endstops.
 
-To check that, use the ``M119`` code, if you see ``TRIGGERED`` as in the example below
+To check that use the ``M119`` code, if you see ``TRIGGERED`` as in the example below
 
 ```
 anet> query M119
@@ -96,7 +96,7 @@ the ``THERMAL_PROTECTION_HOTENDS`` and ``THERMAL_PROTECTION_BED`` and the relate
 options: in my case, when the fan started spinning, the extruder temperature
 was dropping of ten degrees and it was unable to make it raise fast enough
 and printer was halting to prevent temperature runaway; increasing the acceptable
-temperature difference and/or the time allowed to balance it fixed the problem.
+temperature difference and/or the time allowed to balance it, fixed the problem.
 
 Disabling them it's not a viable option since you will risk to put your house in fire
 if the thermostat detaches from the printing head.
@@ -104,9 +104,8 @@ if the thermostat detaches from the printing head.
 ### Bed calibration
 
 When all the important options are in place, it's a good occasion to fix the placement
-of the bed as seen from the firmware: there are some [options](https://reprap.org/wiki/Configuring_Marlin_Bed_Dimensions)
-and some [calibration print](https://www.thingiverse.com/thing:2280529) (remember to print
-without build adesion extra steps).
+of the bed as seen from the firmware: there are some [calibration print](https://www.thingiverse.com/thing:2280529) (remember to print
+without build adesion).
 
 At first didn't seemed a so important step but, bad enough, the informations I have found
 were not clear so I'll try here to summarize a quick way to fix the printable area configuration.
@@ -152,8 +151,9 @@ you can notice the negative values: they are the location in the original coordi
 system of the origin of the printable area of the bed; now you have to set explicitely that
 in the original coordinate system
 
-In practice you can move the head to the origin and then issue the command ``G0``
-until you find the right position of the ``
+In practice you can move the head using the command ``G0`` until you find the right position of the head;
+when you have set all the necessary you can check the final result using the command ``M211``
+that summarizes the configuration obtained
 
 ```
 anet> query M211
@@ -161,7 +161,8 @@ echo:Soft endstops: On   Min: X-10.00 Y-15.00 Z0.00  Max: X200.00 Y200.00 Z200.0
 ok
 ````
 
-Cura and bed margin
+Now you have to set your slicer to choice to follow these settings without extra
+steps.
 
 At the end obviously the main way to test all is correct is to test some
 [calibration cube](https://www.thingiverse.com/thing:1278865).
@@ -196,9 +197,14 @@ of the board and the ATmega
 | A11       | 65         |
 | A12       | 66         |
 
+Bad enough, it seems that the only pin pwm-capable is the number 11 but is used for
+internal timing in the firmware: indeed if I try to use it I obtain the following error:
+
 ```
 In file included from sketch/MarlinConfig.h:40:0,
                  from /opt/Marlin/Marlin/Marlin.ino:31:
 SanityCheck.h:1547: error: #error "Counter/Timer for SPINDLE_LASER_PWM_PIN is used by a system interrupt."
        #error "Counter/Timer for SPINDLE_LASER_PWM_PIN is used by a system interrupt."
 ```
+
+If I want to use ``PWM`` probably the only option is to re-purpose a fan connector. I'll see.
