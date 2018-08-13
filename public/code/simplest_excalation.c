@@ -6,13 +6,18 @@
 
 #define NAME_LENGTH 32
 
-int main() {
+void greetings() {
     char name[NAME_LENGTH];
-
-    printf("What's your name? ");
     gets(name);
 
     printf("hello, %s\n", name);
+}
+
+int main(int argc, char* argv[], char* envp[]) {
+
+    printf("What's your name? ");
+
+    greetings();
 
     return EXIT_SUCCESS;
 }
