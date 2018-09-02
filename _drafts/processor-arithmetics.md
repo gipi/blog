@@ -34,6 +34,15 @@ Normally in the code is this the way the negative numbers are represented.
 Remember that a value into a register is not signed or unsigned by itself,
 it depends on how is used in the code.
 
+## Operations
+
+### Extension
+
+In certain cases could be necessary to do operations between numbers having a different
+number of bits; if these numbers are unsigned it's not big deal, but if instead we having
+signed ones we have to **sign extend** i.e. to complete the bits of the extended number
+with all ``1``s.
+
 ## Flags
 
 It's all fine and good but as already said, we have a limited number of bits

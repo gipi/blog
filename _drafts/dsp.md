@@ -42,3 +42,4 @@ $$
 ## Links
 
  - [Foundations of Signal Processing](http://www.fourierandwavelets.org/FSP_v1.1_2014.pdf) free e-book
+ - [D/A and A/D | Digital Show and Tell](https://www.youtube.com/watch?v=cIQ9IXSUzuM)
