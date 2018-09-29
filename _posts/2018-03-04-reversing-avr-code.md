@@ -137,6 +137,27 @@ or the [complete reference](http://ww1.microchip.com/downloads/en/devicedoc/atme
 
 ### Branch
 
+In AVR exists only two opcodes for branching, ``brbs <bit flag> <relative jump>`` and ``brbc <bit flag> relative jump>``
+that for easy of use have a few aliases
+
+| Test  | Boolean  | Mnemonic  | Complementary  | Boolean  | Mnemonic  | Comment  |
+| :---  | :------  | :-------  | :------------  | :------  | :-------  | :------  |
+| Rd > Rr  | Z & (N ^ V) = 0  | BRLT  | Rd <= Rr  | Z+(N ^ V) = 1  | BRGE  | Signed  |
+| Rd >= Rr  | (N ^ V) = 0  | BRGE  | Rd < Rr  | (N ^ V) = 1  | BRLT  | Signed  |
+| Rd = Rr  | Z=1  | BREQ  | Rd != Rr  | Z=0  | BRNE  | Signed  |
+| Rd <= Rr  | Z+(N ^ V) = 1  | BRGE  | Rd > Rr  | Z & (N ^ V) = 0  | BRLT  | Signed  |
+| Rd < Rr  | (N ^ V) = 1  | BRLT  | Rd >= Rr  | (N ^ V) = 0  | BRGE  | Signed  |
+| Rd > Rr  | C+Z=0  | BRLO  | Rd <= Rr  | C+Z=1  | BRSH  | Unsigned  |
+| Rd >= Rr  | C=0  | BRSH/BRCC  | Rd < Rr  | C=1  | BRLO/BRCS  | Unsigned  |
+| Rd = Rr  | Z=1  | BREQ  | Rd != Rr  | Z=0  | BRNE  | Unsigned  |
+| Rd <= Rr  | C+Z=1  | BRSH  | Rd > Rr  | C+Z=0  | BRLO  | Unsigned  |
+| Rd < Rr  | C=1  | BRLO/BRCS  | Rd >= Rr  | C=0  | BRSH/BRCC  | Unsigned  |
+| Carry  | C=1  | BRCS  | No carry  | C=0  | BRCC  | Simple  |
+| Negative  | N=1  | BRMI  | Positive  | N=0  | BRPL  | Simple  |
+| Overflow  | V=1  | BRVS  | No overflow  | V=0  | BRVC  | Simple  |
+| Zero  | Z=1  | BREQ  | Not zero  | Z=0  | BRNE  | Simple  |
+
+
 ## Examples
 
 Below take a look to some examples of common routines implemented
