@@ -93,3 +93,5 @@ However to start as beginner you can use the [mojo ide](https://embeddedmicro.co
  - [Spartan-6 Libraries Guide for HDL Designs](https://www.xilinx.com/support/documentation/sw_manuals/xilinx11/spartan6_hdl.pdf)
  - [Altering the FPGA clock frequency of the Mojo](http://www.smolloy.com/2016/01/altering-the-fpga-clock-frequency-of-the-mojo/)
  - [Controlling A Seven Segment Display Using Mojo](https://coolcapengineer.wordpress.com/2013/06/03/controlling-seven-segment-display-using-mojo/)
+ - [AVR interface available to the Mojo](https://alchitry.com/blogs/tutorials/avr-interface)
+
