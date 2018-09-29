@@ -218,8 +218,8 @@ and ``add/adc`` instructions can be summarized as follow
 
 $$
 \eqalign{
-r25:r24 &= r31:r30 + \left(r25:r24 \oplus ffff\right)\cr
-        &= r31:r30 - 1 + \left(r25:r24\oplus ffff +1\right)\cr
+r25:r24 &= r31:r30 + \left(r25:r24 \oplus {\tt 0xffff}\right)\cr
+        &= r31:r30 - 1 + \left(r25:r24\oplus {\tt 0xffff} +1\right)\cr
         &= r31:r30 - 1 - r25:r24\cr
         &= \hbox{pointer to the next address fo the NULL byte} - 1 - \hbox{pointer to the start of the string}\cr
         &= \hbox{number of bytes not NULL}
@@ -261,7 +261,7 @@ the most significant byte; to end it subtracts two unrelated registers using the
 of the shifting as carry.
 
 Pratically ``r26`` and ``r27`` are always zero if the last bit of ``r25`` is zero, if
-it's not zero then ``r27:r27`` are equal to ``ffff``. Seems sign extension to me.
+it's not zero then ``r27:r26`` are equal to ``0xffff``. Seems sign extension to me.
 
 In order to prove my point I decided to experiment and to experiment
 I need to create a test case where I cast a variable from short to 32bits
