@@ -155,6 +155,15 @@ enum for t_type {
 };
 ```
 
+    What is a reloc? Binary executables often need certain bits of information fixed up before they execute.
+    ELF binaries carry a list of relocs which describe these fixups. Each reloc contains: 
+      the address in the binary that is to get the fixup (offset) 
+      the algorithm to calculate the fixup (type) 
+      a symbol (string and object len) 
+
+    At fixup time, the algorithm uses the offset & symbol, along with the value
+    currently in the file, to calculate a new value to be deposited into memory.
+
 ``e8fcffffff`` is the opcode for a relative jump: the encoding is ``e8<little endian 32 bits address>``
 so in our case is ``call 0xfffffffc`` that using two's complement gives us ``call -4``, but the actual base
 for the offset is the address of the following instruction: since the opcode for the ``call`` instruction takes
