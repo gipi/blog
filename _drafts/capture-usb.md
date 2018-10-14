@@ -179,10 +179,27 @@ Device Status:     0x0000
 
 ## STK500
 
-| Command name | Value |
-|--------------|-------|
-| CMD_SIGN_ON                          | 0x01 |
-| CMD_SET_PARAMETER                    | 0x02 |
+The message format is the following
+
+
+| Parameter name | size/format | description |
+|----------------|-------------|-------------|
+| ``MESSAGE_START`` | 1 byte | always ``0x1b`` |
+| ``SEQUENCE_NUMBER`` | 1 byte | |
+| ``MESSAGE_SIZE`` | 2 bytes, big endian | |
+| ``TOKEN`` | 1 byte | always ``0x0e`` |
+| ``MESSAGE_BODY`` | ``MESSAGE_SIZE`` bytes | |
+| ``CHECKSUM`` | 1 byte | XOR all bytes of the message |
+
+
+In  the ``MESSAGE_BODY`` is contained a command, identified by the first byte;
+each command has a variable length with different number of parameters. Each command
+has a following response.
+
+| Command name | Value | Description |
+|--------------|-------|---|
+| CMD_SIGN_ON                          | 0x01 | returns the signature, usually ``AVRISP_2`` |
+| CMD_SET_PARAMETER                    | 0x02 | |
 | CMD_GET_PARAMETER                    | 0x03 |
 | CMD_SET_DEVICE_PARAMETERS            | 0x04 |
 | CMD_OSCCAL                           | 0x05 |
