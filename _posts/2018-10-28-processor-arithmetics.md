@@ -2,10 +2,10 @@
 layout: post
 comments: true
 title: "Integer arithmetic from a computer point of view"
-tags: [arithmetic, low level]
+tags: [arithmetic, low level, WIP]
 ---
 
-A thing is overlooked is the way arithmetic operations work in a computer
+A thing that is overlooked is the way arithmetic operations work in a computer
 and specifically in the processing unit: not having a clear idea of how
 the operations are performed and their limitations can cause very important
 bug to happen and also help in case you want to reverse unknown code.
