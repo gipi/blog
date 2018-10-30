@@ -52,6 +52,15 @@ First of all you need to download it, there are a lot of [fetcher](https://www.y
 
 [Link](https://www.yoctoproject.org/docs/current/mega-manual/mega-manual.html#ref-images)
 
+## HOWTOs
+
+### Include your file
+
+```
+$ bitbake-layers show-recipes /etc/network/interfaces
+$ bitbake-layers show-appends init-ifupdown
+```
+
 ## Links
 
  - [Yocto project - Mega Manual](https://www.yoctoproject.org/docs/current/mega-manual/mega-manual.html)
@@ -90,4 +99,8 @@ First of all you need to download it, there are a lot of [fetcher](https://www.y
  - https://medium.com/@shigmas/yocto-pi-and-qt-e9f2df38a610
  - [SO WORKDIR question](https://stackoverflow.com/questions/28827764/workdir-in-yocto-receipe)
  - [questions about WORKDIR and S usage and files/ stuff](http://lists.openembedded.org/pipermail/openembedded-core/2015-February/101990.html)
+ - https://www.kynetics.com/docs/2018/Yocto-SDK-Qt/
+ - https://wiki.rdkcentral.com/display/RDK/Yocto+Software+Development+Kit%28SDK%29+Guide
+ - https://wiki.yoctoproject.org/wiki/TipsAndTricks/Cmake,Eclipse,_and_SDKS
+ - https://stackoverflow.com/questions/49532977/yocto-generated-nativesdk-cmake-sdk-is-incomplete
 
