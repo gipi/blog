@@ -75,7 +75,7 @@ glyph memory address?
 The idea here is that the value of the pixel is decided calculating in which
 \\(column, row\\) belongs: this can be determined using its coordinates \\((x, y)\\)
 with a division respectively by 8 and 16; in digital logic is simpler to take only
-the most significant bits of the these signals:
+the most significant bits of these signals:
 
 ```
 // (column, row) = (x / 8, y / 16)
@@ -182,7 +182,7 @@ we have two memories in series we need two clock cycles to obtain the pixel valu
 screen. So the pixel data and the ``hsync`` and ``vsync`` signals are out of synch causing the
 character to be not aligned to the side of the screen.
 
-Another connection that need an explicit synchronization is the combinational logic
+Another connection that needs an explicit synchronization is the combinational logic
 that translates the screen's coordinates for the glyph ``ROM``: as just said, only after
 one clock cycle the ``ASCII`` value is output from the text memory, so using directly
 the glyph coordinates derived from the screen ones gives you the wrong glyph data;
