@@ -103,4 +103,8 @@ $ bitbake-layers show-appends init-ifupdown
  - https://wiki.rdkcentral.com/display/RDK/Yocto+Software+Development+Kit%28SDK%29+Guide
  - https://wiki.yoctoproject.org/wiki/TipsAndTricks/Cmake,Eclipse,_and_SDKS
  - https://stackoverflow.com/questions/49532977/yocto-generated-nativesdk-cmake-sdk-is-incomplete
+ - https://wiki.yoctoproject.org/wiki/TipsAndTricks/QuickAndDirtyKernelConfig to quickly modify the ``.config`` without creating another recipe
+ - https://old.yoctoproject.org/training/kernel-lab
+ - https://www.yoctoproject.org/docs/1.6.1/kernel-dev/kernel-dev.html
+ - https://stefanchrist.eu/blog/2017_09_15/Yocto%20Recipes%20vs%20Packages.xhtml
 
