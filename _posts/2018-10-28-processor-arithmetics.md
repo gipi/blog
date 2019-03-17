@@ -10,13 +10,13 @@ and specifically in the processing unit: not having a clear idea of how
 the operations are performed and their limitations can cause very important
 bug to happen and also help in case you want to reverse unknown code.
 
+## Integer encoding
+
+We are interested of the case of a register containing a number: since
 First of all, the arithmetic inside a CPU is done on register of fixed
 size via the ``ALU`` and since the register are size limited, all the
 arithmetic operations are intended modulo the size of the registers.
 
-## Integer encoding
-
-We are interested of the case of a register containing a number: since
 the register has a fixed number of bits (let's say is \\(N\\)) we can
 only represent (directly) unsigned values between \\(0\\) and \\(2^N - 1\\).
 
@@ -46,16 +46,11 @@ $$
 $$
 
 that means that left shifting a binary number is equivalent to multiplying
-the same number for a power of two.
+the same number for a power of two (I know, I know, this is obvious).
 
 For signed numbers there is not a unique way to represent them: the quick
-and dirty way would be to use the most significant bit as **sign bit**;
-this has two drawbacks:
-
- 1. when you add a positive and negative number together you have to invert the
-operation to be a subtraction (and viceversa) and this need a circuitery in
-the processor.
- 2. you have two zeros
+and dirty way would be to use the most significant bit as **sign bit** but this has
+the drawback to have two zeros.
 
 I think that this encoding is not used by anyone in the real world (but I could be
 wrong), there are more efficient ways.
@@ -84,6 +79,13 @@ w = - a_{N - 1}\, 2^{N - 1} + \sum_{i = 0}^{N - 2} a_i\,2^i
 $$
 
 Normally in the code is this the way the negative numbers are represented.
+
+Mind blowing realization is that the two's complement of the lowest integer
+is itself:
+
+$$
+\hbox{two}\left(\tt 0x10000000\right) = {\tt 0x01111111} + 1 = {\tt 0x10000000}
+$$
 
 Remember that a value into a register is not signed or unsigned by itself,
 it depends on how is used in the code.
@@ -147,7 +149,7 @@ Used in unsigned numbers to indicate that the result doesn't fit in the register
 ### Overflow flag
 
 Used for signed numbers to indicate that the resulting sign bit is not coherent
-with the correct result; for example with 4-bit numbers we can have the
+with the correct result; for example with 4-bit (binary) numbers we can have the
 following four cases:
 
 $$
@@ -161,6 +163,19 @@ $$
 
 ### Zero flag
 
+The last operation resulted in a result equal to zero, like subtracting two registers containing
+the same value or doing the logical ``and`` operation between two registers having both zero as value.
+
+## Flow control
+
+At the end of the day the flags are used primarly to do the so called **flow control** that in
+high level languages is implemented via ``if``, ``while``, ``for``, etc...
+
+Each architecture implements this with some particular couple of family of instructions:one family to
+set the flag, like ``cmp`` and ``test``, and another to jump to a particular location depending on the
+particular values the flags have, like ``jmp``, ``jne``, ``jnz``
+and so on in ``x86`` or ``b``, ``bne``, ``ble`` etc... in ``ARM``;
+
 ## Programmation errors
 
 ### Out of bounds
@@ -171,8 +186,32 @@ $$
 
 ### Wrap
 
+### Conversion
+
+### Undefined behaviour
+
+Having an asymmetry between the size of the greatest positive and lowest negative in two's complement arithmetics
+causes some particular behaviour to happen for some functions: take for example the ``abs()`` one; this function
+returns the positive version of (almost) any number, indeed what is the positive value of the lowest negative
+possible in a given architecture (in two's complement arithmetics)? From the man page we can read that
+``Trying to take the absolute value of the most negative integer is not defined.`` so the following
+code is not doing what you would expect when is passed ``INT_MIN`` as argument
+
+```
+#define MAX_VALUE 5000
+
+char buffer[MAX_VALUE];
+
+int arg1 = atoi(argv[1]);
+
+if (abs(arg1) < MAX_VALUE) {
+    buffer[arg1] = arg2;
+}
+```
+
 ## Links
 
  - [The CARRY flag and OVERFLOW flag in binary arithmetic](http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt)
  - [Intel x86 JUMP quick reference](http://unixwiz.net/techtips/x86-jumps.html)
  - [SEI CERT C Coding Standard](https://wiki.sei.cmu.edu/confluence/display/c/SEI+CERT+C+Coding+Standard)
+ - [Condition Codes 1: Condition Flags and Codes](https://community.arm.com/developer/ip-products/processors/b/processors-ip-blog/posts/condition-codes-1-condition-flags-and-codes) from ARM site

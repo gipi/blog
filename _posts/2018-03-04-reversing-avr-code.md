@@ -5,7 +5,12 @@ title: "Getting started to reverse AVR code"
 tags: [reversing, AVR, WIP]
 ---
 
+First of all, the instructions used on ATMel's chips are **RISC**-like, aligned
+to 2-byte addresses but with instructions that can be 16 or 32-bit long.
+
 ## Registers
+
+The registers have all 8-bit size.
 
  - ``pc`` is the **program counter**, cannot be modified directly. Since the instructions
 are all two bytes longs (a word), the value inside this register is an index of words.
@@ -37,28 +42,8 @@ peripherics
 It's important to understand how mathematics works with registers:
 the first thing to learn is that (in all the architecture) the arithmetic
 is module the number of bits; the other thing is that negative numbers
-are implemented via **two's complement** but before explaining that
-I need to explain **one's complement**.
-
-### One's complement
-
-It consists in flipping all the bits of a number, in this way
-if you define the negative of a given number as the one's complement
-of it you have the nice property that this two numbers summed are equal
-to zero.
-
-The problem is that you have two zero: all bits equal to zero and all
-equal to one.
-
-### Two's complement
-
-It's an extension of the one's complement: to obtain the negative representation
-of a number you have to take the one's complement and add one: in this way you have
-an asymmetry between the minimum and maximum number that can be represented.
-
-Normally in the code is this the way the negative numbers are represented.
-Remember that a value into a register is not signed or unsigned by itself,
-it depends on how is used in the code.
+are implemented via **two's complement**. I have a [post]({% post_url 2018-10-28-processor-arithmetics %})
+dedicated to that.
 
 ### Flags
 
@@ -157,6 +142,8 @@ that for easy of use have a few aliases
 | Overflow  | V=1  | BRVS  | No overflow  | V=0  | BRVC  | Simple  |
 | Zero  | Z=1  | BREQ  | Not zero  | Z=0  | BRNE  | Simple  |
 
+| sbrs Rr | Skip if Bit in Register is Set |
+| sbrc Rr | Skip if Bit in Register is Cleared |
 
 ## Examples
 
