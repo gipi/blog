@@ -215,3 +215,4 @@ if (abs(arg1) < MAX_VALUE) {
  - [Intel x86 JUMP quick reference](http://unixwiz.net/techtips/x86-jumps.html)
  - [SEI CERT C Coding Standard](https://wiki.sei.cmu.edu/confluence/display/c/SEI+CERT+C+Coding+Standard)
  - [Condition Codes 1: Condition Flags and Codes](https://community.arm.com/developer/ip-products/processors/b/processors-ip-blog/posts/condition-codes-1-condition-flags-and-codes) from ARM site
+ - [Jumps, flags, and the CMP instruction](https://www.hellboundhackers.org/articles/read-article.php?article_id=729)
