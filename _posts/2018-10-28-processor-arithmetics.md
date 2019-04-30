@@ -60,8 +60,16 @@ wrong), there are more efficient ways.
 It consists in flipping all the bits of a number, in this way
 if you define the negative of a given number as the one's complement
 of it you have the nice property that this two numbers summed are equal
-to zero and you don't have to implement any particular circuitery
-on the processor since the operations are executed as usual.
+to zero. However you have to add one to a subtraction to obtain the
+correct result
+
+$$
+\hbox{one}(x) = 2^N - x
+$$
+
+$$
+-x = \hbox{one}(x) + 1
+$$
 
 The problem is that you have two zeros: all bits equal to zero and all
 equal to one.
@@ -91,6 +99,56 @@ Remember that a value into a register is not signed or unsigned by itself,
 it depends on how is used in the code.
 
 ## Operations
+
+We have a representation of numbers in binary that can handle unsigned and signed, but we need
+to do math with them and we have to manage the limits of having a fixed bit width but
+at the end of the day is not impossible in practice.
+
+### Addition and Subtraction
+
+The simplest operation is the addition: we simply use the rules from the normal math but since
+we have a fixed number of bits we cannot sum two number and have the result in a register
+with the same number of bits, indeed if with \\(N\\) bits we can have as a maximum unsigned value \\(2^N-1\\)
+if we sum itself we obtain 
+
+$$
+\eqalign{
+    \hbox{max}_u(N) + \hbox{max}_u(N) &= 2^N - 1 + \left(2^N - 1\right) \cr
+    &= 2\cdot2^N - 2 \cr
+    &= 2^{N+1} - 2 \cr
+    &= \hbox{max}_u(N + 1) - 1 \cr
+}
+$$
+
+i.e. is possible, with one bit more, to represent more numbers that is possible to obtain (think for example
+in a register with width 4-bit, you have 7 has a maximum unsigned number, so the maximum result of a sum
+for this case is 14 that is less that 15, the maximum unsigned possible with 5 bits).
+
+
+### Multiplication
+
+Multiplication is straightforward as well, I mean, there are operations from a processor that
+implement that;
+
+$$
+\eqalign{
+    \hbox{max}_u(N)\cdot\hbox{max}_u(N) &= \left(2^N - 1\right)\cdot\left(2^N - 1\right) \cr
+    &= 2^{2N} - 2\cdot2^N + 1 \cr
+    &= 2^{2N} - 2^{N + 1} + 1 \cr
+    &= 2^{2N} - 1 + 1 - 2^{N + 1} + 1 \cr
+    &= \hbox{max}_u(2N) - 2^{N + 1} + 2\cr
+    &= \hbox{max}_u(2N) - \left(2^{N + 1} - 2\right)\cr
+    &= \hbox{max}_u(2N) - 2\cdot\left(2^{N} - 1\right)\cr
+    &= \hbox{max}_u(2N) - 2\cdot\hbox{max}_u(N)\cr
+}
+$$
+
+so we can contain a result for sure if we use two registers for the destination (like the ``x86`` does
+with the ``mul`` operation).
+
+If we take two 4-bit number and we multiply them together we obtain as maximum result \\(15\cdot15 = 225\\)
+
+### Division
 
 ### Sign extension
 
@@ -142,11 +200,16 @@ architectures have it](https://en.wikipedia.org/wiki/Status_register#CPU_archite
 Each system has its own nomenclature and specific flags, but I think the minimal
 set is composed of the following
 
-### Carry flag
+### Carry flag (CF)
 
-Used in unsigned numbers to indicate that the result doesn't fit in the register.
+Used in unsigned numbers to indicate that the result doesn't fit in the register; for an
+addition is pretty clear what that means, for a subtraction is a little tricky since
+this flag can be used for this operation as **borrow flag** (see [wikipedia](https://en.wikipedia.org/wiki/Carry_flag#Carry_flag_vs._borrow_flag)).
 
-### Overflow flag
+There are two schools of thoughts: some architectures (like ``x86``) use the borrow
+bit, others (like ``ARM``) use the carry and the relation \\( (a - b) = a + \hbox{not}(b) + 1\\).
+
+### Overflow flag (OF)
 
 Used for signed numbers to indicate that the resulting sign bit is not coherent
 with the correct result; for example with 4-bit (binary) numbers we can have the
@@ -161,7 +224,14 @@ $$
 }
 $$
 
-### Zero flag
+It's important to stress that the ``OF`` doesn't indicate an overflow into the sign
+bit, but that the sign bit is wrong: in the last example above you can see that although
+there is a carry bit into the sign bit, at the end of the calculation the sign is right.
+
+If you want a more in deep explanation, this [post](http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html)
+about the ``OF`` of the 6502's ``ALU`` is amazing.
+
+### Zero flag (ZF)
 
 The last operation resulted in a result equal to zero, like subtracting two registers containing
 the same value or doing the logical ``and`` operation between two registers having both zero as value.
@@ -171,10 +241,21 @@ the same value or doing the logical ``and`` operation between two registers havi
 At the end of the day the flags are used primarly to do the so called **flow control** that in
 high level languages is implemented via ``if``, ``while``, ``for``, etc...
 
-Each architecture implements this with some particular couple of family of instructions:one family to
+Each architecture implements this with some particular couple of family of instructions: one family to
 set the flag, like ``cmp`` and ``test``, and another to jump to a particular location depending on the
 particular values the flags have, like ``jmp``, ``jne``, ``jnz``
-and so on in ``x86`` or ``b``, ``bne``, ``ble`` etc... in ``ARM``;
+and so on in ``x86`` or ``b``, ``bne``, ``ble`` etc... in ``ARM``.
+
+Take in mind that in an instruction like ``cmp arg1, arg2`` is ``arg2`` that is subtracted from ``arg1``.
+
+For an **unsigned** comparison is sufficient to look at the ``CF`` to understand if a number is greater
+than another.
+
+For a **signed** number it's trickier: the greater condition is achieved if the sign bit is not set
+and no overflow happened (i.e. the sign bit is consistent) or if the sign bit is set (i.e. the number
+is negative) and the overflow happened (making the sign bit wrong).
+
+For the equal condition is sufficient to check the ``ZF``.
 
 ## Programmation errors
 
@@ -216,3 +297,4 @@ if (abs(arg1) < MAX_VALUE) {
  - [SEI CERT C Coding Standard](https://wiki.sei.cmu.edu/confluence/display/c/SEI+CERT+C+Coding+Standard)
  - [Condition Codes 1: Condition Flags and Codes](https://community.arm.com/developer/ip-products/processors/b/processors-ip-blog/posts/condition-codes-1-condition-flags-and-codes) from ARM site
  - [Jumps, flags, and the CMP instruction](https://www.hellboundhackers.org/articles/read-article.php?article_id=729)
+ - [The 6502 overflow flag explained mathematically](http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html)
