@@ -218,6 +218,12 @@ Common targets are:
 You can also run generated qemu images with a command like 'runqemu qemux86'
 ```
 
+## Kernel
+
+Remember that the kernel is a particular recipe that needs particular attention; in particular
+take in mind that for example the ``CFLAGS`` are not passed directly but set by the ``Makefile``
+using the ``KBUILD_CFLAGS`` and family.
+
 ## SDK
 
 ```
