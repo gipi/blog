@@ -72,6 +72,82 @@ B = "${S}"
 
 ```
 
+## Compilers
+
+ - ``gcc`` is the recipe for gcc that runs on the target machine itself.
+ - ``gcc-cross`` is the cross-compiler that the build system uses. If you build any recipe for the target that needs to be compiled with gcc, this is what will be used to compile that.
+ - ``gcc-cross-canadian-`` is the final relocatable cross-compiler for the SDK, in this case for the ARM architecture.
+ - ``gcc-crosssdk`` is an intermediate step in producing gcc-cross-canadian.
+ - the ``*-initial`` are the initial versions of the compiler required to bootstrap the toolchain separately for the standard cross-compiler and for the SDK.
+ - ``gcc-runtime`` builds the runtime components that come as part of gcc (e.g. libstdc++).
+ - ``gccmakedep`` isn't really part of gcc itself, it's a script that comes as part of the X11 utilities that some projects need to determine dependencies for each source file.
+
+## Shared state cache
+
+The Yocto Project implements shared state code that supports incremental builds ([ref](https://www.yoctoproject.org/docs/2.8/overview-manual/overview-manual.html#shared-state-cache)).
+
+The support is provided by the ``sstate.bbclass`` class that is enabled by default through the ``INHERIT_DISTRO``
+variable.
+
+## Cleaning
+
+([src](https://community.nxp.com/thread/353311)) When you say bitbake
+core-image-minimal, the dependencies required to build that system image are
+recursively discovered and built.  However, when you want to clean things out,
+the same recursion doesn't take place.  Only the package you explicitly name
+gets cleaned.  So all bitbake core-image-minimal -c clean -f will actually
+clean is the working directory where the system image was built.  All the rest
+of the stuff -- the kernel, the shell commands, the compilers used to build
+everything -- stays around.
+
+So, alas, the question needs to be asked:  What do you want to clean out, and
+why?
+
+If you want to clean out intermediate build products for the target just to
+recover disk space, you can delete those directories by hand.  From the build
+directory:
+
+ 
+```
+$ rm -fr tmp/work
+```
+ 
+
+If you want to clean out the various host-side tools:
+
+ 
+```
+$ rm -fr tmp/sysroots
+```
+
+If you want to clean out all the accumulated system images (because they're big and take a lot of space):
+ 
+```
+$ rm -fr tmp/deploy/images
+```
+
+If you want to clean out a particular component so it will get rebuilt:
+ 
+```
+$ bitbake <component> -c clean -f
+```
+
+If you think the build and/or download caches are corrupt and want bitbake to
+forget everything it thinks it knows about a component so it can be rebuilt
+from scratch:
+
+```
+$ bitbake <component> -c cleanall -f
+```
+
+If you have the ``build/`` configuration directory as a git repo you can simply
+
+```
+$ git clean -f -x -d
+```
+
+to restart from scratch.
+
 ## Recipes
 
 A **recipe** is a set of instructions to follow in order to build something;
@@ -138,6 +214,22 @@ First of all you need to download it, there are a lot of [fetcher](https://www.y
 ## Images
 
 [Link](https://www.yoctoproject.org/docs/current/mega-manual/mega-manual.html#ref-images)
+
+A simple dirty trick to have the list of images available is
+
+```
+$ ls meta*/recipes*/images/*.bb
+meta/recipes-core/images/build-appliance-image_15.0.0.bb  meta/recipes-extended/images/core-image-lsb-dev.bb               meta/recipes-sato/images/core-image-sato-dev.bb
+meta/recipes-core/images/core-image-base.bb               meta/recipes-extended/images/core-image-lsb-sdk.bb               meta/recipes-sato/images/core-image-sato-sdk.bb
+meta/recipes-core/images/core-image-minimal.bb            meta/recipes-extended/images/core-image-testmaster.bb            meta/recipes-sato/images/core-image-sato-sdk-ptest.bb
+meta/recipes-core/images/core-image-minimal-dev.bb        meta/recipes-extended/images/core-image-testmaster-initramfs.bb  meta-selftest/recipes-test/images/error-image.bb
+meta/recipes-core/images/core-image-minimal-initramfs.bb  meta/recipes-graphics/images/core-image-clutter.bb               meta-selftest/recipes-test/images/oe-selftest-image.bb
+meta/recipes-core/images/core-image-minimal-mtdutils.bb   meta/recipes-graphics/images/core-image-weston.bb                meta-selftest/recipes-test/images/test-empty-image.bb
+meta/recipes-core/images/core-image-tiny-initramfs.bb     meta/recipes-graphics/images/core-image-x11.bb                   meta-selftest/recipes-test/images/wic-image-minimal.bb
+meta/recipes-extended/images/core-image-full-cmdline.bb   meta/recipes-rt/images/core-image-rt.bb                          meta-skeleton/recipes-multilib/images/core-image-multilib-example.bb
+meta/recipes-extended/images/core-image-kernel-dev.bb     meta/recipes-rt/images/core-image-rt-sdk.bb
+meta/recipes-extended/images/core-image-lsb.bb            meta/recipes-sato/images/core-image-sato.bb
+```
 
 ## Start a new project
 
