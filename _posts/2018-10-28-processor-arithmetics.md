@@ -298,3 +298,4 @@ if (abs(arg1) < MAX_VALUE) {
  - [Condition Codes 1: Condition Flags and Codes](https://community.arm.com/developer/ip-products/processors/b/processors-ip-blog/posts/condition-codes-1-condition-flags-and-codes) from ARM site
  - [Jumps, flags, and the CMP instruction](https://www.hellboundhackers.org/articles/read-article.php?article_id=729)
  - [The 6502 overflow flag explained mathematically](http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html)
+ - [Avoiding Overflow, Underflow, and Loss of Precision](https://www.codeproject.com/Articles/25294/Avoiding-Overflow-Underflow-and-Loss-of-Precision) "The cardinal rule in numerical analysis is to avoid subtracting nearly equal numbers. The more nearly equal two numbers are, the more precision is lost in the subtraction"
