@@ -118,13 +118,132 @@ struct AFX_MSGMAP_ENTRY
 
 that corresponds perfectly with what we are looking for.
 
-At the end the scheme is
+At the end the layout in memory of a MFC class is the following
 
 ```
-getMessageMap()
-ptr to AFX_MSGMAP_ENTRY array
-
-AFX_MSGMAP_ENTRY array
-
-vtable
++ Message Map data   <----------------------------------------.
+ + ptr to MFC42.DLL::<super class>::messageMap()              |
+ + ptr to AFX_MSGMAP_ENTRY array -.                           |
+ + AFX_MSGMAP_ENTRY array  <------'                           |
+  + 0th element                                               |
+  + 1th element                                               |
+   ...                                                        |
+  + last element (all elements are NULL)                      |
++ MFC class' vtable                                           |
+ + GetRuntimeClass()                                          |
+ + Destructor()                                               |
+ + null()                                                     |
+ + null()                                                     |
+ + null()                                                     |
+ + OnCmdMsg()                                                 |
+  ...                                                         |
+ + messageMap() (returns a pointer to) -----------------------'
+  ...
 ```
+
+All the destructors have a structure like
+
+```
+CDialog * __thiscall FUN_0040a4d0(void *this,byte param_1)
+
+{
+  FUN_0040a4f0((CDialog *)this);
+  if ((param_1 & 1) != 0) {
+    operator_delete(this);
+  }
+  return (CDialog *)this;
+}
+```
+
+
+You can read on the [official documentation](https://docs.microsoft.com/en-us/cpp/mfc/tn006-message-maps).
+
+https://docs.microsoft.com/en-us/cpp/mfc/reference/ccmdtarget-class?view=vs-2019#syntax
+
+## Firmware downloading and parsing
+
+00408d80 download_firmware()
+
+After downloading the file from the remote server and saving it in ``Upgrade.tmp`` (this path is
+set by the routine that starts at ``0x0040882c``) the application parses it.
+
+The core of what interest us is at ``0x00408d50``:
+
+```
+int __cdecl update(CDialogUpdateClass *this)
+
+{
+  int downloadStatus;
+  
+  downloadStatus = download_firmware(this);
+  if (downloadStatus != 0) {
+    setState(this,8);
+    return 0;
+  }
+  firmware_open_and_parse(this);
+  return 1;
+}
+```
+
+The function ``firmware_open_and_parse()`` located at ``0x00408b00`` then opens the
+downloaded firmware using a global ``CFile`` instance located at ``0x00593858``
+that will be used from other parts of the application to act on the firmware itself
+or on other kind of files.
+
+The next step parses finally the firmware at ``0x0040e7a0``: first of all the first
+16 bytes **must contain** the header of the firmware with the string ``ActionsFirmware``
+
+A interesting part is the handling of the ``CHECkSUM`` section
+
+```
+
+00000020 43 48 45 43 4b  char[16]  "CHECKSUM"              checksum
+         53 55 4d 00 00 
+         00 00 00 00 00
+00000030 40 00 00 00     ddw       40h                     start
+00000034 c0 ed 66 00     ddw       66EDC0h                 ???
+00000038 00 00 00 00     ddw       0h                      encriptedFlag
+0000003c 5a fa ad 12     ddw       12ADFA5Ah               checksum
+```
+
+### Intermezzo: stack_adjust
+
+This is particular function that I encountered during my trip in the assembly land
+
+```
+        004dbf50   0    51                  PUSH                         ECX             <-- it's going to use ECX
+        004dbf51 004    3d 00 10 00 00      CMP                          EAX,0x1000      <-- EAX must be passed as argument
+        004dbf56 004    8d 4c 24 08         LEA                          ECX,[ESP + 0x8] <-- ECX = addr of 1st arg
+ .----- 004dbf5a 004    72 14               JC                           LAB_004dbf70
+ |                           LAB_004dbf5c
+ | .--> 004dbf5c 004    81 e9 00 10         SUB                          ECX,0x1000
+ | |                    00 00
+ | |    004dbf62 004    2d 00 10 00 00      SUB                          EAX,0x1000
+ | |    004dbf67 004    85 01               TEST                         dword ptr [ECX],EAX  <--- here it's make an AND between
+ | |    004dbf69 004    3d 00 10 00 00      CMP                          EAX,0x1000
+ | '--- 004dbf6e 004    73 ec               JNC                          LAB_004dbf5c
+ |                           LAB_004dbf70
+ '----> 004dbf70 004    2b c8               SUB                          ECX,EAX              <--- ECX points to addr 1st arg - EAX
+        004dbf72 004    8b c4               MOV                          EAX,ESP              <--- EAX now points to the stack frame
+        004dbf74 004    85 01               TEST                         dword ptr [ECX],EAX  <--- USELESS???
+        004dbf76 004    8b e1               MOV                          ESP,ECX              <--- now use ECX as stack pointer (ghidra goes banana)
+        004dbf78 - ? -  8b 08               MOV                          ECX,dword ptr [EAX]  <--- restore ECX
+        004dbf7a - ? -  8b 40 04            MOV                          EAX,dword ptr [EAX + 0x4] <---. 
+        004dbf7d - ? -  50                  PUSH                         EAX   <-----------------------'-- restore the return address so that
+        004dbf7e - ? -  c3                  RET <------------------------------------------------------'   we jump back to the caller
+```
+
+probably is a "dynamic" allocation routine that uses the stack: it moves the stack pointer ``EAX`` bytes
+below: indeed at the end of each function that uses this method there is a ``ADD ESP, <offset>`` that
+restore the correct frame for the caller.
+
+## Firmware uploading
+
+## Internal state
+
+There is a global variable used to handle the internal state of the GUI at ``0x00594e78``
+and it's processed mainly at ``0x00409a20`` by a function named by me ``setState()``;
+this function is pretty interesting since allows to know what state corresponds to what
+number via the messages that presents to the user and so you can create a wonderful enum :)
+
+Also there are pieces of the interfaces that are set, like the PNGs etc...
