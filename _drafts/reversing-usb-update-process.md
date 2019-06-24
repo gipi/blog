@@ -193,7 +193,9 @@ or on other kind of files.
 The next step parses finally the firmware at ``0x0040e7a0``: first of all the first
 16 bytes **must contain** the header of the firmware with the string ``ActionsFirmware``
 
-A interesting part is the handling of the ``CHECkSUM`` section
+A interesting part is the handling of the ``CHECKSUM`` section: if there isn't
+such section there is some code to decrypt, however if there is a section
+with that name then read some values and calculate the checksum
 
 ```
 
@@ -201,10 +203,95 @@ A interesting part is the handling of the ``CHECkSUM`` section
          53 55 4d 00 00 
          00 00 00 00 00
 00000030 40 00 00 00     ddw       40h                     start
-00000034 c0 ed 66 00     ddw       66EDC0h                 ???
+00000034 c0 ed 66 00     ddw       66EDC0h                 size
 00000038 00 00 00 00     ddw       0h                      encriptedFlag
 0000003c 5a fa ad 12     ddw       12ADFA5Ah               checksum
 ```
+
+the function is at ``0x00407510``
+
+```
+int __cdecl checksum(void *buffer,uint size)
+
+{
+  int ctr;
+  byte bVar1;
+  uint nDword;
+  dword *ptrBuffer;
+  int iVar2;
+  dword tmp;
+  
+  ctr = 0;
+  nDword = size >> 2;
+  ptrBuffer = (dword *)buffer;
+  while (nDword != 0) {
+    tmp = *ptrBuffer;
+    ptrBuffer = ptrBuffer + 1;
+    ctr = ctr + tmp;
+    nDword = nDword - 1;
+  }
+  if (ptrBuffer < (dword *)(size + (int)buffer)) {
+    iVar2 = 0;
+    do {
+      bVar1 = (byte)iVar2;
+      iVar2 = iVar2 + 8;
+      ctr = ctr + ((uint)*(byte *)ptrBuffer << (bVar1 & 0x1f));
+      ptrBuffer = (dword *)((int)ptrBuffer + 1);
+    } while (ptrBuffer < (dword *)(size + (int)buffer));
+  }
+  return ctr;
+}
+```
+
+After that check for the sections named ``LINUX`` and ``FIRM``, with the last one **mandatory**.
+
+```
+00000120        46 49 52 4d         section_t
+                00 00 00 00 
+                9a 0b f0 dc 
+   00000120 46 49 52 4d 00  char[16]  "FIRM"                  name
+            00 00 00 9a 0b 
+            f0 dc a1 74 bf
+   00000130 00 de 01 00     ddw       1DE00h                  start_address
+   00000134 00 00 17 00     ddw       170000h                 ???
+   00000138 00 ce 16 00     ddw       16CE00h                 size
+   0000013c df c6 16 00     ddw       16C6DFh                 unk1
+```
+
+```
+00000140        4c 49 4e 55         section_t
+                58 00 00 00 
+                00 00 00 00 
+   00000140 4c 49 4e 55 58  char[16]  "LINUX"                 name
+            00 00 00 00 00 
+            00 00 00 00 00
+   00000150 01 00 00 00     ddw       1h                      start_address
+   00000154 00 00 20 00     ddw       200000h                 length
+   00000158 02 00 00 00     ddw       2h                      n_subsections
+   0000015c 00 00 00 00     ddw       0h                      unk1
+00000160        72 6f 6f 74         section_t
+                66 73 00 00 
+                00 00 00 00 
+   00000160 72 6f 6f 74 66  char[16]  "rootfs"                name
+            73 00 00 00 00 
+            00 00 00 00 00
+   00000170 00 a6 18 00     ddw       18A600h                 start_address
+   00000174 00 50 4e 00     ddw       4E5000h                 length
+   00000178 00 50 4e 00     ddw       4E5000h                 unk0
+   0000017c 83 00 01 00     ddw       10083h                  unk1
+00000180        76 72 61 6d         section_t
+                00 00 00 00 
+                00 00 00 00 
+   00000180 76 72 61 6d 00  char[16]  "vram"                  name
+            00 00 00 00 00 
+            00 00 00 00 00
+   00000190 00 a0 66 00     ddw       66A000h                 start_address
+   00000194 00 4e 00 00     ddw       4E00h                   length
+   00000198 00 00 08 00     ddw       80000h                  unk0
+   0000019c 0b 00 00 00     ddw       Bh                      unk1
+```
+
+The ``LINUX`` parsing is done at ``0x00417ae0``
 
 ### Intermezzo: stack_adjust
 
@@ -236,6 +323,19 @@ This is particular function that I encountered during my trip in the assembly la
 probably is a "dynamic" allocation routine that uses the stack: it moves the stack pointer ``EAX`` bytes
 below: indeed at the end of each function that uses this method there is a ``ADD ESP, <offset>`` that
 restore the correct frame for the caller.
+
+Since this function messup the stack, every function that uses it makes ghidra lose tracking of
+the local variables after the call.
+
+The best way to deal with it is to set stack depth change to minus the offset plus four (I don't know why...
+probably there is a disalignment between the listing and decompilation windows)
+
+## AWK
+
+Function at ``0x004111d0`` does some magic with ``awk`` to parse
+```
+%s -v BS=\ "{if($NF==BS){$NF=NULL;line=line $0;}else{print line $0;line=NULL;}}" %s |%s -F# -v SP=" " "$1{gsub(/\t/,SP,$1);gsub(/rd_size=__FIX_ME_ON_PACK__/,\"rd_size=0x%08x\",$1);print $1}" > %s
+```
 
 ## Firmware uploading
 
