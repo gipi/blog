@@ -23,6 +23,9 @@ environment:
 | docker ps -l | as above but only the latest |
 | docker ps -s | give me also the size |
 | docker update --restart=no | |
+| docker image prune | removes dangling images (not tagged and not referenced by any container) |
+| docker image prune -a |  |
+| docker system prune | |
 
 ## Useful images
 
@@ -30,4 +33,6 @@ environment:
 
 ## Links
 
+ - [Docker documentation](https://docs.docker.com/)
  - [Another cheat sheet](https://github.com/wsargent/docker-cheat-sheet)
+
