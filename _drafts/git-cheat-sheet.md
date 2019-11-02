@@ -83,6 +83,39 @@ of the function containing it
 $ git grep -W <some string>
 ```
 
+## Submodules
+
+This is the most hated functionality by me: the interface is really hard to remember
+and doesn't make sense.
+
+### Status
+
+```
+$ git submodule status
+-7ada843c5bb0bb49c7f2bf5db72f9969e4091ba2 hardware/victims/firmware/crypto/secAES-ATmega8515
+ 715baf70fb04100a2c9da9764161a0019c3a9e41 jupyter (remotes/origin/cw5dev-74-g715baf7)
+-9bebfcbda448fb39e8cf99aa75db4e345d56572e openadc
+-1f79b63d485587d6ec5243f78b0fa86eaea9931c tutorials
+```
+``-`` means the submodule needs to be initialized
+
+### Update
+
+```
+$ git submodule update --init
+Submodule 'hardware/victims/firmware/crypto/secAES-ATmega8515' (https://github.com/jmichelp/secAES-ATmega8515.git) registered for path 'hardware/victims/firmware/crypto/secAES-ATmega8515'
+Submodule 'openadc' (git://git.assembla.com/openadc.git) registered for path 'openadc'
+Submodule 'tutorials' (https://github.com/newaetech/chipwhisperer-tutorials.git) registered for path 'tutorials'
+Cloning into '/opt/chipwhisperer-git/hardware/victims/firmware/crypto/secAES-ATmega8515'...
+Cloning into '/opt/chipwhisperer-git/openadc'...
+Cloning into '/opt/chipwhisperer-git/tutorials'...
+Submodule path 'hardware/victims/firmware/crypto/secAES-ATmega8515': checked out '7ada843c5bb0bb49c7f2bf5db72f9969e4091ba2'
+Submodule path 'openadc': checked out '9bebfcbda448fb39e8cf99aa75db4e345d56572e'
+Submodule path 'tutorials': checked out '1f79b63d485587d6ec5243f78b0fa86eaea9931c'
+```
+
+90% of the case you need only to update&init together!
+
 ## Links
 
  - [Git Submodules vs Git Subtrees](https://codewinsarguments.co/2016/05/01/git-submodules-vs-git-subtrees/)
