@@ -5,6 +5,13 @@ title: "Tips and tricks in debugging kernel drivers in Linux"
 tags: [Linux, programming, debug]
 ---
 
+First of all
+
+```
+$ make alldefconfig
+$ make tags ctags
+```
+
 ```errno``` is defined in ``include/uapi/asm-generic/errno.h``
 
 ```
@@ -13,6 +20,10 @@ CONFIG_DEBUG_INFO=y
 CONFIG_DEBUG_DRIVER
 CONFIG_DYNAMIC_DEBUG
 CONFIG_GDB_SCRIPTS
+```
+
+```
+$ ./scripts/config -e CONFIG_DEBUG_INFO
 ```
 
 Under the directory named ``tools`` there a certain numbers of script useful to debug.
@@ -97,3 +108,4 @@ the address can be read from ``/sys/modules/<name>/sections/.text
  - http://mokosays.com/work/?p=22
  - http://henryhermawan.blogspot.com/2011/02/bigger-buffer-log-dmesg-size.html
  - https://www.kernel.org/doc/html/v4.14/dev-tools/gdb-kernel-debugging.html
+ - https://developer.ibm.com/articles/l-kernel-memory-access/

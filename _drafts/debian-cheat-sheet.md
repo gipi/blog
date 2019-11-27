@@ -83,4 +83,5 @@ to apply.
  - https://vincent.bernat.im/en/blog/2016-pragmatic-debian-packaging
  - https://grml.org/
  - https://fatemachine.github.io/live-armor/ Building Custom Live Images with Debian and Grsecurity
+ - [Avoiding tests when building Debian packages](https://iomem.com/archives/18-Avoiding-tests-when-building-Debian-packages.html)
 

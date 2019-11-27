@@ -5,12 +5,28 @@ title: "Setup a lab for malware experimentation"
 tags: [malware, virtualbox]
 ---
 
-https://github.com/fireeye/flare-vm
+The setup is
 
-https://oalabs.openanalysis.net/2018/07/16/oalabs_malware_analysis_virtual_machine/
+ - two virtual machines (virtualbox)
+   - gateway with linux where to route all the traffic with ``inetsim`` to simulate all the services
+   - victim machine with Windows OS where to launch the malware
+ - a closed network between the machines with static ips
+ - a shared folder between the physical machine and the gateway
 
-https://www.malwaretech.com/2017/11/creating-a-simple-free-malware-analysis-environment.html
-https://www.malwaretech.com/2015/08/creating-ultimate-tor-virtual-network.html
+To share file from the gateway machine to the victime one set an entry with ``inetsim`` so to
+obtain a file when requested like
+
+```
+http_fakefile   kebab   malware x-msdos-program
+```
+
+**Note:** in the gateway machine remove all the possible programs that could use the
+port you need (like ``dnsmasq`` or ``apache``).
+
+## Samples
+
+It seems interesting the [Zoo](https://github.com/ytisf/theZoo) repository, that contains
+a searchable database of malwares.
 
 ## Route all traffics through TOR
 
@@ -42,3 +58,22 @@ iface vnet0 inet static
 interface=vnet0
 dhcp-range=172.16.0.2,172.16.0.254,1h
 ```
+
+## Example
+
+f1bae35d296930d2076b9d84ba0c95ea
+
+call ``VirtualAlloc`` that returns address ``0x1c0000``, then loads at runtime
+some functions and in particular it calls ``CreateThread()`` pointing inside
+the allocated memory indicated before.
+
+## Links
+
+ - https://github.com/rshipp/awesome-malware-analysis
+ - https://github.com/fireeye/flare-vm
+ - https://oalabs.openanalysis.net/2018/07/16/oalabs_malware_analysis_virtual_machine/
+ - https://www.malwaretech.com/2017/11/creating-a-simple-free-malware-analysis-environment.html
+ - https://www.malwaretech.com/2015/08/creating-ultimate-tor-virtual-network.html
+ - https://blog.christophetd.fr/malware-analysis-lab-with-virtualbox-inetsim-and-burp/
+ - https://handlers.sans.org/tliston/ThwartingVMDetection_Liston_Skoudis.pdf
+

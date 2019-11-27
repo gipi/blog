@@ -2,8 +2,13 @@
 layout: post
 comments: true
 title: "Build embedded systems with buildroot"
-tags: [embedded, buildroot, linux]
+tags: [embedded, buildroot, Linux]
 ---
+
+It has a kconfig configuration mechanism, identical to the one
+used in the kernel
+
+https://bootlin.com/~thomas/pub/using-buildroot-real-project.pdf
 
 ## Source
 

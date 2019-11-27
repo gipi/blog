@@ -2,7 +2,7 @@
 layout: post
 comments: true
 title: "From zero to hero"
-tags: [reversing,linux,firmware, ghidra]
+tags: [reversing, firmware, ghidra]
 ---
 
 A couple of years ago a friend of mine asked me to take a look at

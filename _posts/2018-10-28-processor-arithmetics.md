@@ -13,12 +13,13 @@ bug to happen and also help in case you want to reverse unknown code.
 ## Integer encoding
 
 We are interested of the case of a register containing a number: since
-First of all, the arithmetic inside a CPU is done on register of fixed
-size via the ``ALU`` and since the register are size limited, all the
-arithmetic operations are intended modulo the size of the registers.
-
-the register has a fixed number of bits (let's say is \\(N\\)) we can
+the arithmetic inside a CPU is done on registers via the ``ALU`` and
+since the registers are size limited, all the
+arithmetic operations are intended modulo the size of the registers:
+so if \\(N\\) is the number of bits of the registers we can
 only represent (directly) unsigned values between \\(0\\) and \\(2^N - 1\\).
+
+**Note:** there is a tricky part about the representation of numbers, i.e.
 
 The formula is the following
 
@@ -104,7 +105,7 @@ We have a representation of numbers in binary that can handle unsigned and signe
 to do math with them and we have to manage the limits of having a fixed bit width but
 at the end of the day is not impossible in practice.
 
-### Addition and Subtraction
+### Addition
 
 The simplest operation is the addition: we simply use the rules from the normal math but since
 we have a fixed number of bits we cannot sum two number and have the result in a register
@@ -124,6 +125,14 @@ i.e. is possible, with one bit more, to represent more numbers that is possible 
 in a register with width 4-bit, you have 7 has a maximum unsigned number, so the maximum result of a sum
 for this case is 14 that is less that 15, the maximum unsigned possible with 5 bits).
 
+### Subtraction
+
+Thanks to the two's complement representation, it is possible to do subtraction in the same way
+we can do normally in arithmetics, i.e. \\(a - b = a + \left(-b\right)\\) that can be translated
+as \\( a - b = a + \hbox{two}(b) = a + \hbox{one}(b) + 1\\).
+
+The only thing not obvious is the carry flag: if you take for example the case where we subtract
+zero with itself, we obtain a carry although we shouldn't have it in a normal calculation.
 
 ### Multiplication
 
@@ -149,6 +158,27 @@ with the ``mul`` operation).
 If we take two 4-bit number and we multiply them together we obtain as maximum result \\(15\cdot15 = 225\\)
 
 ### Division
+
+This operation is straightforward as well, the only consideration to add is that
+here we are handling fixed precision (integer) numbers and in the general case
+dividing two integers can result in not integer numbers.
+
+To clarify the point we need some terminology
+
+$$
+{\hbox{dividend}\over\hbox{divisor}} \rightarrow \hbox{dividend} = \hbox{quotient}\times\hbox{divisor} + \hbox{remainder} 
+$$
+
+Since we cannot divide with numbers less than one (generally dividing by zero raise an exception)
+this means that the quotient cannot be greater than the dividend, so a register can contain all
+the possible results; moreover, usually another register is used to store the remainder of the
+operation (that can be seen as the result of the \\(\mod \hbox{divisor}\\) operation).
+
+Note the to use division, the following condition MUST apply ([source](https://blog.regehr.org/archives/213))
+
+```c
+(b != 0) && (!((a == INT32_MIN) && (b == -1)))
+```
 
 ### Sign extension
 
@@ -236,6 +266,10 @@ about the ``OF`` of the 6502's ``ALU`` is amazing.
 The last operation resulted in a result equal to zero, like subtracting two registers containing
 the same value or doing the logical ``and`` operation between two registers having both zero as value.
 
+### Sign flag (SF)
+
+This indicates that the result of the last operation is negative
+
 ## Flow control
 
 At the end of the day the flags are used primarly to do the so called **flow control** that in
@@ -243,19 +277,26 @@ high level languages is implemented via ``if``, ``while``, ``for``, etc...
 
 Each architecture implements this with some particular couple of family of instructions: one family to
 set the flag, like ``cmp`` and ``test``, and another to jump to a particular location depending on the
-particular values the flags have, like ``jmp``, ``jne``, ``jnz``
-and so on in ``x86`` or ``b``, ``bne``, ``ble`` etc... in ``ARM``.
+particular values the flags have, like ``jmp``, ``jne``, ``jnz`` and so on in ``x86`` or ``b``,
+``bne``, ``ble`` etc... in ``ARM``.
 
 Take in mind that in an instruction like ``cmp arg1, arg2`` is ``arg2`` that is subtracted from ``arg1``.
 
 For an **unsigned** comparison is sufficient to look at the ``CF`` to understand if a number is greater
-than another.
+than another. As convention the terms **above** and **below** are used in the related jump.
 
 For a **signed** number it's trickier: the greater condition is achieved if the sign bit is not set
 and no overflow happened (i.e. the sign bit is consistent) or if the sign bit is set (i.e. the number
-is negative) and the overflow happened (making the sign bit wrong).
+is negative) and the overflow happened (making the sign bit wrong). As convention the terms **greater**
+and **less* are used in the related jump.
 
 For the equal condition is sufficient to check the ``ZF``.
+
+| Description | Type | Flags |
+|-------------|-------|---|
+| > | unsigned (above) | ``CF == 1`` |
+|   | signed (greater) | ``(ZF == 0) && (SF==OF)`` |
+| == | any | ``ZF == 1`` |
 
 ## Programmation errors
 
@@ -299,3 +340,6 @@ if (abs(arg1) < MAX_VALUE) {
  - [Jumps, flags, and the CMP instruction](https://www.hellboundhackers.org/articles/read-article.php?article_id=729)
  - [The 6502 overflow flag explained mathematically](http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html)
  - [Avoiding Overflow, Underflow, and Loss of Precision](https://www.codeproject.com/Articles/25294/Avoiding-Overflow-Underflow-and-Loss-of-Precision) "The cardinal rule in numerical analysis is to avoid subtracting nearly equal numbers. The more nearly equal two numbers are, the more precision is lost in the subtraction"
+ - https://www.cs.utah.edu/~rajeev/cs3810/slides/3810-08.pdf
+ - https://electronics.stackexchange.com/questions/22410/how-does-division-occur-in-our-computers
+ - https://gcc.gnu.org/onlinedocs/gcc/Integer-Overflow-Builtins.html

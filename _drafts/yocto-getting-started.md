@@ -2,7 +2,7 @@
 layout: post
 comments: true
 title: "Yocto getting started"
-tags: [embedded, yocto, linux]
+tags: [embedded, yocto]
 ---
 
 **Yocto** is an umbrella of projects used to generate a working linux distribution for embedded system.
@@ -393,4 +393,5 @@ $ oe-pkgdata-util find-path $FILE
  - https://old.yoctoproject.org/training/kernel-lab
  - https://www.yoctoproject.org/docs/1.6.1/kernel-dev/kernel-dev.html
  - https://stefanchrist.eu/blog/2017_09_15/Yocto%20Recipes%20vs%20Packages.xhtml
+ - https://github.com/shantanoo-desai/yoctoproject-cheatsheet
 

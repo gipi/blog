@@ -8,7 +8,11 @@ tags: [reversing,MFC,C++,windows,ghidra]
 I'm again at it: I have a device that I want to know how it works and I start
 to reverse it, this time without any particular reason if not curiosity.
 
-I want to describe the process of using Ghidra to reverse.
+In this post I want to describe without any particular order, how to reverse
+a C++ application and the USB protocol that it uses to update the firmware
+on the device.
+
+I will use Ghidra and I will try to show how to do some specific steps.
 
 ## Context
 
@@ -141,6 +145,10 @@ At the end the layout in memory of a MFC class is the following
   ...
 ```
 
+and in particular ``GetRuntimeClass()`` gives us the class this vtable
+belongs to; instead if you want the constructor you need to look at the
+function referencing the vtable:
+
 All the destructors have a structure like
 
 ```
@@ -155,6 +163,36 @@ CDialog * __thiscall FUN_0040a4d0(void *this,byte param_1)
 }
 ```
 
+Some of these tables have as the first function something that ghidra doesn't recognize
+as a ``GetRuntimeClass()``:
+
+```
+					 **************************************************************
+					 *                          FUNCTION                          *
+					 **************************************************************
+					 undefined * * __stdcall FUN_004192b0(void)
+	 undefined * *     EAX:4          <RETURN>
+					 FUN_004192b0                                    XREF[1]:     004e0d40(*)  
+004192b0   0      b8 90 0c        MOV        EAX=>PTR_s_CPage_ECDkey_004e0c90,PTR_s_CPage_E   = 0055fcf4
+				  4e 00
+004192b5   0      c3              RET
+```
+
+but in reality this is a custom object so the function returns the [CRuntimeStructure](https://docs.microsoft.com/en-us/cpp/mfc/reference/cobject-class?view=vs-2019#getruntimeclass)
+for that object:
+
+```
+					 PTR_s_CPage_ECDkey_004e0c90                     XREF[2]:     FUN_004192b0:004192b0(*), 
+																				  FUN_004192b0:004192b0(*)  
+004e0c90          f4 fc 55 00     addr       s_CPage_ECDkey_0055fcf4                          = "CPage_ECDkey"
+004e0c94          6c 41 00 00     ddw        416Ch
+004e0c98          ff ff 00 00     ddw        FFFFh
+004e0c9c          50 92 41 00     addr       FUN_00419250
+004e0ca0          b0 3f 42 00     addr       FUN_00423fb0
+004e0ca4          00 00 00 00     ddw        0h
+```
+
+obviously also the ``getMessageMap()`` method is custom.
 
 You can read on the [official documentation](https://docs.microsoft.com/en-us/cpp/mfc/tn006-message-maps).
 
@@ -162,14 +200,57 @@ https://docs.microsoft.com/en-us/cpp/mfc/reference/ccmdtarget-class?view=vs-2019
 
 ## Firmware downloading and parsing
 
-00408d80 download_firmware()
+```c
 
-After downloading the file from the remote server and saving it in ``Upgrade.tmp`` (this path is
-set by the routine that starts at ``0x0040882c``) the application parses it.
+int __cdecl download(CDialogUpdateClass *this)
+
+{
+  int iVar1;
+  
+  setState(this,DOWNLOADING_CONF);
+  iVar1 = download_conf(this);
+  if (iVar1 == 0) {
+    setState(this,RETRY_SERVER);
+    return 1;
+  }
+  setState(this,UPGRADE);
+  return 1;
+}
+```
+
+```c
+
+/* Here get the response from the server with FW and CONF urls,
+   but also downloads the conf. */
+
+int __fastcall download_conf(CDialogUpdateClass *this)
+
+{
+  char *response;
+  int iVar1;
+  
+  response = (char *)client_do_request(s_https://www.iezvu.com/upgrade/ot_0055e0ec,
+                                       (char *)&this->json);
+  if (response == NULL) {
+    return 0;
+  }
+                    /* here seems that the function takes like three args
+                       but internally doesn't use the last two */
+  parse_response(response,(char *)&this->ota_conf_file,(char *)&this->ota_fw_file);
+  free(response);
+  iVar1 = downloading_at((char *)&this->ota_conf_file,(char *)&this->Upgrade.con_path);
+  if (iVar1 != 0) {
+    return 0;
+  }
+  getServerVersionFromConfFile(this);
+  return 1;
+}
+```
 
 The core of what interest us is at ``0x00408d50``:
 
-```
+```c
+
 int __cdecl update(CDialogUpdateClass *this)
 
 {
@@ -177,13 +258,29 @@ int __cdecl update(CDialogUpdateClass *this)
   
   downloadStatus = download_firmware(this);
   if (downloadStatus != 0) {
-    setState(this,8);
+    setState(this,DOWNLOAD_FIRMWARE_FAILED);
     return 0;
   }
   firmware_open_and_parse(this);
   return 1;
 }
 ```
+
+00408d80 download_firmware()
+
+```c
+void __fastcall download_firmware(CDialogUpdateClass *this)
+
+{
+  setState(this,DOWNLOADING_FIRMWARE);
+  downloading_at((char *)&this->ota_fw_file,(char *)&this->Upgrade.tmp_path);
+  return;
+}
+```
+
+After downloading the file from the remote server and saving it in ``Upgrade.tmp`` (this path is
+set by the routine that starts at ``0x0040882c``) the application parses it.
+
 
 The function ``firmware_open_and_parse()`` located at ``0x00408b00`` then opens the
 downloaded firmware using a global ``CFile`` instance located at ``0x00593858``
@@ -330,6 +427,10 @@ the local variables after the call.
 The best way to deal with it is to set stack depth change to minus the offset plus four (I don't know why...
 probably there is a disalignment between the listing and decompilation windows)
 
+## GZIP
+
+An interesting part is where the code gunzip the firmware at ``0x00414d50``
+
 ## AWK
 
 Function at ``0x004111d0`` does some magic with ``awk`` to parse
@@ -347,3 +448,19 @@ this function is pretty interesting since allows to know what state corresponds 
 number via the messages that presents to the user and so you can create a wonderful enum :)
 
 Also there are pieces of the interfaces that are set, like the PNGs etc...
+
+## USB
+
+The mechanism that the application uses to update the firmware is by a custom
+``USB`` protocolo on top of the mass storage
+
+## Flash
+
+It's better to knwo the underlying techniology, for example at ``0x00416240``
+there is a routine that checks for ``0xff``
+
+## bare metal execution
+
+the piece of the OTA contains piece of code
+
+remember to set the correct address mapping before analyze them in ghidra
