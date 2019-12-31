@@ -5,10 +5,13 @@ title: "Integer arithmetic from a computer point of view"
 tags: [arithmetic, low level, WIP]
 ---
 
-A thing that is overlooked is the way arithmetic operations work in a computer
+A thing that is often overlooked is the way arithmetic operations work in a computer
 and specifically in the processing unit: not having a clear idea of how
 the operations are performed and their limitations can cause very important
 bug to happen and also help in case you want to reverse unknown code.
+
+In this I will explore how operation on integers (floating point will be
+treated in a specific, future, post).
 
 ## Integer encoding
 
@@ -298,15 +301,120 @@ For the equal condition is sufficient to check the ``ZF``.
 |   | signed (greater) | ``(ZF == 0) && (SF==OF)`` |
 | == | any | ``ZF == 1`` |
 
+## Arithmetics in the C language
+
+Our discussion is about how processors consume numbers but obvioulsy you usually
+write code in some high-level language like ``C`` and this presents with the problem
+of how the variable we declare in the code are implemented with the assembly language
+by the compiler and how the different operations between variables interact with each
+other (taking into consideration also that generally you have variables of different
+size and "signess").
+
+If you want a really deep dive into this kind of stuff, you need to read "The art
+of software security assessment", in particular chapter 6.
+
+First of all you have a finite number of **type**: **char**, **integer** and **floating point**.
+We have to add the sign/unsigned type for the first twos.
+
+Each type has its own bit-width and generally are "classified" following the scheme below
+
+|Type |ILP32 |ILP32LL |LP64 |ILP64 |LLP64 |
+|------|-------|---------|------|-------|-------|
+|``char`` |8 |8 |8 |8 |8 |
+|``short`` |16 |16 |16 | 16|16 |
+|``int`` |32 |32 |32 |64 |32 |
+|``long`` |32 |32 |64 |64 |32 |
+|``long long`` |? |64 |64 |64 |64 |
+|``pointer`` |32 |32 |64 |64 |64 |
+
+(obviously the ``ILP`` stands for "integer", "long", "pointer" and ``LL`` stands for "long long").
+Note how in all the systems the ``char`` is supposed to be 8-bit wide.
+
+### C Language's constructs
+
+It's important to be aware of the terminology
+
+[source](https://www.cs.auckland.ac.nz/references/unix/digital/AQTLTBTE/DOCU_026.HTM)
+
+An rvalue is the value of an expression, such as \\(2\\), or \\((x + 3)\\) , or \\((x + y) * (a - b)\\) . rvalues are not storage space
+
+An lvalue is an expression that describes the location of an object used in the
+program. The location of the object is the object's lvalue, and the object's
+rvalue is the value stored at the location described by the lvalue.
+
+### Type conversions
+
+Here we have the interesting and useful stuffs
+
+**value preserving:** when the conversion allow to represent all the possible value of the starting type
+otherwise is called **value changing**.
+
+The so called **integer conversion rank** ([source](http://www.enseignement.polytechnique.fr/informatique/INF478/docs/Cpp/en/c/language/integer_conversion_rank.html))
+
+|``long long int``, ``unsigned long long int`` |
+|``long int``, ``unsigned long int`` |
+|``int``, ``unsigned int`` |
+|``short int``, ``unsigned short int`` |
+|``signed char``, ``char``, ``unsigned char`` |
+|``_Bool`` |
+
+**usual arithmetic conversions**: when an operator needs two integer operands, first
+check either are floating point, otherwise starts the following procedure
+
+ - **integer promotions:** any type with rank lower than integer is promoted to integer
+
+at this point if the two operands are of the same type then we stop since there is no problem
+to do the operation, otherwise we need to take into consideration some factors
+
+ - **same sign, different rank:** the narrower type is converted to the wider
+ - **rank(unsigned) >= rank(signed):** convert to unsigned type
+ - **rank(unsigned)  < rank(signed):** there are two cases
+   - **value preserving:** convert both to the signed type
+   - **value changing:** convert both to the corresponding signed type of the unsigned operand
+
 ## Programmation errors
 
 ### Out of bounds
 
 ### Signedness
 
+The signedness can cause two kind of bugs, one pretty logical, like the following
+where we suppose that
+
+```c
+int n;
+
+n = read_some_n();
+
+char buffer[1024];
+
+if (n > 1024) {
+    return -1;
+}
+
+read(fd, buffer, n);
+```
+
+Take in mind that modern operating systems can have some measure to avoid
+catastrophic event like that, from the man page of ``read(2)``:
+
+    On  Linux, read() (and similar system calls) will transfer at most
+    0x7ffff000 (2,147,479,552) bytes, returning the number of bytes actually
+    transferred.  (This is true on both 32-bit and 64-bit sys‐ tems.)
+
+This avoid that negative numbers casted to ``size_t`` can cause harm.
+
 ### Overflow
 
 ### Wrap
+
+The following piece of code run indefinetly
+
+```c
+    int count = 10;
+    while(count-- >= 0U)
+        fprintf(stdout, "%c", count);
+```
 
 ### Conversion
 
@@ -343,3 +451,4 @@ if (abs(arg1) < MAX_VALUE) {
  - https://www.cs.utah.edu/~rajeev/cs3810/slides/3810-08.pdf
  - https://electronics.stackexchange.com/questions/22410/how-does-division-occur-in-our-computers
  - https://gcc.gnu.org/onlinedocs/gcc/Integer-Overflow-Builtins.html
+ - [64-Bit Programming Models: Why LP64?](https://web.archive.org/web/20170214042740/http://www.unix.org/version2/whatsnew/lp64_wp.html)

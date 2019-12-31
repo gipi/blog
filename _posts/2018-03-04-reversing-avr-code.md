@@ -17,14 +17,18 @@ are all two bytes longs (a word), the value inside this register is an index of 
  - ``x`` stands for ``r27:r26``
  - ``y`` stands for ``r29:r28`` also is the frame pointer
  - ``z`` stands for ``r31:r30`` and is used as argument for ``eicall``
- - ``r0`` is a temporary register
- - ``r1`` is usually zero
- - ``r2`` to ``r25`` are general purpose registers, used also for calling subroutines (see
+ - ``r0`` to ``r25`` are general purpose registers, used also for calling subroutines (see
 below the section about calling conventions).
 
 What is missing from this list is the **stack pointer**: it's not a directly accessible
 register, it's implemented using the memory address couple ``0x3e:0x3d``, see the section about
 the prologue of a function to see what this means.
+
+**Note:** for ``avr-libc`` ``r0`` and ``r1`` are particular registers that have fixed meaning,
+in particular:
+
+ - ``r0`` is a temporary register
+ - ``r1`` is usually zero
 
 ## Harvard architecture
 
@@ -36,6 +40,10 @@ data in these spaces, ``lds/sts`` and ``lpm/spm`` respectively.
 
 Another particularity is that by the memory space can be accessed some
 peripherics
+
+### SRAM
+
+### Program
 
 ## Arithmetic
 
@@ -158,11 +166,11 @@ the space into the stack for local variables; generally looks like the following
 
 ```
 push r28
-push r29
+push r29        ; save the frame pointer
 in r28, 0x3d
-in r29, 0x3e
-subi r28, 0x10
-sbci r29, r1
+in r29, 0x3e    ; set the frame pointer to the location of the stack pointer
+subi r28, 0x10  ; reserve space in the stack for local variables
+sbci r29, r1    ; (taking into account possible carry)
 ```
 
 In this case the code saves the frame pointer of the caller and sets the frame pointer
@@ -295,3 +303,31 @@ $ r2 -A -a avr extended.o
 \           0x0800005e      0895           ret
 ```
 
+### UART communication
+
+Like looking for ``printf()`` in "normal code", in embedded, bare-metal code
+you probably are interested in finding where the system communicates with 
+the user, and in ``AVR`` systems this means the **serial port**.
+
+The Atmel has produced a certain number of microcontrollers with a serial port,
+someone with more the one (but also a few without native support, where you need
+to bing bang some pins to recreate the functionality).
+
+Explaining how the ``UART`` protocol works is out of scope of this post, you only
+need to know that you need to specify the number of bits, and the speed of trasmission
+of these and in a microcontroller this is done via some registers.
+
+The most important registers are the following
+
+| ``UCSR0A`` |
+| ``RXC0``   | ``TXC0``   | ``UDRE0``  | ``FE0``   | ``DOR0``  | ``UPE0``   | ``U2X0``  | ``MPCM0`` |
+
+| ``UCSR0B`` |
+| ``RXCIE0`` | ``TXCIE0`` | ``UDRIE0`` | ``RXEN0`` | ``TXEN0`` | ``UCSZ20`` | ``RXB80`` | ``TXB80`` |
+
+| ``UCSR0C`` |
+| ``UMSEL01`` | ``UMSEL00`` | ``UPM01`` | ``UPM00`` | ``USBS0`` | ``UCSZ01`` | ``UCSZ00`` | ``UCPOL0`` |
+
+obviously each register has an address (probably) different in different microcontrollers.
+
+If you want a tutorial look [here](https://appelsiini.net/2011/simple-usart-with-avr-libc/).

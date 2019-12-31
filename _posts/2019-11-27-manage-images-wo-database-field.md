@@ -106,7 +106,7 @@ to talk with the database and validate the data automagically.
 
 All this is possible by the use of descriptors and metaclasses: we have just seen the
 descriptors, and metaclasses are out of scope for this post but let me say that
-an object, roughly speaking, is an instance of a metaclass in the same way an instance
+a class, roughly speaking, is an instance of a metaclass in the same way an instance
 of a class is obtained from a class: in particular ``__new__()`` is the analogous
 of ``__init__()`` for a metaclass.
 
@@ -360,7 +360,7 @@ The steps to implement this field
  5. we want to reuse the ``FieldImage`` wrapper class so to have the attributes of ``CubeImages``
     behave like ``ImageField`` instances.
 
-We can do that with the following three classes
+We can do that with the following four classes
 
 {% github_sample_ref gipi/cube-images/blob/master/cube_images/manager.py %}
 {% highlight python %}

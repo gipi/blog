@@ -13,19 +13,20 @@ environment:
 
 | Command | Description |
 |---------|-------------|
-| docker info | |
-| docker build -t \<name\> \<url\>#\<branch\>:\<subdir\> | |
-| docker run -it -v \<host\>:\<guest\> \<image/name\> \<cmd\> | |
-| docker run -p \<port host\>:\<port guest\> --link \<container id or name\>:\<label\> | run and allow connection with the given container |
-| docker commit \<container id\> \<image/name\> | |
-| docker inspect \<image/name\> | |
-| docker ps | ``ps`` but for containers |
-| docker ps -l | as above but only the latest |
-| docker ps -s | give me also the size |
-| docker update --restart=no | |
-| docker image prune | removes dangling images (not tagged and not referenced by any container) |
-| docker image prune -a |  |
-| docker system prune | |
+| ``docker info`` | |
+| ``docker build -t <name> <url>#<branch>:<subdir>`` | |
+| ``docker run -it -v <host>:<guest> <image/name> <cmd>`` | |
+| ``docker run -p <port host>:<port guest> --link <container id or name>:<label>`` | run and allow connection with the given container |
+| ``docker run ... --network none ...`` | run container with disabled networking |
+| ``docker commit <container id> <image/name>`` | |
+| ``docker inspect <image/name>`` | |
+| ``docker ps`` | ``ps`` but for containers |
+| ``docker ps -l`` | as above but only the latest |
+| ``docker ps -s`` | give me also the size |
+| ``docker update --restart=no`` | |
+| ``docker image prune`` | removes dangling images (not tagged and not referenced by any container) |
+| ``docker image prune -a`` |  |
+| ``docker system prune`` | |
 
 ## Useful images
 
