@@ -84,4 +84,5 @@ to apply.
  - https://grml.org/
  - https://fatemachine.github.io/live-armor/ Building Custom Live Images with Debian and Grsecurity
  - [Avoiding tests when building Debian packages](https://iomem.com/archives/18-Avoiding-tests-when-building-Debian-packages.html)
+ - [Downgrade all Debian packages to a specific date](https://vincent.bernat.ch/en/blog/2020-downgrade-debian)
 

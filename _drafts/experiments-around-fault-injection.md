@@ -216,3 +216,6 @@ Verified flash OK, 2459 bytes
 ## Links
 
  - [AVR instruction set manual](http://ww1.microchip.com/downloads/en/devicedoc/atmel-0856-avr-instruction-set-manual.pdf)
+ - https://pbpython.com/interactive-dashboards.html
+ - https://jakevdp.github.io/PythonDataScienceHandbook/04.08-multiple-subplots.html
+ - https://towardsdatascience.com/subplots-in-matplotlib-a-guide-and-tool-for-planning-your-plots-7d63fa632857
