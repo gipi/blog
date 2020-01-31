@@ -12,7 +12,7 @@ file, but probably your script has to act on some specific file that you want
 to indicate from command line
 
 How to handle a filepath passed as argument in your scripts? there are two
-possible way
+possible ways
 
  1. interpret it as a relative path to the current working directory
  2. interpret it as a relative path to the script containing directory
