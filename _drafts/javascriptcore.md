@@ -137,8 +137,56 @@ and describe the "layout" of the javascript object, i.e. the actual values
 that identify the ``Butterfly``; moreover, it contains the actual table (data type ``PropertyTable``
 in the field ``m_propertyTableUnsafe``) with the list of attributes that are defined and at what offsets.
 
+```c++
+inline Structure* JSCell::structure() const
+{
+        return Heap::heap(this)->structureIDTable().get(m_structureID);
+}
 
+inline Heap* Heap::heap(const JSCell* cell)
+{
+        return MarkedBlock::blockFor(cell)->heap();
+}
 
+typedef uintptr_t Bits;
+
+inline MarkedBlock* MarkedBlock::blockFor(const void* p)
+{
+    return reinterpret_cast<MarkedBlock*>(reinterpret_cast<Bits>(p) & blockMask);
+}
+```
+
+``Source/JavaScriptCore/heap/MarkedBlock.h``
+
+```c++
+namespace JSC {
+    ...
+    class MarkedBlock : public DoublyLinkedListNode<MarkedBlock> {
+    ...
+    public:
+        static const size_t atomSize = 16; // bytes
+        static const size_t blockSize = 16 * KB;
+        static const size_t blockMask = ~(blockSize - 1); // blockSize must be a power of two.
+        ...
+    }
+    ...
+}
+```
+
+```c++
+class VM : public ThreadSafeRefCounted<VM> {
+public:
+    // WebCore has a one-to-one mapping of threads to VMs;
+    // either create() or createLeaked() should only be called once
+    // on a thread, this is the 'default' VM (it uses the
+    // thread's default string uniquing table from wtfThreadData).
+    // API contexts created using the new context group aware interface
+    // create APIContextGroup objects which require less locking of JSC
+    // than the old singleton APIShared VM created for use by
+    // the original API.
+    ...
+}
+```
 
 ``m_keyCount`` gives the number of properties available and if ``m_propertyTableUnsafe`` is ``NULL``
 obvioulsy we don't have properties.
@@ -351,7 +399,24 @@ inline bool Structure::hasIndexingHeader(const JSCell* cell) const
 
 ## GDB manual session
 
-Let's create a simple object in Javascript, using the javascript console ``jsc``
+To make sense of what I'm talking about, I'll try to analyze the running
+code with ``gdb`` and the actual vulnerable version of the code. I found
+that the most reliable way to compile the code is to use docker and a ``debian:jesse``
+base image (I have a Dockerfile in my [repository](https://github.com/gipi/cve-cemetery)
+for that).
+
+Instead of using a webkit browser is simpler to use the javascript console (``jsc``)
+directly from the build directory; as a PoC I'll use the saelo's [one](https://github.com/saelo/jscpwn).
+
+Exists a very comfortable function to evaluate the vulnerability:
+
+```
+./obj-x86_64-linux-gnu/bin/jsc /opt/jscpwn/pwn.js /opt/jscpwn/utils.js  /opt/jscpwn/int64.js  -i
+>>> isVulnerable()
+true
+```
+
+Now we are good to go: I try to create an object in the console
 
 ```
 >>> a = {a: 1, b:2, c:3}
@@ -360,7 +425,12 @@ Let's create a simple object in Javascript, using the javascript console ``jsc``
 Cell: 0x55e56899be40 (0x55e5689e8d00:[Object, {a:0, b:1, c:2}, NonArray, Proto:0x55e5689c3ff0, Leaf]), ID: 348
 ```
 
-and after attaching to it with ``gdb`` we can inspect the memory
+and after attaching to the process with ``gdb`` I can inspect the memory, first
+by simply printing the quadword and then dereferencing the address
+as a ``JSC::JSCell`` (``gdb`` needs that the type is enclosed by single
+quote otherwise goes banana).
+
+Here below a summary with some lines removed for clarity
 
 ```
 gef➤  x/60xg 0x55e56899be40
@@ -380,6 +450,12 @@ $9 = {
   m_cellState = JSC::CellState::NewWhite
 }
 ```
+
+As you can see, the three properties's values are "inlined" with no butterfly; now
+I want to try to find the corresponding ``Structure`` in memory: ``m_structureID``
+contains the index in the array where the element is located.
+
+From ``gdb`` is possible to create a magic spell to reach such element:
 
 ```
 gef➤  print *('JSC::Structure'*)(('JSC::MarkedBlock'*)( 0x55e56899be40 & ~(16*1024 - 1)))->m_weakSet.m_vm->heap->m_structureIDTable.m_table.get()[348]
@@ -411,63 +487,25 @@ $22 = {
       doubleWord = 0x10016000000015c
     }
   },
-  m_outOfLineTypeFlags = 0x0,
-  m_globalObject = {
-    <JSC::WriteBarrierBase<JSC::JSGlobalObject>> = {
-      m_cell = 0x55e568983700
-    }, <No data fields>},
+  ...
   m_prototype = {
     <JSC::WriteBarrierBase<JSC::Unknown>> = {
       m_value = 0x55e5689c3ff0
     }, <No data fields>},
-  m_cachedPrototypeChain = {
-    <JSC::WriteBarrierBase<JSC::StructureChain>> = {
-      m_cell = 0x0
-    }, <No data fields>},
-  m_previousOrRareData = {
-    <JSC::WriteBarrierBase<JSC::JSCell>> = {
-      m_cell = 0x55e5689e3e00
-    }, <No data fields>},
-  m_nameInPrevious = {
-    m_ptr = 0x55e56894a850
-  },
-  m_classInfo = 0x7fae22daea00 <JSC::JSFinalObject::s_info>,
-  m_transitionTable = {
-    static UsingSingleSlotFlag = 0x1,
-    m_data = 0x1
-  },
+  ...
   m_propertyTableUnsafe = {
     <JSC::WriteBarrierBase<JSC::PropertyTable>> = {
       m_cell = 0x55e5689925c0
     }, <No data fields>},
-  m_inferredTypeTable = {
-    <JSC::WriteBarrierBase<JSC::InferredTypeTable>> = {
-      m_cell = 0x0
-    }, <No data fields>},
-  m_transitionWatchpointSet = {
-    static IsThinFlag = 0x1,
-    static StateMask = 0x6,
-    static StateShift = 0x1,
-    m_data = 0x3
-  },
+  ...
   m_offset = 0x2,
   m_inlineCapacity = 0x6,
-  m_lock = {
-    <WTF::LockBase> = {
-      static isHeldBit = 0x1,
-      static hasParkedBit = 0x2,
-      m_byte = {
-        value = {
-          <std::__atomic_base<unsigned char>> = {
-            _M_i = 0x0
-          }, <No data fields>}
-      }
-    }, <No data fields>},
-  m_bitField = 0x4a00000
+  ...
 }
 ```
 
-Take a look at the butterflies: from the ``jsc``'s prompt insert an object
+Now I want to try something involving the butterfly: from the ``jsc``'s prompt I insert an object
+with more than six properties
 
 ```js
 >>> a = {a:1, b:2, c:3, d:4, e:5, f:6, g:7}
@@ -488,6 +526,10 @@ Cell: 0x563afd783d40 (0x563afd82ed00:[Object, {h:0, i:1, l:2, m:3, n:4, o:5, p:1
 99
 ```
 
+and to make easier to use the instance I'll set a **convenience variable** in ``gdb``:
+in this way the variable has a proper type and can access the methods of the class
+(I think there are some limitations but for now is ok)
+
 ```
 gef➤  set $obj = (('JSC::JSObject'*) 0x563afd783d80)
 gef➤  x/10xg $obj
@@ -496,6 +538,11 @@ gef➤  x/10xg $obj
 0x563afd783da0: 0xffff000000000003      0xffff000000000004
 0x563afd783db0: 0xffff000000000005      0xffff000000000006
 0x563afd783dc0: 0x0100160000000173      0x0000000000000000
+```
+
+indeed we can ask for a dump of the butterfly from its base
+
+```
 gef➤  x/20xg $obj->butterfly()->base($obj->structure())
 0x563afd81a720: 0xffff000000000063      0xffff000000000011
 0x563afd81a730: 0xffff000000000022      0xffff000000000007
@@ -507,6 +554,11 @@ gef➤  x/20xg $obj->butterfly()->base($obj->structure())
 0x563afd81a790: 0x0000000000000000      0x0000000000000000
 0x563afd81a7a0: 0x0000000000000000      0x0000000000000000
 0x563afd81a7b0: 0x0000000000000000      0x0000000000000000
+```
+
+or from the "central pointer"
+
+```
 gef➤  x/20xg $obj->butterfly()
 0x563afd81a748: 0x41e575a3a7400000      0x7ff8000000000000
 0x563afd81a758: 0x7ff8000000000000      0x7ff8000000000000
@@ -520,11 +572,14 @@ gef➤  x/20xg $obj->butterfly()
 0x563afd81a7d8: 0x0000000000000000      0x0000000000000000
 ```
 
+Probably the best way to interact is using convenience variables
+since is more portable with respect to resolve each field and subfield.
+
 ## GEF
 
 Now that we have done some homeworks, we can try to power up the game creating a tool
 (or improving one in our case) in order to make all simpler for future adventures: we can
-try to extend ``gef`` ([github repo here](https://github.com/hugsy/gef)) a ``gdb`` extension(?) for security activities.
+try to extend ``gef`` ([github repo here](https://github.com/hugsy/gef)) a ``gdb`` extension(?) for security research.
 
 Remember if you have problem when you are writing code for gef that is possible to enable
 the debugging so to have a clean traceback when errors happen
@@ -540,7 +595,91 @@ Description:
 ```
 
 and to avoid to restart ``gdb`` when you change the script code you can do ``source /path/to/script.py``
-to reload it; take in mind that all the classes and functions are available in the python environment.
+to reload it; take in mind that all the classes and functions are available in the python environment
+that can be accessed in ``gdb`` using the command ``pi``. ``py`` is used for one liner.
+
+``gef`` uses the gdb's internal python API to create some commands: in our case we want to add a way
+to visualize clearly the value in memory of the javascript objects.
+
+The main data type in ``gdb`` is the ``Value`` class, it is a wrapper around a value of course
+and allows to interact with the API
+
+```
+gef➤  pi
+>>> addr = gdb.Value(0x55791e11fe00)
+```
+
+if we want to cast this address so to reference a specific type, like ``JSC::JSCell``
+I can use the ``gdb.lookup_type()`` function
+
+```
+>>> jsc_cell_type = gdb.lookup_type('JSC::JSCell')
+```
+
+(obviously ``gdb`` must know about this type, this means you have loaded a binary
+with the simbol loaded, maybe debug symbols?).
+
+I cannot indicate explicitely a pointer (``JSC::JSCell``*) but instead I have to use
+the ``pointer()`` method
+
+```
+>>> jsc_cell_type_pointer = jsc_cell_type.pointer()
+```
+
+At this point I can use
+
+```
+>>> addr.cast(jsc_cell_type_pointer)
+<gdb.Value object at 0x7f9750287e70>
+>>> print(addr.cast(jsc_cell_type_pointer))
+0x55791e11fe00
+>>> print(addr.cast(jsc_cell_type_pointer).dereference())
+{
+  static StructureFlags = 0x0, 
+  static needsDestruction = 0x0, 
+  static TypedArrayStorageType = JSC::NotTypedArray, 
+  m_structureID = 0x163, 
+  m_indexingType = 0x0, 
+  m_type = JSC::FinalObjectType, 
+  m_flags = 0x0, 
+  m_cellState = JSC::CellState::NewWhite
+}
+```
+
+It is also possible to parse ``gdb``'s commands via ``gdb.parse_and_eval()``
+
+```
+gef➤  set $obj = ('JSC::JSCell'*) 0x55791e11fe00
+>>> print(gdb.parse_and_eval('*$obj'))
+{
+  static StructureFlags = 0x0, 
+  static needsDestruction = 0x0, 
+  static TypedArrayStorageType = JSC::NotTypedArray, 
+  m_structureID = 0x163, 
+  m_indexingType = 0x0, 
+  m_type = JSC::FinalObjectType, 
+  m_flags = 0x0, 
+  m_cellState = JSC::CellState::NewWhite
+}
+```
+
+Obviously is possible to set convenience variables also using the python API
+
+```
+>>> obj = addr.cast(jsc_cell_type_pointer)
+>>> gdb.set_convenience_variable('miao', obj)
+>>> print(gdb.parse_and_eval('*$miao'))
+{
+  static StructureFlags = 0x0, 
+  static needsDestruction = 0x0, 
+  static TypedArrayStorageType = JSC::NotTypedArray, 
+  m_structureID = 0x163, 
+  m_indexingType = 0x0, 
+  m_type = JSC::FinalObjectType, 
+  m_flags = 0x0, 
+  m_cellState = JSC::CellState::NewWhite
+}
+```
 
 ## Case study: CVE-2016-4622
 
