@@ -77,7 +77,25 @@ $ qemu-system-x86_64 \
     -net nic,model=virtio -net user,hostfwd=tcp::2222-:22
 ```
 
+
+## Cheat sheet
+
+### Enable keymap
+
+Enable package ``kbd``
+
+Prompt: kbd                                                                                                                                                                                                │  
+  │   Location:                                                                                                                                                                                                │  
+  │     -> Target packages                                                                                                                                                                                     │  
+  │       -> Hardware handling
+
+### Enable ssh
+
 You can connect to it using the redirection in the last line
+
+```
+    -net nic,model=virtio -net user,hostfwd=tcp::2222-:22
+```
 
 ```
 $ ssh -p 2222 root@127.0.0.1 -o StrictHostKeyChecking=off
@@ -92,4 +110,35 @@ PermitEmptyPassword yes
 
 into ``/etc/ssh/sshd_config`` and restart the service with ``/etc/init.d/50sshd restart``.
 
-http://nairobi-embedded.org/qemu_serial_port_system_console.html
+### Customize filesystem
+
+If you need to add, remove or whatever to the final image, you can indicate
+a post build script, take for example ``pc_x86_64_bios_defconfig``
+
+```
+BR2_ROOTFS_POST_BUILD_SCRIPT="board/pc/post-build.sh"
+```
+
+```bash
+#!/bin/sh
+
+set -e
+
+BOARD_DIR=$(dirname "$0")
+
+# Detect boot strategy, EFI or BIOS
+if [ -f "$BINARIES_DIR/efi-part/startup.nsh" ]; then
+    cp -f "$BOARD_DIR/grub-efi.cfg" "$BINARIES_DIR/efi-part/EFI/BOOT/grub.cfg"
+else
+    cp -f "$BOARD_DIR/grub-bios.cfg" "$TARGET_DIR/boot/grub/grub.cfg"
+
+    # Copy grub 1st stage to binaries, required for genimage
+    cp -f "$HOST_DIR/lib/grub/i386-pc/boot.img" "$BINARIES_DIR"
+fi
+```
+
+## Links
+
+ - http://nairobi-embedded.org/qemu_serial_port_system_console.html
+ - https://www.viatech.com/en/2015/06/buildroot/
+ - https://elinux.org/images/2/2a/Using-buildroot-real-project.pdf
