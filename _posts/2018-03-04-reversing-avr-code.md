@@ -109,7 +109,7 @@ or the [complete reference](http://ww1.microchip.com/downloads/en/devicedoc/atme
 | add ra, rb | adds two register and stores the result in the first one |
 | adc ra, rb | adds two register using also the carry flag and stores the result in the first one |
 | adiw ra, K | adds immediate to word |
-| inc ra | increments a register of one |
+| inc ra | increments a register by one |
 | sub ra, rb | subtracts two registers and stores the result in the first one |
 | sbc ra, rb | subtracts two registers using also the carry flag and stores the result in the first one |
 | sbiw ra, K | subtracts immediate from word |
