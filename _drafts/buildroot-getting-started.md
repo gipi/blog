@@ -2,13 +2,14 @@
 layout: post
 comments: true
 title: "Build embedded systems with buildroot"
-tags: [embedded, buildroot, Linux]
+tags: [embedded, buildroot, Linux, WIP]
 ---
 
-It has a kconfig configuration mechanism, identical to the one
-used in the kernel
+[Buildroot](https://buildroot.org/) is an integration system used to obtain complete bootable
+embedded systems; it uses a KConfig configuration mechanism (the ``menuconfig`` thing).
 
-https://bootlin.com/~thomas/pub/using-buildroot-real-project.pdf
+This post is a simple way for me to take notes about it, refer to the [official documentation](https://buildroot.org/docs.html)
+for anything serious.
 
 ## Source
 
@@ -17,7 +18,6 @@ First of all you need to download the source code with ``git``
 ```
 $ git clone git://git.buildroot.net/buildroot
 ```
-
 
 and then enter in the new created directory. 
 
@@ -77,17 +77,84 @@ $ qemu-system-x86_64 \
     -net nic,model=virtio -net user,hostfwd=tcp::2222-:22
 ```
 
+During the package compiling process, Buildroot will record the compiling
+process via some identification files and save those files to the related
+directory of the package. All those identification files are:
+
+```
+.stamp_configured
+.stamp_downloaded
+.stamp_extracted
+.stamp_patched
+.stamp_staging_installed
+.stamp_target_installe
+```
+
+These identification files mainly control the download, decompression,
+packaging, configuration, compilation, installation, etc. of this package.
+
+Read ``docs/manual/rebuilding-packages.txt`` for more informations (seriously, read it,
+it's full of information).
 
 ## Cheat sheet
 
+### Save configuration
+
+You can set the file where to save the configuration
+
+```
+Build options ---->
+   (configs/whatever_defconfig) Location to save buildroot config
+```
+
+and once exited from ``menuconfig`` you can do
+
+```
+$ make savedefconfig
+```
+
+### Save kernel configuration
+
+```
+Kernel --->
+    (board/vendor/linux.config) Configuration file path
+```
+
+### Packages
+
+For each package is available a set of commands
+
+```
+  <pkg>                  - Build and install <pkg> and all its dependencies
+  <pkg>-source           - Only download the source files for <pkg>
+  <pkg>-extract          - Extract <pkg> sources
+  <pkg>-patch            - Apply patches to <pkg>
+  <pkg>-depends          - Build <pkg>'s dependencies
+  <pkg>-configure        - Build <pkg> up to the configure step
+  <pkg>-build            - Build <pkg> up to the build step
+  <pkg>-graph-depends    - Generate a graph of <pkg>'s dependencies
+  <pkg>-dirclean         - Remove <pkg> build directory
+  <pkg>-reconfigure      - Restart the build from the configure step
+  <pkg>-rebuild          - Restart the build from the build step
+```
+
+### Force rebuild target
+
+```
+$ rm -rf output/target
+$ find output/ -name ".stamp_target_installed" |xargs rm -rf
+```
+
 ### Enable keymap
 
-Enable package ``kbd``
+Enable package ``kbd`` in order to use ``loadkeys`` and the correct
+localization for your keyboard
 
-Prompt: kbd                                                                                                                                                                                                │  
-  │   Location:                                                                                                                                                                                                │  
-  │     -> Target packages                                                                                                                                                                                     │  
+```
+  │     -> Target packages
   │       -> Hardware handling
+                kbd
+```
 
 ### Enable ssh
 
@@ -109,6 +176,50 @@ PermitEmptyPassword yes
 ```
 
 into ``/etc/ssh/sshd_config`` and restart the service with ``/etc/init.d/50sshd restart``.
+
+Bad enough, with qemu is happened that the machine hangs at boot probably during the ``ssh-keygen``,
+maybe you can use ``CONFIG_RANDOM_TRUST_CPU`` or something indicated
+
+https://wiki.debian.org/BoottimeEntropyStarvation
+https://daniel-lange.com/archives/152-Openssh-taking-minutes-to-become-available,-booting-takes-half-an-hour-...-because-your-server-waits-for-a-few-bytes-of-randomness.html
+
+or maybe, hit the keyboard a couple times.
+
+https://unix.stackexchange.com/questions/442698/when-i-log-in-it-hangs-until-crng-init-done
+
+maybe rng-tools
+
+In some cases it's possible that ``sshd`` doesn't start because the keys are
+not present, in such case is possible to do
+
+```
+$ ssh-keygen -A -f output/target/ # generate the keys
+$ make                            # rebuild the filesystem
+```
+
+### Enable X11
+
+This is tricky: for now I was able to make work only the modular
+X server with a configuration like the following:
+
+```
+BR2_PACKAGE_XAPP_TWM=y
+BR2_PACKAGE_XAPP_XCALC=y
+BR2_PACKAGE_XAPP_XCLOCK=y
+BR2_PACKAGE_XAPP_XEYES=y
+BR2_PACKAGE_XAPP_XINIT=y
+BR2_PACKAGE_XDRIVER_XF86_INPUT_KEYBOARD=y
+BR2_PACKAGE_XDRIVER_XF86_INPUT_MOUSE=y
+BR2_PACKAGE_XDRIVER_XF86_VIDEO_CIRRUS=y
+BR2_PACKAGE_XDRIVER_XF86_VIDEO_FBDEV=y
+BR2_PACKAGE_XDRIVER_XF86_VIDEO_VESA=y
+BR2_PACKAGE_XORG7=y
+BR2_PACKAGE_XSERVER_XORG_SERVER=y
+BR2_PACKAGE_XTERM=y
+BR2_TOOLCHAIN_BUILDROOT_CXX=y
+BR2_TOOLCHAIN_BUILDROOT_WCHAR=y
+BR2_USE_WCHAR=y
+```
 
 ### Customize filesystem
 
@@ -137,8 +248,41 @@ else
 fi
 ```
 
-## Links
+### Linux kernel
 
+If you want to configure it
+
+```
+$ make linux-menuconfig
+```
+
+and then
+
+```
+$ make linux
+```
+
+to build it.
+
+### Build out-of-tree modules
+
+This is as usual
+
+```
+$ cd /path/to/module/code/
+$ make KDIR=/path/to/buildroot/output/build/linux-x.y.z/ M=$PWD
+```
+
+## Linkography
+
+ - [Official documentation](https://buildroot.org/docs.html)
  - http://nairobi-embedded.org/qemu_serial_port_system_console.html
  - https://www.viatech.com/en/2015/06/buildroot/
  - https://elinux.org/images/2/2a/Using-buildroot-real-project.pdf
+ - http://www.linux-kvm.org/page/USB_Host_Device_Assigned_to_Guest
+ - https://stackoverflow.com/questions/31617575/how-to-use-usb-camera-in-qemu
+ - https://stackoverflow.com/questions/47320800/how-to-clean-only-target-in-buildroot
+ - https://techfortalk.co.uk/2017/06/15/how-to-addcompile-a-kernel-module-as-a-new-buildroot-package/
+ - http://wiki.t-firefly.com/en/Firefly-PX3-SE/buildroot_introduction.html
+ - https://unix.stackexchange.com/questions/70931/how-to-install-x11-on-my-own-linux-buildroot-system
+ - https://www.kraxel.org/blog/2019/09/display-devices-in-qemu/
