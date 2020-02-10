@@ -305,6 +305,28 @@ It's possible to use ``qemu`` to debug the kernel
 
 To wait for the debugger to attach you can pass ``-s -S``.
 
+### Forward USB devices to guest
+
+It's possible to debug a physical USB device attached to the host
+indicating the port it's attached to; here we see a webcam
+
+```
+$ lsusb -t
+...
+/:  Bus 02.Port 1: Dev 1, Class=root_hub, Driver=xhci_hcd/14p, 480M
+    ...
+    |__ Port 14: Dev 36, If 0, Class=Imaging, Driver=, 480M
+/:  Bus 01.Port 1: Dev 1, Class=root_hub, Driver=ehci-pci/2p, 480M
+...
+```
+
+and since we need an high speed device we are telling ``qemu`` to
+use ``ehci``
+
+```
+-usb -device usb-ehci,id=ehci -device usb-host,hostport=14
+```
+
 ## Miscellanea
 
 ```errno``` is defined in ``include/uapi/asm-generic/errno.h``
