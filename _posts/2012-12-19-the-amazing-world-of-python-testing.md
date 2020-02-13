@@ -287,4 +287,4 @@ If we want a real report with each line annotated is possible to create an HTML 
 
     $ coverage html
 
-It worth to know that is possible to use it with your django project following [this instructions](http://www.darkcoding.net/software/code-coverage-in-django-with-coverage-and-django-jenkins/).
+It's worth noting that is possible to use it with your django project following [this instructions](http://www.darkcoding.net/software/code-coverage-in-django-with-coverage-and-django-jenkins/).
