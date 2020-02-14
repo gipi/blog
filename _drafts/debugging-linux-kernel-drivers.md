@@ -5,7 +5,8 @@ title: "Tips and tricks in debugging kernel drivers in Linux"
 tags: [Linux, programming, debug, kernel, WIP]
 ---
 
-This post includes a couple of notes about linux kernel debugging;
+This post includes a couple of notes about linux kernel debugging, in
+particular the things that I keep forgetting.
 
 
 ## Navigation
@@ -40,16 +41,20 @@ loglevel=       All Kernel Messages with a loglevel smaller than the
 
 ## Configuration
 
+If you have an old config and you want to generate a new config having non pre-existing
+configurations set to the default value you can issue a
 
 ```
 $ make alldefconfig
 ```
 
-You can set the options via command line using the following
+If you don't want to use ``menuconfig`` is possible to set configuration options via command line using the following
 
 ```
 $ ./scripts/config -e CONFIG_<your option>
 ```
+
+Now some configuration values that can be useful when debugging
 
 ```
 CONFIG_DEBUG_KERNEL:
@@ -59,7 +64,14 @@ CONFIG_DEBUG_KERNEL:
 ```
 
 ```
-CONFIG_DEBUG_INFO=y
+  │ CONFIG_DEBUG_INFO:
+  │
+  │ If you say Y here the resulting kernel image will include
+  │ debugging info resulting in a larger kernel image.
+  │ This adds debug symbols to the kernel and modules (gcc -g), and
+  │ is needed if you intend to use kernel crashdump or binary object
+  │ tools like crash, kgdb, LKCD, gdb, etc on the kernel.
+  │ Say Y here only if you plan to debug the kernel.
 ```
 
 ```
@@ -117,19 +129,19 @@ It's possible to have the debug messages enabled only when and where necessary:
 [here the documentation](https://kernel.org/doc/html/v4.15/admin-guide/dynamic-debug-howto.html)
 
 ```
-CONFIG_DYNAMIC_DEBUG:                                                                                                                                                                           │   
-  │                                                                                                                                                                                                 │   
-  │                                                                                                                                                                                                 │   
-  │ Compiles debug level messages into the kernel, which would not                                                                                                                                  │   
-  │ otherwise be available at runtime. These messages can then be                                                                                                                                   │   
-  │ enabled/disabled based on various levels of scope - per source file,                                                                                                                            │   
-  │ function, module, format string, and line number. This mechanism                                                                                                                                │   
-  │ implicitly compiles in all pr_debug() and dev_dbg() calls, which                                                                                                                                │   
-  │ enlarges the kernel text size by about 2%.                                                                                                                                                      │   
-  │                                                                                                                                                                                                 │   
-  │ If a source file is compiled with DEBUG flag set, any                                                                                                                                           │   
-  │ pr_debug() calls in it are enabled by default, but can be                                                                                                                                       │   
-  │ disabled at runtime as below.  Note that DEBUG flag is                                                                                                                                          │   
+CONFIG_DYNAMIC_DEBUG:
+  │
+  │
+  │ Compiles debug level messages into the kernel, which would not
+  │ otherwise be available at runtime. These messages can then be
+  │ enabled/disabled based on various levels of scope - per source file,
+  │ function, module, format string, and line number. This mechanism
+  │ implicitly compiles in all pr_debug() and dev_dbg() calls, which
+  │ enlarges the kernel text size by about 2%.
+  │
+  │ If a source file is compiled with DEBUG flag set, any
+  │ pr_debug() calls in it are enabled by default, but can be
+  │ disabled at runtime as below.  Note that DEBUG flag is
   │ turned on by many CONFIG_*DEBUG* options.
    ...
   │   Depends on: PRINTK [=y] && DEBUG_FS [=y]
@@ -141,7 +153,7 @@ filesystem via the following option
 ```
 CONFIG_DEBUG_FS:
     debugfs is a virtual file system that kernel developers use to put
-    debugging files into.  Enable this option to be able to read and                                                                                                                                │   
+    debugging files into.  Enable this option to be able to read and
     write to these files
 ```
 
@@ -198,16 +210,23 @@ inlined so try to single step instead of using the "next".
 
 ### Breakpoints
 
+Setting breakpoints works as usual but obviously there are some particular
+aspects of a operating system that you have to take into account, in particular
+symbols; It's convenient to use the ``lx`` related functions to facilitate
+debugging like in these examples
+
 ```
 (gdb) br do_exit if $lx_current()->pid == 42
 (gdb) br vfs_open if $_streq(path.dentry->d_iname, "test")
 ```
 
 if you need to debug a kernel module, you cannot set a breakpoint directly (I'm not sure really)
-but you can set a breakpoint to ``do_init_module()`` and then do whateber you want after you
-trigger it via a modprobe of the module
+but you can set a breakpoint to ``do_init_module()`` and then do whatever you want after you
+trigger it via a modprobe of the module; remember to use ``lx-symbol`` to load automatically
+the symbols
 
 ```
+gef➤ lx-symbol /opt/r5u870/ /opt/r5u870/usbcam/
 gef➤ b do_init_module
 gef➤ c
 Continuing.
@@ -256,6 +275,10 @@ show_signal_msg(struct pt_regs *regs, unsigned long error_code,
 ```
 ## OOPS
 
+The Oops is what you probably find yourself staring at and is important
+to remember that the crash happens at the ``RIP`` address, a lot of times
+I'm distracted from the stacktrace; your usual Oops looks something like this
+
 ```
 BUG: unable to handle kernel NULL pointer dereference at 0000000000000208
 PGD 800000003dece067 P4D 800000003dece067 PUD 3ded0067 PMD 0
@@ -266,12 +289,16 @@ RIP: 0010:dma_direct_map_sg+0x45/0xb0
  ...
 ```
 
-You can use the ``scripts/decode_stacktrace.sh`` to obtain information from an OOPS or
-``addr2line -e <kernel binary> <addr>``
+You can use the ``scripts/decode_stacktrace.sh`` to obtain source information from an OOPS
 
 ```
 $ cat /opt/r5u870/crash.log | ./scripts/decode_stacktrace.sh vmlinux . /opt/r5u870/usbcam/
 ```
+
+or ``addr2line -e <kernel binary> <addr>``.
+
+If you want to see the line in the code where the crash happened directly from
+the debugger, ``list`` is your friend
 
 ```
 gef➤  l *dma_direct_map_sg+0x45
@@ -288,20 +315,24 @@ gef➤  l *dma_direct_map_sg+0x45
 46      {
 ```
 
+and in case the address you want to see is from a module
+
 ```
 (gdb) list *<addr oops>
-(gdb) add_symbol_file <path/to/the/module.ko> <addr at runtime>
+(gdb) add_symbol_file <path/to/the/module.ko> <base addr at runtime>
 ```
 
-the address can be read from ``/sys/modules/module name/sections/.text``
+the base address at runtime can be read from ``/sys/modules/module name/sections/.text``
+(``lx-symbol`` should do that for you but in case you have to work with an old kernel
+knowing the general case can help).
 
 ## Qemu
 
-It's possible to use ``qemu`` to debug the kernel
+It's possible to use ``qemu`` to debug the kernel take in mind some
 
  - use ``nokaslr`` to avoid randomization of the addresses
- - use ``add-auto-load-safe-path /path/to/linux/build/scripts/gdb/vmlinux-gdb.py``
- - ``cd /path/to/linux/build/``
+ - ``cd /path/to/linux/build/`` if you want to use the scripts from the kernel and
+ - use ``add-auto-load-safe-path /path/to/linux/build/scripts/gdb/vmlinux-gdb.py`` in ``gdb``
 
 To wait for the debugger to attach you can pass ``-s -S``.
 
@@ -332,6 +363,8 @@ use ``ehci``
 ```errno``` is defined in ``include/uapi/asm-generic/errno.h``
 
 Under the directory named ``tools`` there a certain numbers of script useful to debug.
+
+If you want to install the modules in another path use this
 
 ```
 $ make INSTALL_MOD_PATH=/path/where/to/install/modules modules_install
