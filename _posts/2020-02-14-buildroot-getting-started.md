@@ -178,16 +178,10 @@ PermitEmptyPassword yes
 into ``/etc/ssh/sshd_config`` and restart the service with ``/etc/init.d/50sshd restart``.
 
 Bad enough, with qemu is happened that the machine hangs at boot probably during the ``ssh-keygen``,
-maybe you can use ``CONFIG_RANDOM_TRUST_CPU`` or something indicated
-
-https://wiki.debian.org/BoottimeEntropyStarvation
-https://daniel-lange.com/archives/152-Openssh-taking-minutes-to-become-available,-booting-takes-half-an-hour-...-because-your-server-waits-for-a-few-bytes-of-randomness.html
-
-or maybe, hit the keyboard a couple times.
-
-https://unix.stackexchange.com/questions/442698/when-i-log-in-it-hangs-until-crng-init-done
-
-maybe rng-tools
+maybe you can use ``CONFIG_RANDOM_TRUST_CPU`` or something indicated [here](https://wiki.debian.org/BoottimeEntropyStarvation)
+or [here](https://daniel-lange.com/archives/152-Openssh-taking-minutes-to-become-available,-booting-takes-half-an-hour-...-because-your-server-waits-for-a-few-bytes-of-randomness.html)
+or maybe, hit the keyboard a couple times or
+maybe [rng-tools](https://unix.stackexchange.com/questions/442698/when-i-log-in-it-hangs-until-crng-init-done).
 
 In some cases it's possible that ``sshd`` doesn't start because the keys are
 not present, in such case is possible to do

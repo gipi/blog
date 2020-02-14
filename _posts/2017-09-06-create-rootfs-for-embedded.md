@@ -10,7 +10,9 @@ a good boy shared some images in order to start to put hands on esotic architect
 
 The bad thing in my opinion is that he doesn't explain how they have been generated,
 just in case someone need to customize something; in this post I want to show how to create root filesystems for all
-the necessary architectures using ``multistrap``.
+the necessary architectures using ``multistrap``. If you want instead to use something more serious,
+[here]({% post_url 2020-02-14-buildroot-getting-started %}) another post about buildroot,
+that allows you to do something similar.
 
 [Multistrap](https://wiki.debian.org/Multistrap) is a Debian tool used to create root filesystem: from the
 Debian's wiki
