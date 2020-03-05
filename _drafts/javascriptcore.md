@@ -2,7 +2,7 @@
 layout: post
 comments: true
 title: "Notes on JavascriptCore"
-tags: [browser, gdb]
+tags: [Webkit, browser, gdb]
 ---
 
 In this post I want to add some pratical notes (and maybe a new tool)
@@ -10,6 +10,9 @@ to the [paper from saelo](http://phrack.com/papers/attacking_javascript_engines.
 about exploiting modern browsers; in particular Webkit.
 
 As in his paper, I'll deep dive into the source code of that version of webkit.
+
+Since seems that doesn't exist a documentation for the its code base you
+can take this as a getting started if you want to hack its code.
 
 ## Fundamental datatypes
 
@@ -66,76 +69,67 @@ enum JSType : uint8_t {
 }
 ```
 
+```c++
+inline bool isJSArray(JSCell* cell) { return cell->classInfo() == JSArray::info(); }
+inline bool isJSArray(JSValue v) { return v.isCell() && isJSArray(v.asCell()); }
+
+inline const ClassInfo* JSCell::classInfo() const
+{
+    MarkedBlock* block = MarkedBlock::blockFor(this);
+    if (block->needsDestruction() && !(inlineTypeFlags() & StructureIsImmortal))
+        return static_cast<const JSDestructibleObject*>(this)->classInfo();
+    return structure(*block->vm())->classInfo();
+}
+```
+
+An example of inheritance is the following in the ``JSArray`` class:
+
+```c++
+bool JSArray::getOwnPropertySlot(JSObject* object, ExecState* exec, PropertyName propertyName, PropertySlot& slot)
+{
+    JSArray* thisObject = jsCast<JSArray*>(object);
+    if (propertyName == exec->propertyNames().length) {
+        unsigned attributes = thisObject->isLengthWritable() ? DontDelete | DontEnum : DontDelete | DontEnum | ReadOnly;
+        slot.setValue(thisObject, attributes, jsNumber(thisObject->length()));
+        return true;
+    }
+
+    return JSObject::getOwnPropertySlot(thisObject, exec, propertyName, slot);
+}
+```
+
 
 ### JSCell
 
 ``JSCell`` it's the base class for all the runtime data types that need to be
-garbage collected somehow.
+garbage collected somehow. You can think of it as a kind of header for identifying
+the real object.
 
- ``JSObject`` instead is 
+In memory it has the following layout
 
-but there are a couple of others classes important for the following
-
-### Butterfly
-
-``Butterfly`` it's a class without properties, mainly used to "cast" and wrap
-the data structure holding the actual data
-
-The way in which the pointer to a butterfly is used cause the code that returns
-the pointer to it to make some magic with pointer arithmetics:
-
-```c++
-inline Butterfly* Butterfly::createUninitialized(VM& vm, JSCell* intendedOwner, size_t preCapacity, size_t propertyCapacity, bool hasIndexingHeader, size_t indexingPayloadSizeInBytes)
-{
-    void* temp;
-    size_t size = totalSize(preCapacity, propertyCapacity, hasIndexingHeader, indexingPayloadSizeInBytes);
-    RELEASE_ASSERT(vm.heap.tryAllocateStorage(intendedOwner, size, &temp));
-    Butterfly* result = fromBase(temp, preCapacity, propertyCapacity);
-    return result;
-}
-
-static Butterfly* JSC::Butterfly::fromBase(void* base, size_t preCapacity, size_t propertyCapacity)
-{
-    return reinterpret_cast<Butterfly*>(static_cast<EncodedJSValue*>(base) + preCapacity + propertyCapacity + 1);
-}
+```
+  .----.----.----.----.----.----.----.----.
+  |    Structure ID   | in | ty | fl | st |
+  '----'----'----'----'----'----'----'----'
+                         \    \    \    \_______ CellState
+                          \    \    \___________ TypeInfo::InlineTypeFlags
+                           \    \_______________ JSType
+                            \___________________ IndexingType
 ```
 
-indeed the size is calculated in the following way
-
-```c++
-static size_t totalSize(size_t preCapacity, size_t propertyCapacity, bool hasIndexingHeader, size_t indexingPayloadSizeInBytes)
-{
-    ASSERT(indexingPayloadSizeInBytes ? hasIndexingHeader : true);
-    ASSERT(sizeof(EncodedJSValue) == sizeof(IndexingHeader));
-    return (preCapacity + propertyCapacity) * sizeof(EncodedJSValue) + (hasIndexingHeader ? sizeof(IndexingHeader) : 0) + indexingPayloadSizeInBytes;
-}
-
-inline size_t JSObject::butterflyTotalSize()
-{
-    Structure* structure = this->structure();
-    Butterfly* butterfly = this->butterfly();
-    size_t preCapacity;
-    size_t indexingPayloadSizeInBytes;
-    bool hasIndexingHeader = this->hasIndexingHeader();
-
-    if (UNLIKELY(hasIndexingHeader)) {
-        preCapacity = butterfly->indexingHeader()->preCapacity(structure);
-        indexingPayloadSizeInBytes = butterfly->indexingHeader()->indexingPayloadSizeInBytes(structure);
-    } else {
-        preCapacity = 0;
-        indexingPayloadSizeInBytes = 0;
-    }
-
-    return Butterfly::totalSize(preCapacity, structure->outOfLineCapacity(), hasIndexingHeader, indexingPayloadSizeInBytes);
-}
-```
 
 ### Structure
 
 ``Structure``: it identifies the class the object belongs to (via the ``m_classInfo`` attribute)
-and describe the "layout" of the javascript object, i.e. the actual values
-that identify the ``Butterfly``; moreover, it contains the actual table (data type ``PropertyTable``
+and describe the "layout" of the javascript object, i.e. the actual relation properties/offsets
+contained in the ``Butterfly``; moreover, it contains the actual table (data type ``PropertyTable``
 in the field ``m_propertyTableUnsafe``) with the list of attributes that are defined and at what offsets.
+
+Another field important is ``m_inlineCapacity`` that tells us how much space for inline properties is
+preallocated alongside the object in memory and not stored in the butterfly.
+
+From the code below you can see that the table is placed at the start of the memory
+block (described by the class ``MarkedBlock``).
 
 ```c++
 inline Structure* JSCell::structure() const
@@ -154,11 +148,7 @@ inline MarkedBlock* MarkedBlock::blockFor(const void* p)
 {
     return reinterpret_cast<MarkedBlock*>(reinterpret_cast<Bits>(p) & blockMask);
 }
-```
-
-``Source/JavaScriptCore/heap/MarkedBlock.h``
-
-```c++
+// Source/JavaScriptCore/heap/MarkedBlock.h``
 namespace JSC {
     ...
     class MarkedBlock : public DoublyLinkedListNode<MarkedBlock> {
@@ -188,8 +178,55 @@ public:
 }
 ```
 
+```
+gef➤  ptype/rom JSC::PropertyTable
+/* offset    |  size */  type = class JSC::PropertyTable : public JSC::JSCell {
+/*    8      |     4 */    unsigned int m_indexSize;
+/*   12      |     4 */    unsigned int m_indexMask;
+/*   16      |     8 */    unsigned int *m_index;
+/*   24      |     4 */    unsigned int m_keyCount;
+/*   28      |     4 */    unsigned int m_deletedCount;
+/*   32      |     8 */    class std::unique_ptr<WTF::Vector<int, 0ul, WTF::CrashOnOverflow, 16ul>, std::default_delete<WTF::Vector<int, 0ul, WTF::CrashOnOverflow, 16ul> > > {
+                             private:
+/*   32      |     8 */        std::unique_ptr<WTF::Vector<int, 0ul, WTF::CrashOnOverflow, 16ul>, std::default_delete<WTF::Vector<int, 0ul, WTF::CrashOnOverflow, 16ul> > >::__tuple_type _M_t;
+
+                               /* total size (bytes):    8 */
+                           } m_deletedOffsets;
+
+                           /* total size (bytes):   40 */
+                         }
+```
+
+The particularity is that the table is at the address obtained
+with the sum of ``m_index`` and ``m_indexSize``: this because
+the table itself is preceded by a hash table.
 ``m_keyCount`` gives the number of properties available and if ``m_propertyTableUnsafe`` is ``NULL``
 obvioulsy we don't have properties.
+
+```c++
+inline PropertyTable::ValueType* PropertyTable::table()
+{
+    // The table of values lies after the hash index.
+    return reinterpret_cast<ValueType*>(m_index + m_indexSize);
+}
+```
+
+```c++
+typedef PropertyMapEntry ValueType;
+
+struct PropertyMapEntry {
+    UniquedStringImpl* key;
+    PropertyOffset offset;
+    uint8_t attributes;
+    bool hasInferredType;
+    ...
+};
+
+typedef int PropertyOffset;
+
+static const PropertyOffset invalidOffset = -1;
+static const PropertyOffset firstOutOfLineOffset = 100;
+```
 
 **Note:** it seems that properties of the ``JSCell`` are assigned from the corresponding values in the
 ``Structure`` associated during creation(?), I think for performance reason.
@@ -327,6 +364,76 @@ private:
 **Note:** the ``Butterfly`` uses for taking outoflinestorage and indexing properties a wrapper
 datatype named ``IndexingHeader`` *moved by 1*
 
+
+### Butterfly
+
+``Butterfly`` it's a class without properties, mainly used to "cast" and wrap
+the data structure holding the actual data
+
+The way in which the pointer to a butterfly is used cause the code that returns
+the pointer to it to make some magic with pointer arithmetics:
+
+```c++
+inline Butterfly* Butterfly::createUninitialized(VM& vm, JSCell* intendedOwner, size_t preCapacity, size_t propertyCapacity, bool hasIndexingHeader, size_t indexingPayloadSizeInBytes)
+{
+    void* temp;
+    size_t size = totalSize(preCapacity, propertyCapacity, hasIndexingHeader, indexingPayloadSizeInBytes);
+    RELEASE_ASSERT(vm.heap.tryAllocateStorage(intendedOwner, size, &temp));
+    Butterfly* result = fromBase(temp, preCapacity, propertyCapacity);
+    return result;
+}
+
+static Butterfly* JSC::Butterfly::fromBase(void* base, size_t preCapacity, size_t propertyCapacity)
+{
+    return reinterpret_cast<Butterfly*>(static_cast<EncodedJSValue*>(base) + preCapacity + propertyCapacity + 1);
+}
+```
+
+indeed the size is calculated in the following way
+
+```c++
+static size_t totalSize(size_t preCapacity, size_t propertyCapacity, bool hasIndexingHeader, size_t indexingPayloadSizeInBytes)
+{
+    ASSERT(indexingPayloadSizeInBytes ? hasIndexingHeader : true);
+    ASSERT(sizeof(EncodedJSValue) == sizeof(IndexingHeader));
+    return (preCapacity + propertyCapacity) * sizeof(EncodedJSValue) + (hasIndexingHeader ? sizeof(IndexingHeader) : 0) + indexingPayloadSizeInBytes;
+}
+
+inline size_t JSObject::butterflyTotalSize()
+{
+    Structure* structure = this->structure();
+    Butterfly* butterfly = this->butterfly();
+    size_t preCapacity;
+    size_t indexingPayloadSizeInBytes;
+    bool hasIndexingHeader = this->hasIndexingHeader();
+
+    if (UNLIKELY(hasIndexingHeader)) {
+        preCapacity = butterfly->indexingHeader()->preCapacity(structure);
+        indexingPayloadSizeInBytes = butterfly->indexingHeader()->indexingPayloadSizeInBytes(structure);
+    } else {
+        preCapacity = 0;
+        indexingPayloadSizeInBytes = 0;
+    }
+
+    return Butterfly::totalSize(preCapacity, structure->outOfLineCapacity(), hasIndexingHeader, indexingPayloadSizeInBytes);
+}
+```
+
+## JSObject
+
+In memory a ``JSObject`` is composed by only two quadword as "header", followed
+of a couple of inline properties:
+
+```
+    .----.----.----.----.----.----.----.----.----.----.----.----.----.----.----.----.
+    |                 JSCell                |               Butterfly               |
+     ----'----'----'----'----'----'----'----'----'----'----'----'----'----'----'----
+    |           properties inline 0         |           property inline 1           |
+     ----'----'----'----'----'----'----'----'----'----'----'----'----'----'----'----'
+    |                                                                               |
+
+```
+
 ## Arrays
 
 From ``ArrayStorage.h``
@@ -455,7 +562,47 @@ As you can see, the three properties's values are "inlined" with no butterfly; n
 I want to try to find the corresponding ``Structure`` in memory: ``m_structureID``
 contains the index in the array where the element is located.
 
-From ``gdb`` is possible to create a magic spell to reach such element:
+By the way, if you want to know the definition of a datatype inside ``gdb`` you can
+use the ``ptype`` command
+
+```
+gef➤  help ptype
+Print definition of type TYPE.
+Usage: ptype[/FLAGS] TYPE | EXPRESSION
+Argument may be any type (for example a type name defined by typedef,
+or "struct STRUCT-TAG" or "class CLASS-NAME" or "union UNION-TAG"
+or "enum ENUM-TAG") or an expression.
+The selected stack frame's lexical context is used to look up the name.
+Contrary to "whatis", "ptype" always unrolls any typedefs.
+
+Available FLAGS are:
+  /r    print in "raw" form; do not substitute typedefs
+  /m    do not print methods defined in a class
+  /M    print methods defined in a class
+  /t    do not print typedefs defined in a class
+  /T    print typedefs defined in a class
+  /o    print offsets and sizes of fields in a struct (like pahole)
+
+gef➤  ptype/om JSC::JSCell
+/* offset    |  size */  type = class JSC::JSCell {
+                         public:
+                           static const unsigned int StructureFlags;
+                           static const bool needsDestruction;
+                           static const enum JSC::TypedArrayType TypedArrayStorageType;
+                         private:
+/*    0      |     4 */    JSC::StructureID m_structureID;
+/*    4      |     1 */    JSC::IndexingType m_indexingType;
+/*    5      |     1 */    enum JSC::JSType m_type;
+/*    6      |     1 */    JSC::TypeInfo::InlineTypeFlags m_flags;
+/*    7      |     1 */    enum JSC::CellState m_cellState;
+
+                           /* total size (bytes):    8 */
+                         }
+```
+
+Sometimes reaching the right instance of an object is a little tricky, but
+from ``gdb`` is possible to create magic spells if like this below to reach
+the structure describing the object properties:
 
 ```
 gef➤  print *('JSC::Structure'*)(('JSC::MarkedBlock'*)( 0x55e56899be40 & ~(16*1024 - 1)))->m_weakSet.m_vm->heap->m_structureIDTable.m_table.get()[348]
@@ -689,6 +836,7 @@ what saelo was talking about.
 To automatize the analysis you can use the following ``gdb``'s [script]({{ site.baseurl }}/public/code/javascriptcore/bp.gdb)
 
 ```
+obj = {a: 1, b:2}
 >>> a = [];for (var i = 0; i < 100; i++)a.push(i + 13.37);var b = a.slice(0, {valueOf: function() { a.length = 0;c=[obj];return 4;}});b
 13.37,14.37,8.4879831644e-314,4.6843036111784e-310
 ```
