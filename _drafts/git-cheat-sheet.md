@@ -23,6 +23,12 @@ $ git reset HEAD^
 $ git rebase --continue
 ```
 
+## Diffing
+
+A part from the normal ``git diff`` and the options predates from ``diff(1)``,
+if you want colored output even in presence of a pipe, you must pass
+``--color=always`` and use the ``-r`` option for ``less(1)``.
+
 ## Rebase one commit onto
 
 This is particular: you want to rebase the tip of ``<branch>`` to ``<upstream>``,
