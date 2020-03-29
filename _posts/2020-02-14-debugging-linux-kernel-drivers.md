@@ -54,6 +54,12 @@ If you don't want to use ``menuconfig`` is possible to set configuration options
 $ ./scripts/config -e CONFIG_<your option>
 ```
 
+However, if you are in hurry, that is to compile for ``x86_64``:
+
+```
+$ make ARCH=x86_64 defconfig
+```
+
 Now some configuration values that can be useful when debugging
 
 ```
@@ -81,6 +87,32 @@ CONFIG_DEBUG_KERNEL:
   │ debug messages to the system log. Select this if you are having a
   │ problem with the driver core and want to see more of what is
   │ going on.
+```
+
+It's important to know that you need ``gcc`` to compile the kernel
+and in particular, depending on the version of the kernel you are trying
+to compile, a specific version; to find out which version is supported
+look in the directory ``include/linux/`` for some file named ``compiler-gccX.h``.
+
+If you need to tell the compiler of a particular version use the ``CC``
+variable
+
+```
+$ make CC=gcc-4
+```
+
+It's a little tricky for very old kernel to find which version works and
+actually find the binary; if you are in a Debian distribution you can
+use [snapshot.debian.org](https://snapshot.debian.org/). YMMV but I'm
+not sure it will work at all :)
+
+## Cross Compile
+
+This is something I forget about a lot
+
+```
+$ make ARCH=mips CROSS_COMPILE=mips-linux-gnu- defconfig
+$ make ARCH=mips CROSS_COMPILE=mips-linux-gnu- -j 4
 ```
 
 ### GDB scripts
@@ -370,7 +402,15 @@ If you want to install the modules in another path use this
 $ make INSTALL_MOD_PATH=/path/where/to/install/modules modules_install
 ```
 
-## Links
+### Errors
+
+``gcc: error: elf_x86_64: No such file or directory`` -> change ``-m elf_x86_64`` to ``-m64``.
+
+
+``can't use 'defined(@array)' (Maybe you should just omit the defined()?) at kernel/timeconst.pl line 373``
+is fixed changing ``if (!defined(@val)) {`` to ``if (!@val) {``.
+
+## Linkography
 
  - https://opensourceforu.com/2011/01/understanding-a-kernel-oops/
  - http://mokosays.com/work/?p=22
