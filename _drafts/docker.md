@@ -27,6 +27,7 @@ environment:
 | ``docker image prune`` | removes dangling images (not tagged and not referenced by any container) |
 | ``docker image prune -a`` |  |
 | ``docker system prune`` | |
+| ``docker cp <src container:src path> <dest path>`` | copy a file from a running container to the destination path |
 
 ## Useful images
 

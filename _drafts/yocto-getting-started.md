@@ -290,6 +290,62 @@ for the Raspberry Pi.
 I advise you to indicate a suitable path for variables like ``DL_DIR`` in order to avoid
 redownloading over and over the same stuff.
 
+## Create a new layer
+
+ - https://www.yoctoproject.org/docs/current/dev-manual/dev-manual.html#creating-your-own-layer
+
+```
+$ mkdir meta-whatever && cd meta-whatever
+$ mkdir conf
+$ cat > conf/layer.conf <<EOF
+# We have a conf and classes directory, add to BBPATH
+BBPATH .= ":\${LAYERDIR}"
+
+# We have recipes-* directories, add to BBFILES
+BBFILES += "\${LAYERDIR}/recipes-*/*/*.bb \\
+            \${LAYERDIR}/recipes-*/*/*.bbappend"
+
+BBFILE_COLLECTIONS += "whatever"                           # this is a unique identifier
+BBFILE_PATTERN_whatever = "^\${LAYERDIR}/"                  # to be changed here
+BBFILE_PRIORITY_whatever = "5"                             # and here
+LAYERVERSION_whatever = "1"               # layer version  # and here
+LAYERSERIES_COMPAT_whatever = "zeus"      # compatibility  # and here
+EOF
+```
+
+## Add a new machine
+
+ - https://www.yoctoproject.org/docs/current/dev-manual/dev-manual.html#platdev-newmachine
+
+```
+$ cd meta-whatever
+$ mkdir conf/machine/
+$ cat > conf/machine/whatever-soc.conf <<EOF
+require conf/machine/include/tune-cortexa8.inc
+```
+
+## Use your layer
+
+Into ``conf/bblayer.conf``, you can indicate your layer
+
+```
+# POKY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
+# changes incompatibly
+POKY_BBLAYERS_CONF_VERSION = "2"
+
+BBPATH = "${TOPDIR}"
+BBFILES ?= ""
+
+LAYER_PATH = "${TOPDIR}/../sources" # I assume your layers are into sources/
+
+BBLAYERS ?= " \
+    ${LAYER_PATH}/meta \
+    ${LAYER_PATH}/meta-poky \
+    ${LAYER_PATH}/meta-whatever \
+"
+```
+
+
 ## Building
 
 The main purpose of Yocto is building something and the main tool to accomplish that
@@ -310,11 +366,61 @@ Common targets are:
 You can also run generated qemu images with a command like 'runqemu qemux86'
 ```
 
+You can use the flag ``--continue`` to push the build forward as much as possible.
+
+## Clean
+
+```
+$ bitbake -c cleanall <recipe>
+```
+
 ## Kernel
+
+ - yoctoproject.org/docs/1.6/kernel-dev/kernel-dev.html
+ - https://www.yoctoproject.org/docs/1.8.1/kernel-dev/kernel-dev.html#using-an-in-tree-defconfig-file
+
+First of all the kernel is enabled by the ``PREFERRED_PROVIDER_virtual/kernel`` variable
+and you can choose the preferred version like
+
+```
+PREFERRED_VERSION_linux-yocto ??= "4.19.%"
+```
 
 Remember that the kernel is a particular recipe that needs particular attention; in particular
 take in mind that for example the ``CFLAGS`` are not passed directly but set by the ``Makefile``
 using the ``KBUILD_CFLAGS`` and family.
+
+Difference between linux-yocto and ???
+
+If you want ``zImage`` and device tree in the same binary exists the variable ``KERNEL_DEVICETREE_BUNDLE``.
+
+```
+KCONFIG_MODE = "--alldefconfig"
+```
+
+## WIC
+
+ - https://www.yoctoproject.org/docs/2.4.2/dev-manual/dev-manual.html#creating-partitioned-images-using-wic
+
+It's a utility for creating disk images.
+
+You can increase the debug level with ``--debug`` (after the subcommand)
+
+IMAGE_TYPES
+IMAGE_BOOT_FILES
+
+```
+$ wic ls ./galaxy-s-202003291054-mmcblk.direct:1
+Volume in drive : is boot       
+ Volume Serial Number is 731F-09B5
+Directory for ::/
+
+ZIMAGE         1166704 2020-03-29   8:54  zImage
+        1 file            1 166 704 bytes
+                          9 693 184 bytes free
+```
+
+note that generated files won't be included in the previous listing (like ``extlinux`` ;)).
 
 ## SDK
 
@@ -339,6 +445,13 @@ $ source $PATH_TO_SDK/environment-setup-$machine
 $ bitbake-layers show-recipes /etc/network/interfaces
 $ bitbake-layers show-appends init-ifupdown
 ```
+
+### Find appended layers
+
+```
+$ bitbake-layers show-appends
+```
+
 ### Find which recipe creates a file
 
 ```

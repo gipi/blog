@@ -5,6 +5,26 @@ title: "Debian, a cheat sheet (sort of)"
 tags: [debian, WIP, cheat sheet]
 ---
 
+## Releases
+
+| Version | Codename | Date |
+|---------|----------|------|
+| 1.0     | Buzz | 1996 |
+| 1.2 | Rex | 1996 |
+| 1.3 | Bo | 1997 |
+| 2.0 | Hamm | 1998 |
+| 2.1 | Slink |1999 |
+| 2.2 | Potato | 2000 |
+| 3.0 | Woody | 2002 |
+| 3.1 | Sarge | 2005 |
+| 4.0 | Etch | 2007 |
+| 5.0 | Lenny | 2009 |
+| 6.0 | Squeeze | 2011 |
+| 7.0 | Wheezy | 2013 |
+| 8.0 | Jessie | 2015 |
+| 9.0 | Stretch | 2017 |
+| 10  | Buster | 2019 |
+
 ## Commands
 
 | Command | Description |
@@ -50,6 +70,45 @@ then delete `/var/lib/dpkg/info/xyz.postrm`.
 In order to install a specific package version you can use a command like
 
     $ apt-get install subversion-tools=1.3.2-5~bpo1
+
+## Download packages from snapshot.debian.org
+
+Can occur that you need the binary (``gcc`` I'm talking to you)
+and the only way to obtain it a part from recompiling is from
+the packages of an old distribution; you can obtain a little easier
+using a custom configuration file for ``apt``:
+
+```
+Dir::Etc::main ".";
+Dir::Etc::Parts "./apt.conf.d";
+Dir::Etc::sourcelist "./sources.list";
+Dir::Etc::sourceparts "./sources.list.d";
+Dir::State "./apt-tmp";
+Dir::State::status "./apt-tmp/status";
+Dir::Cache "./apt-tmp";
+Acquire::Check-Valid-Until false;
+Acquire::AllowInsecureRepositories true;
+Acquire::AllowDowngradeToInsecureRepositories true;
+```
+
+and in ``sources.list`` you can add the entries from snapshot.debian.org
+using as distribution one that was "active" at that time
+
+```
+$ mkdir -p apt-tmp/lists/partial
+$ touch apt-tmp/status
+$ apt-get -c apt.conf update
+$ apt-get -c apt.conf install -d <package>
+```
+
+once you have the packages into ``apt-tmp/archives/`` you can
+use the following one-liner
+
+```
+$ for i in $(find apt-tmp/archives -name \*.deb); do echo --- $i;dpkg -x $i sysroot/ ;done
+```
+
+and have all the files into ``sysroot/``.
 
 ### files
 
