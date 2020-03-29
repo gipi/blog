@@ -21,7 +21,7 @@ indicating this state.
 
 ### Video
 
-    {% include video.html video_url=https://www.video.com %}
+    {% include video.html video_url="https://www.video.com" %}
 
 ### Link to another post
 
