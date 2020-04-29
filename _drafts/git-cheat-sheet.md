@@ -56,6 +56,8 @@ When there are conflicts a few files are created
 It's possible to use ``git mergetool`` in order to help with resolution, in particular
 with the flag ``--tool`` is possible to indicate which tool to use.
 
+ - [Resolving conflicts during a Git rebase](https://codeinthehole.com/guides/resolving-conflicts-during-a-git-rebase/)
+
 ## Notes
 
 ```

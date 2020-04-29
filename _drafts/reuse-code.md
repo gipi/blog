@@ -9,6 +9,15 @@ Imagine to have a challenge, like a firmware, in a raw binary format; imagine
 that you have to find out the generated passcode but you cannot debug the
 code running live.
 
+[source](https://gcc.gnu.org/pipermail/gcc-help/2020-April/138794.html)
+"xxd" a binary file and then compile the result with a compiler is just like
+"converting a .jpg to .png then back to .jpg".  A smarter way:
+
+  ld -r -b binary some_big_binary_blob.bin -o some_big_binary_blob.o
+
+There will be symbols _binary_some_big_binary_blob_bin_start,
+_binary_some_big_binary_blob_end in some_big_binary_blob.o.
+
 The idea here is to extract the code that you want to run and to transplant it
 into an our executable.
 

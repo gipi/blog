@@ -33,6 +33,20 @@ There are two aspects of this argument: one is how to use them, the other is whe
 
 ### Usage
 
+| Syntax | Meaning |
+|----|-----|
+| ``VAR = "foo"``   | simple assignment |
+| ``VAR ?= "foo"``  | assign if it doesn't have a value |
+| ``VAR ??= "foo"`` | as above but with lower precedence |
+| ``VAR  = "something ${VAR_BIS} kebab"`` | ``VAR_BIS`` is expanded when ``VAR`` is referenced |
+| ``VAR := "something ${VAR_BIS} kebab"`` | ``VAR_BIS`` expanded when parsed |
+| ``VAR += "foo"`` | append with space |
+| ``VAR .= "foo"`` | append without space |
+| ``VAR_append = "foo"`` | append without space |
+| ``VAR =+ "foo"`` | prepend with space |
+| ``VAR =. "foo"`` | prepend without space |
+| ``VAR = "foo ${@<python-code-one-liner>}"`` | expand with the result of the python code |
+
 ### Definition
 
 A lot of variables useful to the recipes are defined directly into ``meta/conf/bitbake.conf``
@@ -71,6 +85,10 @@ B = "${S}"
 [...snip...]
 
 ```
+
+the variable ``FILE`` is the filename of the recipe from which several other
+recipe's variables are generated, like ``PN``, ``PV`` using the ``_`` character
+as delimiter.
 
 ## Compilers
 
@@ -210,6 +228,16 @@ class CookerDataBuilder(object):
 ### Download
 
 First of all you need to download it, there are a lot of [fetcher](https://www.yoctoproject.org/docs/2.5/bitbake-user-manual/bitbake-user-manual.html#bb-fetchers)
+
+### Substitute a file
+
+Simply add to your ``bbappend``
+
+```
+FILESEXTRAPATHS_prepend := "${THISDIR}/files/:"
+```
+
+with inside the file you want to replace in the original recipe.
 
 ## Images
 
@@ -398,8 +426,14 @@ If you want ``zImage`` and device tree in the same binary exists the variable ``
 KCONFIG_MODE = "--alldefconfig"
 ```
 
+```
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+     SRC_URI += "file://defconfig"
+```
+
 ## WIC
 
+ - https://www.yoctoproject.org/docs/2.2.1/dev-manual/dev-manual.html#openembedded-kickstart-wks-reference
  - https://www.yoctoproject.org/docs/2.4.2/dev-manual/dev-manual.html#creating-partitioned-images-using-wic
 
 It's a utility for creating disk images.
@@ -421,6 +455,33 @@ ZIMAGE         1166704 2020-03-29   8:54  zImage
 ```
 
 note that generated files won't be included in the previous listing (like ``extlinux`` ;)).
+
+### Modules
+
+To my surprise seems that the modules are installed by default in the root filesystem
+but you need to add them into ``IMAGE_INSTALL`` like
+
+```
+IMAGE_INSTALL_append = " kernel-modules"
+```
+
+### Initrd&Initramfs
+
+[INITRAMFS_IMAGE](https://www.yoctoproject.org/docs/3.1/ref-manual/ref-manual.html#var-INITRAMFS_IMAGE)
+
+core-image-minimal-initramfs
+
+## Init system
+
+```
+VIRTUAL-RUNTIME_init_manager ?= "sysvinit"
+VIRTUAL-RUNTIME_initscripts ?= "initscripts"
+```
+
+
+## Feature
+
+https://www.yoctoproject.org/docs/1.7/ref-manual/ref-manual.html#ref-features-machine
 
 ## SDK
 
@@ -446,6 +507,12 @@ $ bitbake-layers show-recipes /etc/network/interfaces
 $ bitbake-layers show-appends init-ifupdown
 ```
 
+### List recipes
+
+```
+$ bitbake -s core-image-minimal
+```
+
 ### Find appended layers
 
 ```
@@ -460,6 +527,8 @@ $ oe-pkgdata-util find-path $FILE
 
 ## Links
 
+ - https://layers.openembedded.org/
+ - https://www.yoctoproject.org/docs/current/ref-manual/ref-manual.html#qa-errors-and-warnings
  - [Yocto project - Mega Manual](https://www.yoctoproject.org/docs/current/mega-manual/mega-manual.html)
  - [Yocto Project Board Support Package Developer's Guide](https://www.yoctoproject.org/docs/2.4/bsp-guide/bsp-guide.html)
  - [Yocto Project Development Tasks Manual](https://www.yoctoproject.org/docs/current/dev-manual/dev-manual.html) if you want to write recipes, read this!
@@ -478,6 +547,27 @@ $ oe-pkgdata-util find-path $FILE
  - https://stackoverflow.com/questions/18074979/methods-for-speeding-up-build-time-in-a-project-using-bitbake
  - http://www.wiki.xilinx.com/Yocto
  - https://stackoverflow.com/questions/37347808/how-to-use-an-own-device-tree-and-modified-kernel-config-in-yocto
+
+Scanning mmc 0:1...
+Found /extlinux/extlinux.conf
+Retrieving file: /extlinux/extlinux.conf
+229 bytes read in 16 ms (13.7 KiB/s)
+0:      Yocto
+Retrieving file: /zImage-s5pv210-galaxys--5.2.32+git0+bb2776d6be_73b12de4c8-r0-s5pv210-20200402133134.dtb.bin
+3800010 bytes read in 730 ms (5 MiB/s)
+append: root=/dev/mmcblk2p2 rootwait rootwait console=ttySAC2 console=tty earlyprintk
+Retrieving file: /s5pv210-galaxys.dtb
+30586 bytes read in 21 ms (1.4 MiB/s)
+Kernel image @ 0x32000000 [ 0x000000 - 0x398450 ]
+## Flattened Device Tree blob at 33000000
+   Booting using the fdt blob at 0x33000000
+   Loading Device Tree to 34ff5000, end 34fff779 ... OK
+
+Starting kernel ...
+
+
+
+
  - https://stackoverflow.com/questions/47047209/how-to-change-the-config-of-u-boot-in-yocto
  - https://www.element14.com/community/community/designcenter/single-board-computers/riotboard/blog/2014/09/24/riotboard-yocto-part2-build-u-boot-using-yocto
  - https://community.nxp.com/docs/DOC-94953

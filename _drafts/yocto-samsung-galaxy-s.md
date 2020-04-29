@@ -279,6 +279,10 @@ The cool thing is that the kernel is supported in mainline
 using the ``s5pv210`` configuration, so building it is
 pretty simple
 
+
+ - https://github.com/xc-racer99/linux/tree/all-devices
+ - https://github.com/PabloPL/linux
+
 ```
 $ export CROSS_COMPILE=arm-linux-gnueabi-
 $ export ARCH=arm
@@ -308,20 +312,276 @@ $ cmake ..
 $ make -j8
 ```
 
+(be aware that compiles 32bit)
+
+### PIT
+
+ - [XDA | Investigation Into PIT Files](https://forum.xda-developers.com/showthread.php?t=816449)
+ - [XDA | The reality of PIT files](https://forum.xda-developers.com/showthread.php?t=999097)
+ - https://github.com/xc-racer99/android_kernel_samsung_aries/blob/aosp-7.1/drivers/mtd/onenand/samsung_gsm.h
+
 | PIT | Description |
 |-----|-------------|
-| IBL+PBL | |
+| IBL+PBL | primary boot loader |
 | PIT     |  | 
-| EFS     |  modem data partition |
-| SBL1    |  |
-| SBL2    |  | 
+| EFS     | modem data partition |
+| SBL1    | secondary boot loader |
+| SBL2    | secondary boot loader backup | 
 | PARAM   |  | 
 | KERNEL  |  boot partition |
-| RECOVERY | recovery partition |
+| RECOVERY | recovery partition (in practice backup kernel) |
 | FACTORYFS |  Android system partition |
 | DBDATAFS | Android application data |
 | CACHE   |  Android cache partition |
 | MODEM   |  modem firmware partition 
+
+```
+ ./heimdall/heimdall print-pit
+ Heimdall v1.4.0
+
+ Copyright (c) 2010-2013, Benjamin Dobell, Glass Echidna
+ http://www.glassechidna.com.au/
+
+ This software is provided free of charge. Copying and redistribution is
+ encouraged.
+
+ If you appreciate this software and you would like to support future
+ development please consider donating:
+ http://www.glassechidna.com.au/donate/
+
+ Initialising connection...
+ Detecting device...
+ Claiming interface...
+ Attempt failed. Detaching driver...
+ Claiming interface again...
+ Setting up interface...
+
+ Initialising protocol...
+ Protocol initialisation successful.
+
+ Beginning session...
+
+ Some devices may take up to 2 minutes to respond.
+ Please be patient!
+
+ Session begun.
+
+ Downloading device's PIT file...
+ PIT file download successful.
+
+ Entry Count: 13
+ Unknown 1: 1
+ Unknown 2: 0
+ Unknown 3: 7508
+ Unknown 4: 65
+ Unknown 5: 64224
+ Unknown 6: 18
+ Unknown 7: 55304
+ Unknown 8: 67
+
+
+ --- Entry #0 ---
+ Binary Type: 0 (AP)
+ Device Type: 0 (OneNAND)
+ Identifier: 0
+ Attributes: 0 (Read-Only)
+ Update Attributes: 0
+ Partition Block Size/Offset: 256
+ Partition Block Count: 1
+ File Offset (Obsolete): 6684783
+ File Size (Obsolete): 2097268
+ Partition Name: IBL+PBL
+ Flash Filename: boot.bin
+ FOTA Filename:
+
+
+ --- Entry #1 ---
+ Binary Type: 0 (AP)
+ Device Type: 0 (OneNAND)
+ Identifier: 1
+ Attributes: 0 (Read-Only)
+ Update Attributes: 0
+ Partition Block Size/Offset: 256
+ Partition Block Count: 1
+ File Offset (Obsolete): 0
+ File Size (Obsolete): 0
+ Partition Name: PIT
+ Flash Filename:
+ FOTA Filename:
+
+
+ --- Entry #2 ---
+ Binary Type: 0 (AP)
+ Device Type: 0 (OneNAND)
+ Identifier: 20
+ Attributes: 2 (STL Read-Only)
+ Update Attributes: 0
+ Partition Block Size/Offset: 256
+ Partition Block Count: 40
+ File Offset (Obsolete): 0
+ File Size (Obsolete): 0
+ Partition Name: EFS
+ Flash Filename: efs.rfs
+ FOTA Filename:
+
+
+ --- Entry #3 ---
+ Binary Type: 0 (AP)
+ Device Type: 0 (OneNAND)
+ Identifier: 3
+ Attributes: 0 (Read-Only)
+ Update Attributes: 0
+ Partition Block Size/Offset: 256
+ Partition Block Count: 5
+ File Offset (Obsolete): 0
+ File Size (Obsolete): 0
+ Partition Name: SBL
+ Flash Filename: sbl.bin
+ FOTA Filename:
+
+
+ --- Entry #4 ---
+ Binary Type: 0 (AP)
+ Device Type: 0 (OneNAND)
+ Identifier: 4
+ Attributes: 0 (Read-Only)
+ Update Attributes: 0
+ Partition Block Size/Offset: 256
+ Partition Block Count: 5
+ File Offset (Obsolete): 0
+ File Size (Obsolete): 0
+ Partition Name: SBL2
+ Flash Filename: sbl.bin
+ FOTA Filename:
+
+
+ --- Entry #5 ---
+ Binary Type: 0 (AP)
+ Device Type: 0 (OneNAND)
+ Identifier: 21
+ Attributes: 2 (STL Read-Only)
+ Update Attributes: 0
+ Partition Block Size/Offset: 256
+ Partition Block Count: 20
+ File Offset (Obsolete): 0
+ File Size (Obsolete): 0
+ Partition Name: PARAM
+ Flash Filename: param.lfs
+ FOTA Filename:
+
+
+ --- Entry #6 ---
+ Binary Type: 0 (AP)
+ Device Type: 0 (OneNAND)
+ Identifier: 6
+ Attributes: 0 (Read-Only)
+ Update Attributes: 0
+ Partition Block Size/Offset: 256
+ Partition Block Count: 30
+ File Offset (Obsolete): 0
+ File Size (Obsolete): 0
+ Partition Name: KERNEL
+ Flash Filename: zImage
+ FOTA Filename:
+
+
+ --- Entry #7 ---
+ Binary Type: 0 (AP)
+ Device Type: 0 (OneNAND)
+ Identifier: 7
+ Attributes: 0 (Read-Only)
+ Update Attributes: 0
+ Partition Block Size/Offset: 256
+ Partition Block Count: 30
+ File Offset (Obsolete): 0
+ File Size (Obsolete): 0
+ Partition Name: RECOVERY
+ Flash Filename: zImage
+ FOTA Filename:
+
+
+ --- Entry #8 ---
+ Binary Type: 0 (AP)
+ Device Type: 0 (OneNAND)
+ Identifier: 22
+ Attributes: 2 (STL Read-Only)
+ Update Attributes: 0
+ Partition Block Size/Offset: 256
+ Partition Block Count: 1146
+ File Offset (Obsolete): 0
+ File Size (Obsolete): 0
+ Partition Name: FACTORYFS
+ Flash Filename: factoryfs.rfs
+ FOTA Filename:
+
+
+ --- Entry #9 ---
+ Binary Type: 0 (AP)
+ Device Type: 0 (OneNAND)
+ Identifier: 23
+ Attributes: 2 (STL Read-Only)
+ Update Attributes: 0
+ Partition Block Size/Offset: 256
+ Partition Block Count: 536
+ File Offset (Obsolete): 0
+ File Size (Obsolete): 0
+ Partition Name: DBDATAFS
+ Flash Filename: dbdata.rfs
+ FOTA Filename:
+
+
+ --- Entry #10 ---
+ Binary Type: 0 (AP)
+ Device Type: 0 (OneNAND)
+ Identifier: 24
+ Attributes: 2 (STL Read-Only)
+ Update Attributes: 0
+ Partition Block Size/Offset: 256
+ Partition Block Count: 140
+ File Offset (Obsolete): 0
+ File Size (Obsolete): 0
+ Partition Name: CACHE
+ Flash Filename: cache.rfs
+ FOTA Filename:
+
+
+ --- Entry #11 ---
+ Binary Type: 0 (AP)
+ Device Type: 0 (OneNAND)
+ Identifier: 11
+ Attributes: 0 (Read-Only)
+ Update Attributes: 0
+ Partition Block Size/Offset: 256
+ Partition Block Count: 50
+ File Offset (Obsolete): 0
+ File Size (Obsolete): 0
+ Partition Name: MODEM
+ Flash Filename: modem.bin
+ FOTA Filename:
+
+
+ --- Entry #12 ---
+ Binary Type: 1 (CP)
+ Device Type: 1 (File/FAT)
+ Identifier: 11
+ Attributes: 0 (Read-Only)
+ Update Attributes: 0
+ Partition Block Size/Offset: 0
+ Partition Block Count: 0
+ File Offset (Obsolete): 0
+ File Size (Obsolete): 0
+ Partition Name:
+ Flash Filename:
+ FOTA Filename:
+
+ Ending session...
+ Rebooting device...
+ Releasing device interface...
+ Re-attaching kernel driver...
+ ```
+
+ - https://bootlin.com/blog/creating-flashing-ubi-ubifs-images/
+ - https://elinux.org/UBIFS
 
 
 ## u-boot
@@ -423,6 +683,105 @@ Starting kernel ...
 
 ```
 
+## Proprietary firmwares
+
+These are the binary blobs (and one configuration file) present
+in the Android system
+
+| Firmware name | Related chip | Related functionality|
+|---------------|--------------|----------------------|
+| fw_bcmdhd.bin       | Broadcom BCM4329 | Wi-Fi|
+| fw_bcmdhd_apsta.bin | Broadcom BCM4329 | Wi-Fi host|
+| nvram_net.txt       | Broadcom BCM4329 | Wi-Fi configuration|
+| bcm4329.hcd         | Broadcom BCM4329 | Bluetooth|
+| samsung_mfc_fw.bin  | Samsung S5PC110/S5PV210 MFC | Hardware media encoding/decoding|
+
+
+but practically all of them are now available (still from broadcom) under
+different names.
+
+## I2C
+
+The following option must be set otherwise  ``/dev/i2c-x`` is not present
+and you cannot debug
+```
+CONFIG_I2C_CHARDEV
+```
+
+```
+root@s5pv210:~# modprobe i2c-dev
+i2c /dev entries driver
+```
+
+```
+root@s5pv210:~# i2cdetect -l
+i2c-6   i2c             i2c-gpio-0                              I2C adapter
+i2c-2   i2c             s3c2410-i2c                             I2C adapter
+i2c-9   i2c             i2c-gpio-1                              I2C adapter
+root@s5pv210:~# i2cdetect 2
+WARNING! This program can confuse your I2C bus, cause data loss and worse!
+I will probe file /dev/i2c-2.
+I will probe address range 0x03-0x77.
+Continue? [Y/n] 
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:          -- -- -- -- -- -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: -- -- -- -- -- -- -- -- -- -- UU -- -- -- -- -- 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+70: -- -- -- -- -- -- -- --
+root@s5pv210:~# i2cdetect 6
+WARNING! This program can confuse your I2C bus, cause data loss and worse!
+I will probe file /dev/i2c-6.
+I will probe address range 0x03-0x77.
+Continue? [Y/n] 
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:          -- -- -- UU -- -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- UU -- -- -- -- -- -- -- -- -- 
+70: -- -- -- -- -- -- -- --
+root@s5pv210:~# i2cdetect 9
+WARNING! This program can confuse your I2C bus, cause data loss and worse!
+I will probe file /dev/i2c-9.
+I will probe address range 0x03-0x77.
+Continue? [Y/n] 
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:          -- -- -- -- -- -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+30: -- -- -- -- -- -- UU -- -- -- -- -- -- -- -- -- 
+40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+70: -- -- -- -- -- -- -- --
+```
+
+## Video
+
+```
+root@s5pv210:~# dmesg | grep video
+videodev: Linux video capture interface: v2.00
+s5p-jpeg fb600000.jpeg-codec: encoder device registered as /dev/video0
+s5p-jpeg fb600000.jpeg-codec: decoder device registered as /dev/video1
+s5p-mfc f1700000.codec: decoder registered as /dev/video2
+s5p-mfc f1700000.codec: encoder registered as /dev/video3
+```
+
+ - https://github.com/xc-racer99/linux/commit/fb2767a8e845e6f7e38da68f31adc0bcdde82ffb
+ - https://gitmemory.com/issue/PabloPL/linux/30/498365930
+
+```
+root@s5pv210:~# gst-launch-1.0 videotestsrc ! timeoverlay font-desc=60px ! ximagesink
+```
+
+ - [S5KA3DFX](http://www.zhopper.narod.ru/mobile/s5ka3dfx_full.pdf)
+
 ## Linkography
 
  - [Cyanogenmod wiki page](https://web.archive.org/web/20161224193352/https://wiki.cyanogenmod.org/w/Galaxysmtd_Info)
@@ -438,3 +797,7 @@ Starting kernel ...
  - [UART Output / Bootloader Hacking / Kernel Debuging](https://forum.xda-developers.com/showthread.php?t=1209288)
  - [[GUIDE] Samsung Galaxy S7 UART](https://forum.xda-developers.com/galaxy-s7/how-to/guide-samsung-galaxy-s7-uart-t3743895)
  - [S-Boot](http://hexdetective.blogspot.com/2017/02/exploiting-android-s-boot-getting.html)
+ - [[A][SGS2][Serial] How to talk to the Modem with AT commands](https://forum.xda-developers.com/galaxy-s2/help/how-to-talk-to-modem-commands-t1471241)
+ - https://redmine.replicant.us/projects/replicant/wiki/ExynosModemIsolation
+ - https://forum.xda-developers.com/wiki/Samsung_Galaxy_S/GT-I9000
+ - https://redmine.replicant.us/projects/replicant/wiki/GalaxySI9000LoadedFirmwares

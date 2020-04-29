@@ -2,17 +2,22 @@
 layout: post
 comments: true
 title: "Reversing the USB update process of a device"
-tags: [reversing,MFC,C++,windows,ghidra]
+tags: [WIP,reversing,MFC,C++,windows,ghidra]
 ---
 
-I'm again at it: I have a device that I want to know how it works and I start
+I'm again at it: I have a device that I want to know how it works and I started
 to reverse it, this time without any particular reason if not curiosity.
+
+What I couldn't know was that I was entering a rabbit hole of biblic proportion
+and this post is only the tip of the iceberg.
 
 In this post I want to describe without any particular order, how to reverse
 a C++ application and the USB protocol that it uses to update the firmware
-on the device.
+on the device. I don't think this will be useful to anyone, let me know in
+case it has changed your life :)
 
-I will use Ghidra and I will try to show how to do some specific steps.
+I will use Ghidra and I will try to show how to do some specific steps and how
+I approach reversing in general.
 
 ## Context
 
@@ -71,16 +76,19 @@ x-powered-by: PHP/5.5.9-1ubuntu4.21
 
 and downloaded the firmware update at the url indicated in the field ``ota_fw_file``.
 
-Analyzing the firmware opened a can of worms, since now I wanted to know how they work.
+Analyzing the firmware opened a can of worms, since now I wanted to know how the upgrade process works.
 
 ## MFC C++
 
-Obviously I had no idea of what I was doing so the initial phase was to start jumping
-around the calls tree: my first thing that I do when reversing something is to rename
-functions, variables etc... with labels that indicates something about them, if not just
-to remember that is something I have already seen. It can seem something boring and useless
-but I assure you that the brain is very good at spotting patterns (maybe too much)
-and this helps a lot during the reversing process.
+First of all, the application is using ``VC6`` (the magic in the ``FuncInfo`` struct is ``0x19930520``).
+
+I opened ``ghidra`` and imported the binary: obviously I had no idea of what I
+was doing so the initial phase was to start jumping around the calls tree: my
+first thing that I do when reversing something is to rename functions,
+variables etc... with labels that indicates something about them, if not just
+to remember that is something I have already seen. It can seem something boring
+and useless but I assure you that the brain is very good at spotting patterns
+(maybe too much) and this helps a lot during the reversing process.
 
 However, at some point, walking up to the call tree you arrive to a function that is not
 called from no one and you are like "uhm, how is this possible?"; for example
@@ -94,7 +102,8 @@ using Ghidra you can look for direct reference using the menu ``Search > For Dir
 
 and found that at ``0x004e02a4`` there is 4 bytes value corresponding at that address.
 
-Right clicking and choosing ``Data > pointer`` you can inform Ghidra that address stores
+Right clicking on the address in the listing window and choosing ``Data > pointer`` from the menu
+you can inform Ghidra that the address stores
 a pointer to a function (you can also define a shortcut for data type you use frequently,
 I suggest you one for ``dword``).
 
@@ -120,11 +129,14 @@ struct AFX_MSGMAP_ENTRY
 };
 ```
 
-that corresponds perfectly with what we are looking for.
+that corresponds perfectly with what we are looking for. This struct is used to
+describe "callback" from element of the GUi of the program represented by the MFC class.
 
 At the end the layout in memory of a MFC class is the following
 
 ```
++ CRuntimeClass
+ + 
 + Message Map data   <----------------------------------------.
  + ptr to MFC42.DLL::<super class>::messageMap()              |
  + ptr to AFX_MSGMAP_ENTRY array -.                           |
@@ -182,6 +194,15 @@ but in reality this is a custom object so the function returns the [CRuntimeStru
 for that object:
 
 ```
+char *  m_lpszClassName 
+dword   m_nObjectSize   
+dword * m_pBaseClass    
+dword * m_pfnCreateObject   
+dword * m_pfnGetBaseClass   
+dword   m_wSchema   
+```
+
+```
 					 PTR_s_CPage_ECDkey_004e0c90                     XREF[2]:     FUN_004192b0:004192b0(*), 
 																				  FUN_004192b0:004192b0(*)  
 004e0c90          f4 fc 55 00     addr       s_CPage_ECDkey_0055fcf4                          = "CPage_ECDkey"
@@ -197,13 +218,168 @@ obviously also the ``getMessageMap()`` method is custom.
 You can read on the [official documentation](https://docs.microsoft.com/en-us/cpp/mfc/tn006-message-maps).
 
 https://docs.microsoft.com/en-us/cpp/mfc/reference/ccmdtarget-class?view=vs-2019#syntax
+https://docs.microsoft.com/it-it/cpp/mfc/reference/cwinapp-class?view=vs-2019
+
+
+You can organize smartly the functon into class moving the function in the classes with the mouse
+once that you put the function into the right hierarchy, ``__thiscall`` set the ``ecx`` register
+to the right type (be aware that the struct connected to the class must have the same name, it's obvious
+you know, until you name one ``Whatever`` and the other ``WhateverClass``).
+
+### Subclasses
+
+The classes that are used in the application are
+
+| Name | Description |
+|------|-------------|
+| ``CPageUpdateClass``   | |
+| ``CDialogUpdateClass`` | |
+
+
+```
+explicit CDialog(
+    UINT nIDTemplate,
+    CWnd* pParentWnd = NULL);
+
+UINT GetDlgItemTextA(
+  HWND  hDlg,
+  int   nIDDlgItem,
+  LPSTR lpString,
+  int   cchMax
+);
+
+BOOL SetDlgItemTextA(
+  HWND   hDlg,
+  int    nIDDlgItem,
+  LPCSTR lpString
+);
+```
+
+after ``doModal()`` there is ``initDialog()``
+
+```
+GetRuntimeClass
+FUN_00407d00
+nullsub
+nullsub
+nullsub
+OnCmdMsg
+OnFinalRelease
+IsInvokeAllowed
+GetDispatchIID
+GetTypeInfoCount
+GetTypeLibCache
+GetTypeLib
+GetMessageMap
+GetCommandMap
+GetDispatchMap
+GetConnectionMap
+GetInterfaceMap
+GetEventSinkMap
+OnCreateAggregates
+GetInterfaceHook
+GetExtraConnectionPoints
+GetConnectionHook
+PreSubclassWindow
+Create
+DestroyWindow
+PreCreateWindow
+CalcWindowRect
+OnToolHitTest
+GetScrollBarCtrl
+WinHelpA
+ContinueModal
+EndModalLoop
+OnCommand
+OnNotify
+GetSuperWndProcAddr
+FUN_0041a3f0
+_function_shared
+CPage_ECDkey::FUN_00401fa0
+PreTranslateMessage
+OnAmbientProperty
+WindowProc
+OnWndMsg
+DefWindowProcA
+PostNcDestroy
+OnChildNotify
+CheckAutoCenter
+IsFrameWnd
+SetOccDialogInfo
+DoModal
+OnInitDialog
+OnSetFont
+OnOK
+OnCancel
+PreInitDialog
+```
+
+
+## Windows quirks
+
+For someone like me, coming from linux, some aspects of the runtime of Windows
+are very puzzling
+
+### Libraries resolution
+
+This is the most WTF of all: the external call to a function placed in a library is identified by an ``id``
+so you cannot know the name of the function called if you don't have the library and in my case
+I have some API that are mismatched from the one recognnized by ghidra (it's obvious since in every
+place where those functions are used the stack goes banana).
+
+Maybe I'm missing something here but how in the world someone could think that using an id was a good idea?
+
+### Calling conventions
+
+Internally this application uses all the possible families of calling convention
+that I list here
+
+| Name | Arguments | Stack cleaning | Return value |
+|------|-------------|
+| ``cdecl``   | passed on the stack in reverse order | by the caller | ``eax`` |
+| ``stdcall`` | passed on the stack in reverse order | callee | ``eax`` |
+| ``fastcall`` | passed via registers | by the caller | ``eax`` |
+| ``thiscall`` | used with class's methods, ``ecx`` contains the ``this`` pointer and the arguments are on the stack on the reverse order | | ``eax`` |
+
+If ghidra mis-recognize the calling convention of a function you will see something strange happening
+to the local variables.
+
+### Resources
+
+Inside a Windows executable is possible to use a particular section (named ``.rsrc``)
+for storing **resources**, like icon, images etc... and load it during the execution
+with appropriate calls, like ``FindResourceA(hModule,(LPCSTR)((uint)rsrc_id & 0xffff),type)``.
+
+This can be useful to "connect the dots" to particular functionality: in the application
+exists the function ``loadRsrc()`` that takes a parameter identifying the resource
+and set a particular field of the class to the resource: you can see that is possible
+to directly see what icon corresponds to what resource from ghidra
+
+![]({{ site.baseurl }}/public/images/reversing-usb-update-process/resources.png)
+
+Strange that from the symbol tree pane I see the PNGs and them have the xref to the
+function but the call to ``loadRsrc()`` doesn't have the xref back (if not a ``= <PNG-Image>`` comment
+in the listing window that doesn't jump to the resource).
+
+It's possible also to reconstruct some custom dialog using the resource
+id passed as argument to the constructor of ``CDialog()``
+
+![]({{ site.baseurl }}/public/images/reversing-usb-update-process/dialog.png)
+
+## Internal state
+
+There is a global variable used to handle the internal state of the GUI at ``0x00594e78``
+and it's processed mainly at ``0x00409a20`` by a function named by me ``setState()``;
+this function is pretty interesting since allows to know what state corresponds to what
+number via the messages that presents to the user and so you can create a wonderful enum :)
+
+Also there are pieces of the interfaces that are set, like the PNGs etc...
 
 ## Firmware downloading and parsing
 
 ```c
 
 int __cdecl download(CDialogUpdateClass *this)
-
 {
   int iVar1;
   
@@ -281,6 +457,46 @@ void __fastcall download_firmware(CDialogUpdateClass *this)
 After downloading the file from the remote server and saving it in ``Upgrade.tmp`` (this path is
 set by the routine that starts at ``0x0040882c``) the application parses it.
 
+If we take a look at the first 200 bytes of the firmware we have some hints that
+is structured into different sections:
+
+```
+00000000: 4163 7469 6f6e 7346 6972 6d77 6172 6500  ActionsFirmware.
+00000010: 5570 6461 7465 5665 723a 7631 2e33 3100  UpdateVer:v1.31.
+00000020: 4348 4543 4b53 554d 0000 0000 0000 0000  CHECKSUM........
+00000030: 4000 0000 c0fd b801 0000 0000 b59b c093  @...............
+00000040: 434f 4d50 5245 5353 0000 0000 0000 0000  COMPRESS........
+00000050: 0000 0000 0000 0000 00b2 4100 00de 9d00  ..........A.....
+00000060: 4144 4543 6164 6675 7300 0000 0000 0000  ADECadfus.......
+00000070: 0004 0000 0020 0000 0000 04b4 0000 0000  ..... ..........
+00000080: 4144 4655 6164 6675 7300 0000 0000 0000  ADFUadfus.......
+00000090: 0024 0000 1826 0000 0000 00a0 0000 0000  .$...&..........
+000000a0: 4857 5343 6877 7363 0000 0000 0000 0000  HWSChwsc........
+000000b0: 004c 0000 102a 0000 0000 01a0 0000 0000  .L...*..........
+000000c0: 4636 3438 6677 7363 0000 0000 0000 0000  F648fwsc........
+000000d0: 0078 0000 2091 0100 0080 01a0 0000 0000  .x.. ...........
+000000e0: 4636 3438 6d62 7265 6300 0000 0000 0000  F648mbrec.......
+000000f0: 000a 0200 001a 0000 0000 01a0 0040 04b4  .............@..
+00000100: 4636 3438 6272 6563 0000 0000 0000 0000  F648brec........
+00000110: 0024 0200 0000 0200 0000 0000 1000 0000  .$..............
+00000120: 4649 524d 0000 0000 9879 f68a e33c 4541  FIRM.....y...<EA
+00000130: 0024 0400 0000 9e00 00de 9d00 c304 2400  .$............$.
+00000140: 4c49 4e55 5800 0000 0000 0000 0000 0000  LINUX...........
+00000150: 0100 0000 0000 e000 0300 0000 0000 0000  ................
+00000160: 726f 6f74 6673 0000 0000 0000 0000 0000  rootfs..........
+00000170: 002a 2800 0000 0004 0000 0004 8300 0100  .*(.............
+00000180: 7573 6572 3100 0000 0000 0000 0000 0000  user1...........
+00000190: 00f0 8b01 0000 8000 0000 8000 8300 0100  ................
+000001a0: 7672 616d 0000 0000 0000 0000 0000 0000  vram............
+000001b0: 00a4 b801 005a 0000 0000 1000 0b00 0000  .....Z..........
+000001c0: 7265 7365 7276 6500 0000 0000 0000 0000  reserve.........
+000001d0: 0000 0000 0000 0000 0000 0002 0000 0000  ................
+000001e0: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+000001f0: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+```
+
+it seems that the header is composed of header sections of 32 bytes each,
+let's see if we are able to understand the structure of them.
 
 The function ``firmware_open_and_parse()`` located at ``0x00408b00`` then opens the
 downloaded firmware using a global ``CFile`` instance located at ``0x00593858``
@@ -356,16 +572,6 @@ After that check for the sections named ``LINUX`` and ``FIRM``, with the last on
 ```
 
 ```
-00000140        4c 49 4e 55         section_t
-                58 00 00 00 
-                00 00 00 00 
-   00000140 4c 49 4e 55 58  char[16]  "LINUX"                 name
-            00 00 00 00 00 
-            00 00 00 00 00
-   00000150 01 00 00 00     ddw       1h                      start_address
-   00000154 00 00 20 00     ddw       200000h                 length
-   00000158 02 00 00 00     ddw       2h                      n_subsections
-   0000015c 00 00 00 00     ddw       0h                      unk1
 00000160        72 6f 6f 74         section_t
                 66 73 00 00 
                 00 00 00 00 
@@ -388,7 +594,28 @@ After that check for the sections named ``LINUX`` and ``FIRM``, with the last on
    0000019c 0b 00 00 00     ddw       Bh                      unk1
 ```
 
-The ``LINUX`` parsing is done at ``0x00417ae0``
+The ``LINUX`` parsing is done at ``0x00417ae0`` and it's the more puzzling piece
+because some values don't make sense: this is an example
+
+```
+00000140        4c 49 4e 55         section_t
+                58 00 00 00 
+                00 00 00 00 
+   00000140 4c 49 4e 55 58  char[16]  "LINUX"                 name
+            00 00 00 00 00 
+            00 00 00 00 00
+   00000150 01 00 00 00     ddw       1h                      ?????
+   00000154 00 00 20 00     ddw       200000h                 ?????
+   00000158 02 00 00 00     ddw       2h                      n_subsections
+   0000015c 00 00 00 00     ddw       0h                      ????
+```
+
+at ``0x14`` and ``0x1c`` there is something used elsewhere. The interesting fact
+is that is possible to have a ``reserve`` section that doesn't seem to indicate
+actual data in the OTA but some metadata.
+
+The ``FIRM`` instead at ``0x0040ef10``; at ``0x00406e80`` is manipulating
+the first ``0x80`` bytes copied in memory
 
 ### Intermezzo: stack_adjust
 
@@ -427,9 +654,16 @@ the local variables after the call.
 The best way to deal with it is to set stack depth change to minus the offset plus four (I don't know why...
 probably there is a disalignment between the listing and decompilation windows)
 
+
+seems that ghidra can handle this with ``alloca_probe``
+
 ## GZIP
 
-An interesting part is where the code gunzip the firmware at ``0x00414d50``
+An interesting part is where the code gunzip the ``FIRM`` section at ``0x00414d50``:
+it doesn't seem to be depending from parameters as I thought initially (I have firmwares
+from other Actions' devices that don't compress that part).
+
+It's the first time I recognize the format following the [specification](https://tools.ietf.org/html/rfc1952).
 
 ## AWK
 
@@ -438,25 +672,78 @@ Function at ``0x004111d0`` does some magic with ``awk`` to parse
 %s -v BS=\ "{if($NF==BS){$NF=NULL;line=line $0;}else{print line $0;line=NULL;}}" %s |%s -F# -v SP=" " "$1{gsub(/\t/,SP,$1);gsub(/rd_size=__FIX_ME_ON_PACK__/,\"rd_size=0x%08x\",$1);print $1}" > %s
 ```
 
+## Partitions
+
+At ``0x00416660`` the application builds what seems to be the **Native MBR** using
+the information extracted during the parsing of the ``LINUX`` portion of the firmware
+
 ## Firmware uploading
-
-## Internal state
-
-There is a global variable used to handle the internal state of the GUI at ``0x00594e78``
-and it's processed mainly at ``0x00409a20`` by a function named by me ``setState()``;
-this function is pretty interesting since allows to know what state corresponds to what
-number via the messages that presents to the user and so you can create a wonderful enum :)
-
-Also there are pieces of the interfaces that are set, like the PNGs etc...
 
 ## USB
 
 The mechanism that the application uses to update the firmware is by a custom
 ``USB`` protocolo on top of the mass storage
 
+```c
+struct cmd_block_t {
+    byte cmd;
+    dword arg0;
+    dword arg1;
+    short subCmd;
+    short subCmd2;
+};
+
+struct CBW_t {
+    byte[4] signature;
+    dword tag;
+    dword transferLength;
+    byte flags;
+    byte LUN;
+    byte cmdLength;
+    struct cmd_block_t cmdBlock;
+    byte padding[3];
+};
+```
+
+The typical code is the following
+
+```
+  CBW_t localCBW;
+
+  /* first it copies the 31 bytes of the pre-filled packet */
+  int counter = 7;
+  dword* cbw = (dword *)&GLOBAL_CBW_PACKET;
+  dword* ref2localCBW = (dword *)&localCBW;
+  while (counter != 0) {
+    counter = counter + -1;
+    *ref2localCBW = *cbw;
+    cbw = cbw + 1;
+    ref2localCBW = ref2localCBW + 1;
+  }
+  *(undefined2 *)ref2localCBW = *(undefined2 *)cbw;
+  *(undefined *)((int)ref2localCBW + 2) = *(undefined *)((int)cbw + 2);
+
+  /* then it fills the values needed for the wanted function */
+  localCBW.transferLength = transferLength;
+  localCBW.cmdBlock.arg0 = arg0;
+  localCBW.cmdBlock.arg1 = arg1;
+
+  /* it then sends the packet to the device */
+  retValue = USB_Write(&localCBW,0x1f,usbIndex);
+
+  /*
+   * here can happen some data upload/download from the device
+   * depending on the command
+   */
+
+  /* the device sends the response of the command */
+  retValueResponse = USB_ReadFile(responseBuffer,0xd,index);
+
+```
+
 ## Flash
 
-It's better to knwo the underlying techniology, for example at ``0x00416240``
+It's better to know the underlying technology, for example at ``0x00416240``
 there is a routine that checks for ``0xff``
 
 ## bare metal execution

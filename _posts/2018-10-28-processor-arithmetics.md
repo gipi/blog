@@ -350,6 +350,7 @@ Here we have the interesting and useful stuffs
 otherwise is called **value changing**.
 
 The so called **integer conversion rank** ([source](http://www.enseignement.polytechnique.fr/informatique/INF478/docs/Cpp/en/c/language/integer_conversion_rank.html))
+(note that different rank doesn't imply different width of its representation)
 
 |``long long int``, ``unsigned long long int`` |
 |``long int``, ``unsigned long int`` |
