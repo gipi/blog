@@ -135,25 +135,25 @@ describe "callback" from element of the GUi of the program represented by the MF
 At the end the layout in memory of a MFC class is the following
 
 ```
-+ CRuntimeClass
- + 
++ CRuntimeClass      <------------------------------.
 + Message Map data   <----------------------------------------.
- + ptr to MFC42.DLL::<super class>::messageMap()              |
- + ptr to AFX_MSGMAP_ENTRY array -.                           |
- + AFX_MSGMAP_ENTRY array  <------'                           |
-  + 0th element                                               |
-  + 1th element                                               |
-   ...                                                        |
-  + last element (all elements are NULL)                      |
-+ MFC class' vtable                                           |
- + GetRuntimeClass()                                          |
+ + ptr to MFC42.DLL::<super class>::messageMap()     |        |
+ + ptr to AFX_MSGMAP_ENTRY array -.                  |        |
+ + AFX_MSGMAP_ENTRY array  <------'                  |        |
+  + 0th element                                      |        |
+  + 1th element                                      |        |
+   ...                                               |        |
+  + last element (all elements are NULL)             |        |
++ MFC class' vtable                                  |        |
+ + GetRuntimeClass() (returns a pointer to) ---------'        |
  + Destructor()                                               |
  + null()                                                     |
  + null()                                                     |
  + null()                                                     |
  + OnCmdMsg()                                                 |
   ...                                                         |
- + messageMap() (returns a pointer to) -----------------------'
+ + GetTypeLib()                                               |
+ + GetMessageMap() (returns a pointer to) --------------------'
   ...
 ```
 
@@ -202,6 +202,11 @@ dword * m_pfnGetBaseClass
 dword   m_wSchema   
 ```
 
+**Remember:** you can follow the ``GetRuntimeClass()`` into the original library
+and find out the size of the class so to have an idea of how much space a class
+is going to occupy in memory (and in particular it's very useful for local variables
+in the stack).
+
 ```
 					 PTR_s_CPage_ECDkey_004e0c90                     XREF[2]:     FUN_004192b0:004192b0(*), 
 																				  FUN_004192b0:004192b0(*)  
@@ -215,11 +220,18 @@ dword   m_wSchema
 
 obviously also the ``getMessageMap()`` method is custom.
 
-You can read on the [official documentation](https://docs.microsoft.com/en-us/cpp/mfc/tn006-message-maps).
+You can read on the official documentation
 
-https://docs.microsoft.com/en-us/cpp/mfc/reference/ccmdtarget-class?view=vs-2019#syntax
-https://docs.microsoft.com/it-it/cpp/mfc/reference/cwinapp-class?view=vs-2019
+ - [message maps](https://docs.microsoft.com/en-us/cpp/mfc/tn006-message-maps).
+ - [CCmdTarget](https://docs.microsoft.com/en-us/cpp/mfc/reference/ccmdtarget-class)
+ - [CWinApp](https://docs.microsoft.com/it-it/cpp/mfc/reference/cwinapp-class)
 
+or an article about ``CString`` internals in VC6
+
+ - [CString In A Nutshell](https://www.codeguru.com/cpp/cpp/string/article.php/c2789/CString-In-A-Nutshell.htm)
+
+bad enough this application uses ``mfc42.dll`` that is a library with API not completly
+"forward" compatible with the one existing today.
 
 You can organize smartly the functon into class moving the function in the classes with the mouse
 once that you put the function into the right hierarchy, ``__thiscall`` set the ``ecx`` register
@@ -257,9 +269,11 @@ BOOL SetDlgItemTextA(
 
 after ``doModal()`` there is ``initDialog()``
 
+The general organization of the vtable is the following
+
 ```
 GetRuntimeClass
-FUN_00407d00
+???
 nullsub
 nullsub
 nullsub
@@ -293,7 +307,7 @@ EndModalLoop
 OnCommand
 OnNotify
 GetSuperWndProcAddr
-FUN_0041a3f0
+???
 _function_shared
 CPage_ECDkey::FUN_00401fa0
 PreTranslateMessage
@@ -613,6 +627,9 @@ because some values don't make sense: this is an example
 at ``0x14`` and ``0x1c`` there is something used elsewhere. The interesting fact
 is that is possible to have a ``reserve`` section that doesn't seem to indicate
 actual data in the OTA but some metadata.
+
+The dword at offset ``0x18`` indicates the number of subsections to read: the name
+of the subsections doesn't imply anything.
 
 The ``FIRM`` instead at ``0x0040ef10``; at ``0x00406e80`` is manipulating
 the first ``0x80`` bytes copied in memory
