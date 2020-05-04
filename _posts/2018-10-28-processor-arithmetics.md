@@ -364,6 +364,12 @@ check either are floating point, otherwise starts the following procedure
 
  - **integer promotions:** any type with rank lower than integer is promoted to integer
 
+as described by the C11 6.3.1.1 rule (source [here](https://stackoverflow.com/questions/46073295/implicit-type-promotion-rules))
+
+> if an int can represent all values of the original type (as restricted by
+> the width, for a bit-field), the value is converted to an int; otherwise, it is
+> converted to an unsigned int. These are called the integer promotions.
+
 at this point if the two operands are of the same type then we stop since there is no problem
 to do the operation, otherwise we need to take into consideration some factors
 
@@ -372,6 +378,15 @@ to do the operation, otherwise we need to take into consideration some factors
  - **rank(unsigned)  < rank(signed):** there are two cases
    - **value preserving:** convert both to the signed type
    - **value changing:** convert both to the corresponding signed type of the unsigned operand
+
+### Literal declaration
+
+From the previous section it's obvious that is important to understand precisely the type of a constant
+to avoid un-expected results; to declare the type of a literal the following suffixes are used
+
+ - ``U`` or ``u`` for ``unsigned``
+ - ``L`` or ``l`` for ``long``
+ - ``LL`` or ``ll`` for ``long long``
 
 ## Programmation errors
 
@@ -383,17 +398,16 @@ The signedness can cause two kind of bugs, one pretty logical, like the followin
 where we suppose that
 
 ```c
-int n;
 
-n = read_some_n();
+int n = read_some_n();
 
 char buffer[1024];
 
-if (n > 1024) {
+if (n > 1024) { /* both are integer so no conversion */
     return -1;
 }
 
-read(fd, buffer, n);
+read(fd, buffer, n);/* here "n" is converted to size_t, i.e. unsigned */
 ```
 
 Take in mind that modern operating systems can have some measure to avoid
