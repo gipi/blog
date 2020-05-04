@@ -85,7 +85,7 @@ First of all, the application is using ``VC6`` (the magic in the ``FuncInfo`` st
 I opened ``ghidra`` and imported the binary: obviously I had no idea of what I
 was doing so the initial phase was to start jumping around the calls tree: my
 first thing that I do when reversing something is to rename functions,
-variables etc... with labels that indicates something about them, if not just
+variables etc... with labels that indicate something about them, if not just
 to remember that is something I have already seen. It can seem something boring
 and useless but I assure you that the brain is very good at spotting patterns
 (maybe too much) and this helps a lot during the reversing process.
@@ -617,6 +617,10 @@ actual data in the OTA but some metadata.
 The ``FIRM`` instead at ``0x0040ef10``; at ``0x00406e80`` is manipulating
 the first ``0x80`` bytes copied in memory
 
+At this point the smart reader could ask about the other sections, like ``ADECadfus``,
+``ADFUadfus`` etc... that part will be investigated in the next post where I'll take
+ a look more in detail in the internal working(?) of this family of chips.
+
 ### Intermezzo: stack_adjust
 
 This is particular function that I encountered during my trip in the assembly land
@@ -677,12 +681,34 @@ Function at ``0x004111d0`` does some magic with ``awk`` to parse
 At ``0x00416660`` the application builds what seems to be the **Native MBR** using
 the information extracted during the parsing of the ``LINUX`` portion of the firmware
 
-## Firmware uploading
-
-## USB
+## USB communication protocol
 
 The mechanism that the application uses to update the firmware is by a custom
-``USB`` protocolo on top of the mass storage
+``USB`` protocol on top of the [mass storage](https://www.usb.org/sites/default/files/usbmassbulk_10.pdf);
+the core of it is the **Command Block Wrapper** (``CBW``) a packet of 31 bytes (yeah, 31) having the
+following organization:
+
+```
+  .----.----.----.----.
+  | U    S    B    C  |
+  |----|----|----|----|
+  |        tag        |
+  |----|----|----|----|
+  |   transferLength  |
+  |----'----'----'----'
+  | Fl | LU | CL |    |
+  |----|----|----|....|
+  |                   |
+  |....|....|....|....|
+  |                   |
+  |....|....|....|....|
+  |         |         |
+  |....|....|....|....'
+  |              |
+  '....|....|....'
+```
+
+the "custom" part is inside ``CBWCB``.
 
 ```c
 struct cmd_block_t {
@@ -720,6 +746,7 @@ The typical code is the following
     cbw = cbw + 1;
     ref2localCBW = ref2localCBW + 1;
   }
+  /* this strange assignment exists because there are the three remaining bytes*/
   *(undefined2 *)ref2localCBW = *(undefined2 *)cbw;
   *(undefined *)((int)ref2localCBW + 2) = *(undefined *)((int)cbw + 2);
 
@@ -741,13 +768,3 @@ The typical code is the following
 
 ```
 
-## Flash
-
-It's better to know the underlying technology, for example at ``0x00416240``
-there is a routine that checks for ``0xff``
-
-## bare metal execution
-
-the piece of the OTA contains piece of code
-
-remember to set the correct address mapping before analyze them in ghidra
