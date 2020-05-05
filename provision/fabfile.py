@@ -1,22 +1,18 @@
+import os
 import hashlib
 import tempfile
 import shlex
 import tarfile
 import subprocess
-from fabric.contrib.files import is_link
-from fabric.utils import abort
-import os
-from fabric.context_managers import show, settings, cd, prefix, lcd
-from fabric.contrib import files
-from fabric.operations import run, sudo, get, local, put, open_shell
-from fabric.state import env
-from fabric.api import task
+from pathlib import Path
+from fabric import task
+from patchwork import files
+
 
 PROJECT_ROOT_DIR = os.path.join(os.path.dirname(__file__), '..')
 REMOTE_REVISION = None
 RELEASES_RELATIVE_PATH_DIR = 'releases'
 
-env.use_ssh_config = True
 
 # https://gist.github.com/lost-theory/1831706
 class CommandFailed(Exception):
@@ -39,64 +35,41 @@ def esudo(*args, **kwargs):
     return result
 
 
-# http://docs.fabfile.org/en/latest/usage/execution.html#roles
+def describe_revision(c, head='HEAD'):
+    with c.prefix('cd %s' % PROJECT_ROOT_DIR):
+        actual_tag = c.local('git describe --always %s' % head)
+        return actual_tag.stdout.strip('\n')
 
-def describe_revision(head='HEAD'):
-    with lcd(PROJECT_ROOT_DIR):
-        actual_tag = local('git describe --always %s' % head, capture=True)
-        return actual_tag
+def get_release_filename(c):
+    return '%s.tar.gz' % describe_revision(c)
 
-def get_dump_filepath(user, prefix=u'backups'):
-    return '%s/%s.sql' % (prefix, get_remote_revision(user))
-
-def get_release_filename():
-    return '%s.tar.gz' % describe_revision()
-
-def get_release_filepath():
-    return os.path.join(PROJECT_ROOT_DIR, RELEASES_RELATIVE_PATH_DIR, get_release_filename())
+def get_release_filepath(c):
+    return os.path.join(PROJECT_ROOT_DIR, RELEASES_RELATIVE_PATH_DIR, get_release_filename(c))
 
 def get_generated_webroot(base_dir):
     return os.path.join(base_dir, '_site')
 
 @task
-def dump_db_snapshot(db_name, user):
-    remote_tmp_file_path = '/tmp/dump_db.sql' # FIXME: use temporary file
-    sudo('pg_dump %s > %s' % (db_name, remote_tmp_file_path), user='postgres')
-    get(remote_path=remote_tmp_file_path, local_path= get_dump_filepath(user))
-
-def reset_db():
-    local('python manage.py reset_db')
-
-@task
-def load_db(user):
-    local('cat %s | python manage.py dbshell' % get_dump_filepath(user))
-
-@task
-def load_db_snapshot(db_name, username):
-    dump_db_snapshot(db_name, username)
-    reset_db()
-    load_db(username)
-
-@task
-def create_release_archive(head='HEAD'):
+def create_release_archive(c, head='HEAD'):
     # TODO: add VERSION file
-    with lcd(PROJECT_ROOT_DIR):
+    c.config['run']['replace_env'] = False  # workaround
+    with c.prefix('cd %s' % PROJECT_ROOT_DIR):
         tempdir = tempfile.mkdtemp()
-        local('git --work-tree=%s checkout -f %s' % (
+        c.local('git --work-tree=%s checkout -f %s' % (
             tempdir,
             head,
         ))
-        local('cd %s && jekyll build' % tempdir)
-        local('mkdir -p %s' % RELEASES_RELATIVE_PATH_DIR)
-        local('tar czf %s -C %s .' % (
-            get_release_filepath(),
+        c.local('cd %s && jekyll build' % tempdir)
+        c.local('mkdir -p %s' % RELEASES_RELATIVE_PATH_DIR)
+        c.local('tar czf %s -C %s .' % (
+            get_release_filepath(c),
             get_generated_webroot(tempdir),
         ))
-        local('rm -fr %s && echo removed temporary directory' % tempdir)
+        c.local('rm -fr %s && echo removed temporary directory' % tempdir)
 
 # https://stackoverflow.com/questions/3431825/generating-a-md5-checksum-of-a-file
 def hashfile(afile, hasher, blocksize=65536):
-    with open(afile, 'r') as f:
+    with open(afile, 'rb') as f:
         buf = f.read(blocksize)
         while len(buf) > 0:
             hasher.update(buf)
@@ -105,7 +78,7 @@ def hashfile(afile, hasher, blocksize=65536):
     return hasher.hexdigest()
 
 @task
-def _release(archive, revision=None, web_root=None, **kwargs):
+def _release(c, path_archive, revision=None, web_root=None, **kwargs):
     '''
     Main task
 
@@ -121,77 +94,77 @@ def _release(archive, revision=None, web_root=None, **kwargs):
     '''
     previous_revision = None
 
-    cwd = erun('pwd').stdout if not web_root else web_root
+    cwd = c.run('pwd').stdout.strip('\n') if not web_root else web_root
 
-    if not os.path.exists(archive):
-        raise CommandFailed('Archive \'%s\' doesn\'t exist' % archive)
 
-    revision = hashfile(archive, hashlib.sha256())
-    remote_filepath = os.path.basename(archive)
+    if not os.path.exists(path_archive):
+        raise CommandFailed('Archive \'%s\' doesn\'t exist' % path_archive)
+
+    revision = hashfile(path_archive, hashlib.sha256())
+    filename_dest = os.path.basename(path_archive)
 
     app_dir = os.path.join(cwd, 'app-%s' % revision)
     app_symlink = os.path.join(cwd, 'app')
 
-    put(local_path=archive, remote_path=remote_filepath)
+    c.put(local=path_archive, remote=filename_dest)
 
     try:
         # if exists remove dir
-        if files.exists(app_dir):
-            erun('rm -vfr %s' % (
+        if files.exists(c, app_dir):
+            c.run('rm -vfr %s' % (
                 app_dir,
             ))
         # create the remote dir
-        erun('mkdir -p %s' % app_dir)
-        erun('tar xf %s -C %s' % (
-            remote_filepath,
+        c.run('mkdir -p %s' % app_dir)
+        c.run('tar xf %s -C %s' % (
+            filename_dest,
             app_dir,
         ))
         # find the previous release and move/unlink it
-        if files.exists(app_symlink) and is_link(app_symlink):
+        is_symlink = c.run('readlink %s' % app_symlink).stdout.strip('\n') != ''
+        if files.exists(c, app_symlink) and is_symlink:
             # TODO: move old deploy in an 'archive' directory
-            previous_deploy_path = erun('basename $(readlink -f %s)' % app_symlink).stdout
+            previous_deploy_path = c.run('basename $(readlink -f %s)' % app_symlink).stdout.strip('\n')
             idx = previous_deploy_path.index('-')
             previous_revision = previous_deploy_path[idx + 1:]
 
             if previous_revision != revision:
-                erun('unlink %s' % app_symlink)
-                erun('mkdir -p old && mv -f %s old/' % previous_deploy_path)
+                c.run('unlink %s' % app_symlink)
+                c.run('mkdir -p old && mv -f %s old/' % previous_deploy_path)
 
-        elif files.exists(app_symlink):
+        elif files.exists(c, app_symlink):
             raise CommandFailed('app directory already exists and is not a symlink')
 
-        erun('ln -s %s %s' % (app_dir, app_symlink))
+        c.run('ln -s %s %s' % (app_dir, app_symlink))
 
     except CommandFailed as e:
-        print 'An error occoured: %s' % e
+        print('An error occoured: %s' % e)
 
-    print '''
+    print ('''
 
     %s --> %s
 
-''' % (previous_revision or '?', revision)
+''' % (previous_revision or '?', revision))
 
 @task
-def jekyll_release(head='HEAD', web_root=None):
+def jekyll_release(c, head='HEAD', web_root=None):
     # locally we create the archive with the app code
-    create_release_archive(head)
-    release_filename = get_release_filename()
+    create_release_archive(c, head)  # cannot use pre=[...] because doesn't work
+    release_filename = get_release_filename(c)
 
-    local_release_filepath = get_release_filepath()
+    local_release_filepath = get_release_filepath(c)
 
-    actual_version = describe_revision(head)
-    previous_version = None
-
-    _release(local_release_filepath, revision=head)
+    _release(c, local_release_filepath, revision=head)
 
 @task
-def shell(revision=None):
+def shell(c, revision=None):
     '''Open a shell into an app's environment (the enabled one as default)'''
-    cwd = erun('pwd').stdout
+    cwd = c.run('pwd').stdout
 
-    open_shell('cd %s' % (
+    c.run('cd %s' % (
         'app' if not revision else ('app-%s' % revision),
     ))
+    c.run('/bin/bash', pty=True)
 
 def get_remote_revision(user):
     global REMOTE_REVISION
@@ -201,7 +174,7 @@ def get_remote_revision(user):
         try:
             _, REMOTE_REVISION = current_app_dir.split('-')
         except Exception as e:
-            print e
+            print(e)
             REMOTE_REVISION = 'unknown'
 
     return REMOTE_REVISION
