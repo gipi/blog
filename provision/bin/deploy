@@ -6,8 +6,16 @@
 readonly PROGNAME=$(basename "$0")
 readonly PROGDIR=$(readlink -m $(dirname $0))
 
-COMMAND=""
+# https://superuser.com/a/186304/183164
+if [[ "$*" == *"-h"* ]]
+then
+    cat <<EOF
+Deploy script, a simple wrapper around 'fab', you need only
+to set an entry inside your ssh's config file and call that
+via the '-H' option.
 
-[ "$PROGNAME" != "deploy" ] && COMMAND="${PROGNAME}"
-# '-a' to avoid quering ssh agent: https://stackoverflow.com/questions/5246416/python-fabric-gives-fatal-error-no-existing-session
-fab -a -f "${PROGDIR}/../fabfile.py" "$@"
+
+EOF
+fi
+
+fab  -r "${PROGDIR}/../" "$@"
