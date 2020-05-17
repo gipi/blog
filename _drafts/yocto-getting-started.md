@@ -5,6 +5,11 @@ title: "Yocto getting started"
 tags: [embedded, yocto]
 ---
 
+ - [Variables](#variables)
+ - [Images](#images)
+ - [SDK](#sdk)
+ - [HOWTOs](#howtos)
+
 **Yocto** is an umbrella of projects used to generate a working linux distribution for embedded system.
 
 If you want to know more I advice to read the [bitbake user manual](https://www.yoctoproject.org/docs/1.6/bitbake-user-manual/bitbake-user-manual.html)
@@ -30,21 +35,24 @@ The source code is defined in ``bitbake/lib/bb/main.py``.
 ## Variables
 
 There are two aspects of this argument: one is how to use them, the other is where are defined.
+Please refer to the [related documentation](https://www.yoctoproject.org/docs/3.1/mega-manual/mega-manual.html#basic-syntax) for more information.
 
 ### Usage
 
 | Syntax | Meaning |
-|----|-----|
+|--------|---------|
 | ``VAR = "foo"``   | simple assignment |
 | ``VAR ?= "foo"``  | assign if it doesn't have a value |
 | ``VAR ??= "foo"`` | as above but with lower precedence |
-| ``VAR  = "something ${VAR_BIS} kebab"`` | ``VAR_BIS`` is expanded when ``VAR`` is referenced |
+| ``VAR  = "something ${VAR_BIS} kebab"`` | ``VAR_BIS`` is expanded when ``VAR`` is referenced, if doesn't exist the the literal ``${VAR_BIS}`` is used |
 | ``VAR := "something ${VAR_BIS} kebab"`` | ``VAR_BIS`` expanded when parsed |
-| ``VAR += "foo"`` | append with space |
-| ``VAR .= "foo"`` | append without space |
-| ``VAR_append = "foo"`` | append without space |
-| ``VAR =+ "foo"`` | prepend with space |
-| ``VAR =. "foo"`` | prepend without space |
+| ``VAR += "foo"`` | append with space, with immediate effect |
+| ``VAR =+ "foo"`` | prepend with space, with immediate effect |
+| ``VAR .= "foo"`` | append without space, with immediate effect |
+| ``VAR =. "foo"`` | prepend without space, with immediate effect |
+| ``VAR_append = "foo"`` | append without space, applied at variable expansion time |
+| ``VAR_prepend = "foo"`` | prepend without space, applied at variable expansion time |
+| ``VAR_remove = "foo"`` | remove value, applied at variable expansion time |
 | ``VAR = "foo ${@<python-code-one-liner>}"`` | expand with the result of the python code |
 
 ### Definition
@@ -89,6 +97,17 @@ B = "${S}"
 the variable ``FILE`` is the filename of the recipe from which several other
 recipe's variables are generated, like ``PN``, ``PV`` using the ``_`` character
 as delimiter.
+
+the evaluation orders is:
+
+ 1. variables on the command line (e.g., 'MACHINE=beagleboard bitbake
+    myimage') are evaluated first,
+ 2. variables in local.conf,
+ 3. Rest depends on the order of things in bblayers.conf *and* how any
+    given layer.conf is implemented (some layers preppend their stuff to the
+    BBPATH and some layers append; from memory the Yocto layers prepend, but
+    layers from OE usually append, and this inconsistency makes for lot of
+    fun when combining layers into custom distro).
 
 ## Compilers
 
@@ -225,23 +244,27 @@ class CookerDataBuilder(object):
         ...
 ```
 
+From the [technical FAQ](https://wiki.yoctoproject.org/wiki/Technical_FAQ#I_tried_bitbake_.3Csome_target_package_name.3E_that_I_know_exists_and_it_told_me_that_nothing_PROVIDES_this....3F)
+
+> There are two namespaces that bitbake concerns itself with - recipe names
+> (a.k.a. build time targets) and package names (a.k.a. runtime targets). You can
+> specify a build time target on the bitbake command line, but not a runtime
+> target; you need to find the recipe that provides the package you are trying to
+> build and build that instead (or simply add that package to your image and
+> build the image). In current versions bitbake will at least tell you which
+> recipes have matching or similar-sounding runtime provides (RPROVIDES) so that
+> you'll usually get a hint on which recipe you need to build.
+
 ### Download
 
 First of all you need to download it, there are a lot of [fetcher](https://www.yoctoproject.org/docs/2.5/bitbake-user-manual/bitbake-user-manual.html#bb-fetchers)
 
-### Substitute a file
-
-Simply add to your ``bbappend``
-
-```
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/:"
-```
-
-with inside the file you want to replace in the original recipe.
 
 ## Images
 
-[Link](https://www.yoctoproject.org/docs/current/mega-manual/mega-manual.html#ref-images)
+[Documentation](https://www.yoctoproject.org/docs/current/mega-manual/mega-manual.html#ref-images)
+
+An image is like a special "root" recipe
 
 A simple dirty trick to have the list of images available is
 
@@ -258,6 +281,50 @@ meta/recipes-extended/images/core-image-full-cmdline.bb   meta/recipes-rt/images
 meta/recipes-extended/images/core-image-kernel-dev.bb     meta/recipes-rt/images/core-image-rt-sdk.bb
 meta/recipes-extended/images/core-image-lsb.bb            meta/recipes-sato/images/core-image-sato.bb
 ```
+
+An image is intended to extend ``meta/classes/images.bbclass``
+
+The part interesting for me is
+
+```
+IMAGE_CLASSES ??= ""
+
+# rootfs bootstrap install
+# warning -  image-container resets this
+ROOTFS_BOOTSTRAP_INSTALL = "run-postinsts"
+
+# Handle inherits of any of the image classes we need
+IMGCLASSES = "rootfs_${IMAGE_PKGTYPE} image_types ${IMAGE_CLASSES}"
+# Only Linux SDKs support populate_sdk_ext, fall back to populate_sdk_base
+# in the non-Linux SDK_OS case, such as mingw32
+IMGCLASSES += "${@['populate_sdk_base', 'populate_sdk_ext']['linux' in d.getVar("SDK_OS")]}"
+IMGCLASSES += "${@bb.utils.contains_any('IMAGE_FSTYPES', 'live iso hddimg', 'image-live', '', d)}"
+IMGCLASSES += "${@bb.utils.contains('IMAGE_FSTYPES', 'container', 'image-container', '', d)}"
+IMGCLASSES += "image_types_wic"
+IMGCLASSES += "rootfs-postcommands"
+IMGCLASSES += "image-postinst-intercepts"
+inherit ${IMGCLASSES}
+
+ ...
+
+fakeroot python do_rootfs () {
+    from oe.rootfs import create_rootfs
+    from oe.manifest import create_manifest
+ ...
+    create_rootfs(d, progress_reporter=progress_reporter, logcatcher=logcatcher)
+ ...
+}
+do_rootfs[dirs] = "${TOPDIR}"
+do_rootfs[cleandirs] += "${S} ${IMGDEPLOYDIR}"
+do_rootfs[umask] = "022"
+do_rootfs[file-checksums] += "${POSTINST_INTERCEPT_CHECKSUMS}"
+addtask rootfs after do_prepare_recipe_sysroot
+```
+
+the ``create_rootfs()`` is imported from ``meta/lib/oe`` and it seems to populate the
+root filesystem installing the packages one by one!
+
+If you want to create a new image, remember to ``export IMAGE_BASENAME``
 
 ## Start a new project
 
@@ -317,6 +384,8 @@ for the Raspberry Pi.
 
 I advise you to indicate a suitable path for variables like ``DL_DIR`` in order to avoid
 redownloading over and over the same stuff.
+
+ - https://git.yoctoproject.org/cgit/cgit.cgi/poky/tree/meta-poky/conf/local.conf.sample.extended
 
 ## Create a new layer
 
@@ -471,6 +540,22 @@ IMAGE_INSTALL_append = " kernel-modules"
 
 core-image-minimal-initramfs
 
+```
+The INITRAMFS_IMAGE image variable will cause an additional recipe to
+# be built as a dependency to the what ever rootfs recipe you might be
+# using such as core-image-sato.  The initramfs might be needed for
+# the initial boot of of the target system such as to load kernel
+# modules prior to mounting the root file system.
+#
+# INITRAMFS_IMAGE_BUNDLE variable controls if the image recipe
+# specified by the INITRAMFS_IMAGE will be run through an extra pass
+# through the kernel compilation in order to build a single binary
+# which contains both the kernel image and the initramfs.  The
+# combined binary will be deposited into the tmp/deploy directory.
+# NOTE: You can set INITRAMFS_IMAGE in an image recipe, but
+#       INITRAMFS_IMAGE_BUNDLE can only be set in a conf file.
+```
+
 ## Init system
 
 ```
@@ -500,11 +585,50 @@ $ source $PATH_TO_SDK/environment-setup-$machine
 
 ## HOWTOs
 
+### Substitute a file
+
+Simply add to your ``bbappend``
+
+```
+FILESEXTRAPATHS_prepend := "${THISDIR}/files/:"
+```
+
+with inside the file you want to replace in the original recipe.
+
+### Add a package to your image
+
+This is done modifying the ``IMAGE_INSTALL`` variable, that can be done
+with ``_append`` or ``+=``
+
+```
+IMAGE_INSTALL += "vim"
+```
+
+[take in mind](https://www.yoctoproject.org/pipermail/yocto/2012-June/007363.html)
+that there are ordering issues: ``meta/classes/core-image.bbclass`` contains the line
+
+```
+IMAGE_INSTALL ?= "${CORE_IMAGE_BASE_INSTALL}"
+```
+
+[documentation](https://www.yoctoproject.org/docs/3.1/dev-manual/dev-manual.html#usingpoky-extend-customimage-localconf)
+
+However to double check what is installed, look at the ``<image name>.manifest`` in the final directory.
+
 ### Include your file
 
 ```
-$ bitbake-layers show-recipes /etc/network/interfaces
-$ bitbake-layers show-appends init-ifupdown
+$ bitbake-layers show-recipes vim
+ ...
+=== Matching recipes: ===
+vim:
+  meta                 8.1.1518
+$ bitbake-layers show-appends formfactor
+ ...
+=== Matched appended recipes ===
+formfactor_0.0.bb:
+  /hack/yocto-samsung-galaxys/../poky-rocko/meta-yocto-bsp/recipes-bsp/formfactor/formfactor_0.0.bbappend
+  /hack/yocto-samsung-galaxys/../meta-s5pv210/recipes-bsp/formfactor/formfactor_0.0.bbappend
 ```
 
 ### List recipes
@@ -521,9 +645,15 @@ $ bitbake-layers show-appends
 
 ### Find which recipe creates a file
 
+This works only **after** building
+
 ```
 $ oe-pkgdata-util find-path $FILE
 ```
+
+### Find build timestamp
+
+It's located into ``/etc/timestamp``.
 
 ## Links
 

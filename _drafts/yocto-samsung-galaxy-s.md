@@ -48,6 +48,14 @@ pin ``ID`` and ``GND`` to enable a different internal subsystem.
 In our case we want to access the UART and the bootloaders so we can use
 a value of 619K as a resistor.
 
+I tried to create a jig in order to make development a little easier, otherwise
+I have to plug/unplug cables to switch from flashing to serial, 
+
+![]({{ site.baseurl }}/public/images/samsung-galaxy-s/usb_serial_mux.jpg)
+
+the core is the ``TS3USB211`` chip that multiplexes between two high speed usb devices;
+in my case one is a serial interface but doesn't matter.
+
 ### PBL&SBL
 
 It's possible to activate in this configuration ``SBoot`` pressing enter during boot;
@@ -279,10 +287,6 @@ The cool thing is that the kernel is supported in mainline
 using the ``s5pv210`` configuration, so building it is
 pretty simple
 
-
- - https://github.com/xc-racer99/linux/tree/all-devices
- - https://github.com/PabloPL/linux
-
 ```
 $ export CROSS_COMPILE=arm-linux-gnueabi-
 $ export ARCH=arm
@@ -297,6 +301,12 @@ Obviously you need also the device tree configuration.
 **Note:** you need the option ``rootwait`` otherwise it's possible that
 the kernel panics (the error message indicates the wrong partition so
 it's possible to lose hours trying to fix that ;)).
+
+However not all the peripherals are supported yet, if you want them you can use the following
+``tree`` used by the developers as a staging point for all the changes that they want to upstream
+
+ - https://github.com/xc-racer99/linux/tree/all-devices
+ - https://github.com/PabloPL/linux
 
 ## Flashing
 
@@ -316,8 +326,8 @@ $ make -j8
 
 ### PIT
 
- - [XDA | Investigation Into PIT Files](https://forum.xda-developers.com/showthread.php?t=816449)
- - [XDA | The reality of PIT files](https://forum.xda-developers.com/showthread.php?t=999097)
+ - [XDA - Investigation Into PIT Files](https://forum.xda-developers.com/showthread.php?t=816449)
+ - [XDA - The reality of PIT files](https://forum.xda-developers.com/showthread.php?t=999097)
  - https://github.com/xc-racer99/android_kernel_samsung_aries/blob/aosp-7.1/drivers/mtd/onenand/samsung_gsm.h
 
 | PIT | Description |
@@ -700,7 +710,23 @@ in the Android system
 but practically all of them are now available (still from broadcom) under
 different names.
 
-## I2C
+## Yocto
+
+What I described above is a tedious process, involving bootloader and kernel but that
+it's missing for example the root filesystem. To improve the process , I created a [yocto](https://www.yoctoproject.org/) layer
+that you can find on github as [meta-s5pv210](https://github.com/gipi/meta-s5pv210).
+
+With a simple
+
+```
+$ bitbake core-image-sato
+```
+
+you obtain an image named ``core-image-sato-s5pv210.wic`` to use for flashing an SD Card.
+
+## Peripherals configuration
+
+### I2C
 
 The following option must be set otherwise  ``/dev/i2c-x`` is not present
 and you cannot debug
@@ -711,6 +737,35 @@ CONFIG_I2C_CHARDEV
 ```
 root@s5pv210:~# modprobe i2c-dev
 i2c /dev entries driver
+```
+
+```
+root@s5pv210:~# for x in $(find /sys/bus/i2c/devices/ ); do echo -en $x"\t";cat $x/name; done
+/sys/bus/i2c/devices/   cat: can't open '/sys/bus/i2c/devices//name': No such file or directory
+/sys/bus/i2c/devices/11-0044    gp2ap002a00f
+/sys/bus/i2c/devices/i2c-13     i2c-gpio-2
+/sys/bus/i2c/devices/6-0066     max8998
+/sys/bus/i2c/devices/i2c-11     i2c-gpio-9
+/sys/bus/i2c/devices/0-0062     s5ka3dfx
+/sys/bus/i2c/devices/i2c-8      i2c-gpio-6
+/sys/bus/i2c/devices/8-0010     si470x
+/sys/bus/i2c/devices/5-0038     bma023
+/sys/bus/i2c/devices/6-0006     dummy
+/sys/bus/i2c/devices/12-002e    yas529
+/sys/bus/i2c/devices/i2c-6      i2c-gpio-4
+/sys/bus/i2c/devices/13-001a    wm8994
+/sys/bus/i2c/devices/2-004a     maxtouch
+/sys/bus/i2c/devices/10-0020    aries-touchkey
+/sys/bus/i2c/devices/i2c-2      s3c2410-i2c
+/sys/bus/i2c/devices/i2c-12     i2c-gpio-10
+/sys/bus/i2c/devices/i2c-0      s3c2410-i2c
+/sys/bus/i2c/devices/7-0025     fsa9480
+/sys/bus/i2c/devices/0-003c     ce147
+/sys/bus/i2c/devices/i2c-9      i2c-gpio-7
+/sys/bus/i2c/devices/i2c-10     i2c-gpio-8
+/sys/bus/i2c/devices/9-0036     max17040
+/sys/bus/i2c/devices/i2c-7      i2c-gpio-5
+/sys/bus/i2c/devices/i2c-5      i2c-gpio-3
 ```
 
 ```
@@ -762,7 +817,10 @@ Continue? [Y/n]
 70: -- -- -- -- -- -- -- --
 ```
 
-## Video
+### Video
+
+The device has two cameras (front and back); the front one is a ``s5ka3dfx`` sensor
+that can be enabled via ``CONFIG_VIDEO_S5KA3DFX``.
 
 ```
 root@s5pv210:~# dmesg | grep video
@@ -771,17 +829,339 @@ s5p-jpeg fb600000.jpeg-codec: encoder device registered as /dev/video0
 s5p-jpeg fb600000.jpeg-codec: decoder device registered as /dev/video1
 s5p-mfc f1700000.codec: decoder registered as /dev/video2
 s5p-mfc f1700000.codec: encoder registered as /dev/video3
+s5p-fimc-md: Registered fimc.0.m2m as /dev/video4
+s5p-fimc-md: Registered fimc.0.capture as /dev/video5
+s5p-fimc-md: Registered fimc.1.m2m as /dev/video6
+s5p-fimc-md: Registered fimc.1.capture as /dev/video7
+s5p-fimc-md: Registered fimc.2.m2m as /dev/video8
+s5p-fimc-md: Registered fimc.2.capture as /dev/video9
+root@s5pv210:~# media-ctl -p
+Media controller API version 5.3.8
+
+Media device information
+------------------------
+driver          s5p-fimc-md
+model           SAMSUNG S5P FIMC
+serial
+bus info
+hw revision     0x0
+driver version  5.3.8
+
+Device topology
+- entity 1: FIMC.0 (3 pads, 3 links)
+            type V4L2 subdev subtype Unknown flags 0
+            device node name /dev/v4l-subdev0
+        pad0: Sink
+                [fmt:YUYV8_2X8/640x480 colorspace:jpeg
+                 crop.bounds:(0,0)/0x0
+                 crop:(0,0)/640x480
+                 compose.bounds:(0,0)/640x480
+                 compose:(0,0)/640x480]
+                <- "S5KA3DFX 0-0062":0 []
+                <- "CE147 0-003c":0 [ENABLED]
+        pad1: Sink
+                [fmt:YUV10_1X30/640x480 colorspace:jpeg
+                 crop.bounds:(0,0)/0x0
+                 crop:(0,0)/640x480
+                 compose.bounds:(0,0)/640x480
+                 compose:(0,0)/640x480]
+        pad2: Source
+                [fmt:YUYV8_2X8/640x480 colorspace:jpeg]
+                -> "fimc.0.capture":0 [ENABLED,IMMUTABLE]
+
+- entity 5: fimc.0.capture (1 pad, 1 link)
+            type Node subtype V4L flags 0
+            device node name /dev/video3
+        pad0: Sink
+                <- "FIMC.0":2 [ENABLED,IMMUTABLE]
+
+- entity 9: FIMC.1 (3 pads, 3 links)
+            type V4L2 subdev subtype Unknown flags 0
+            device node name /dev/v4l-subdev1
+        pad0: Sink
+                [fmt:YUYV8_2X8/640x480 colorspace:jpeg
+                 crop.bounds:(0,0)/0x0
+                 crop:(0,0)/640x480
+                 compose.bounds:(0,0)/640x480
+                 compose:(0,0)/640x480]
+                <- "S5KA3DFX 0-0062":0 [ENABLED]
+                <- "CE147 0-003c":0 []
+        pad1: Sink
+                [fmt:YUV10_1X30/640x480 colorspace:jpeg
+                 crop.bounds:(0,0)/0x0
+                 crop:(0,0)/640x480
+                 compose.bounds:(0,0)/640x480
+                 compose:(0,0)/640x480]
+        pad2: Source
+                [fmt:YUYV8_2X8/640x480 colorspace:jpeg]
+                -> "fimc.1.capture":0 [ENABLED,IMMUTABLE]
+
+- entity 13: fimc.1.capture (1 pad, 1 link)
+             type Node subtype V4L flags 0
+             device node name /dev/video6
+        pad0: Sink
+                <- "FIMC.1":2 [ENABLED,IMMUTABLE]
+
+- entity 17: FIMC.2 (3 pads, 3 links)
+             type V4L2 subdev subtype Unknown flags 0
+             device node name /dev/v4l-subdev2
+        pad0: Sink
+                [fmt:YUYV8_2X8/640x480 colorspace:jpeg
+                 crop.bounds:(0,0)/0x0
+                 crop:(0,0)/640x480
+                 compose.bounds:(0,0)/640x480
+                 compose:(0,0)/640x480]
+                <- "S5KA3DFX 0-0062":0 []
+                <- "CE147 0-003c":0 []
+        pad1: Sink
+                [fmt:YUV10_1X30/640x480 colorspace:jpeg
+                 crop.bounds:(0,0)/0x0
+                 crop:(0,0)/640x480
+                 compose.bounds:(0,0)/640x480
+                 compose:(0,0)/640x480]
+        pad2: Source
+                [fmt:YUYV8_2X8/640x480 colorspace:jpeg]
+                -> "fimc.2.capture":0 [ENABLED,IMMUTABLE]
+
+- entity 21: fimc.2.capture (1 pad, 1 link)
+             type Node subtype V4L flags 0
+             device node name /dev/video9
+        pad0: Sink
+                <- "FIMC.2":2 [ENABLED,IMMUTABLE]
+
+- entity 25: S5KA3DFX 0-0062 (1 pad, 3 links)
+             type V4L2 subdev subtype Sensor flags 0
+             device node name /dev/v4l-subdev3
+        pad0: Source
+                [fmt:YUYV8_2X8/640x480 field:none colorspace:jpeg]
+                -> "FIMC.0":0 []
+                -> "FIMC.1":0 [ENABLED]
+                -> "FIMC.2":0 []
+
+- entity 27: CE147 0-003c (1 pad, 3 links)
+             type V4L2 subdev subtype Sensor flags 0
+             device node name /dev/v4l-subdev4
+        pad0: Source
+                [fmt:YUYV8_2X8/640x480@1/30 field:none colorspace:jpeg]
+                -> "FIMC.0":0 [ENABLED]
+                -> "FIMC.1":0 []
+                -> "FIMC.2":0 []
+
+
+root@s5pv210:~# media-ctl --print-dot
+digraph board {
+        rankdir=TB
+        n00000001 [label="{ {<port0> 0 | <port1> 1} | FIMC.0\n/dev/v4l-subdev0 | {<port2> 2} }", shape=Mrecord, style=filled, fillcolor=green]
+        n00000001:port2 -> n00000005 [style=bold]
+        n00000005 [label="fimc.0.capture\n/dev/video3", shape=box, style=filled, fillcolor=yellow]
+        n00000009 [label="{ {<port0> 0 | <port1> 1} | FIMC.1\n/dev/v4l-subdev1 | {<port2> 2} }", shape=Mrecord, style=filled, fillcolor=green]
+        n00000009:port2 -> n0000000d [style=bold]
+        n0000000d [label="fimc.1.capture\n/dev/video6", shape=box, style=filled, fillcolor=yellow]
+        n00000011 [label="{ {<port0> 0 | <port1> 1} | FIMC.2\n/dev/v4l-subdev2 | {<port2> 2} }", shape=Mrecord, style=filled, fillcolor=green]
+        n00000011:port2 -> n00000015 [style=bold]
+        n00000015 [label="fimc.2.capture\n/dev/video9", shape=box, style=filled, fillcolor=yellow]
+        n00000019 [label="{ {} | S5KA3DFX 0-0062\n/dev/v4l-subdev3 | {<port0> 0}}", shape=Mrecord, style=filled, fillcolor=green]
+        n00000019:port0 -> n00000001:port0 [style=dashed]
+        n00000019:port0 -> n00000009:port0
+        n00000019:port0 -> n00000011:port0 [style=dashed]
+        n0000001b [label="{ {} | CE147 0-003c\n/dev/v4l-subdev4 | {<port0> 0}}", shape=Mrecord, style=filled, fillcolor=green]
+        n0000001b:port0 -> n00000001:port0
+        n0000001b:port0 -> n00000009:port0 [style=dashed]
+        n0000001b:port0 -> n00000011:port0 [style=dashed]
+}
+root@s5pv210:~# v4l2-ctl --list-devices
+__fimc_pipeline_open(): No sensor subdev
+__fimc_pipeline_close(): No sensor subdev
+Silicon Labs Si470x FM Radio Re ():
+        /dev/radio0
+
+s5p-mfc-dec (platform:f1700000.codec):
+        /dev/video5
+        /dev/video7
+
+exynos4-fimc (platform:fb200000.fimc):
+        /dev/video2
+        /dev/video3
+
+exynos4-fimc (platform:fb300000.fimc):
+        /dev/video4
+        /dev/video6
+
+exynos4-fimc (platform:fb400000.fimc):
+        /dev/video8
+        /dev/video9
+
+s5p-jpeg encoder (platform:fb600000.jpeg-codec):
+        /dev/video0
+        /dev/video1
 ```
 
  - https://github.com/xc-racer99/linux/commit/fb2767a8e845e6f7e38da68f31adc0bcdde82ffb
  - https://gitmemory.com/issue/PabloPL/linux/30/498365930
 
 ```
-root@s5pv210:~# gst-launch-1.0 videotestsrc ! timeoverlay font-desc=60px ! ximagesink
+root@s5pv210:~# DISPLAY=:0.0 gst-launch-1.0 videotestsrc ! timeoverlay font-desc=60px ! ximagesink
 ```
 
  - [S5KA3DFX](http://www.zhopper.narod.ru/mobile/s5ka3dfx_full.pdf)
+ - [Camera on Galaxy S3](https://blog.forkwhiletrue.me/posts/camera-on-galaxy-s3/)
+ - [R-Car/Tests:rcar-vin](https://elinux.org/R-Car/Tests:rcar-vin) how to test the VIN and CSI-2 functionality
 
+## Connectivity
+
+First of all you need ``rfkill`` enabled with ``CONFIG_RFKILL``
+
+```
+root@s5pv210:~# rfkill
+ID TYPE      DEVICE    SOFT      HARD
+ 0 bluetooth hci0   blocked unblocked
+ 1 wlan      phy0   blocked unblocked
+root@s5pv210:~# rfkill unblock 0
+root@s5pv210:~# rfkill unblock 1
+root@s5pv210:~# rfkill
+ID TYPE      DEVICE      SOFT      HARD
+ 0 bluetooth hci0   unblocked unblocked
+ 1 wlan      phy0   unblocked unblocked
+```
+
+### Wifi
+
+```
+root@s5pv210:~# ip link
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: sit0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/sit 0.0.0.0 brd 0.0.0.0
+3: wlan0: <NO-CARRIER,BROADCAST,MULTICAST,DYNAMIC,UP> mtu 1500 qdisc pfifo_fast state DOWN mode DORMANT group default qlen 1000
+    link/ether xx:xx:xx:xx:xx:xx brd ff:ff:ff:ff:ff:ff
+```
+
+```
+root@s5pv210:~# iw dev wlan0 scan
+BSS xx:xx:xx:xx:xx:xx(on wlan0)
+        last seen: 378.381s [boottime]
+        TSF: 0 usec (0d, 00:00:00)
+        freq: 2412
+        beacon interval: 100 TUs
+        capability: ESS Privacy ShortSlotTime RadioMeasure (0x1411)
+        signal: -44.00 dBm
+        last seen: 0 ms ago
+        SSID: kebab
+        Supported rates: 1.0* 2.0* 5.5* 11.0* 18.0 24.0 36.0 54.0
+        DS Parameter set: channel 1
+        ERP: <no flags>
+        Extended supported rates: 6.0 9.0 12.0 48.0
+        RSN:     * Version: 1
+                 * Group cipher: CCMP
+                 * Pairwise ciphers: CCMP
+                 * Authentication suites: PSK
+                 * Capabilities: 16-PTKSA-RC 1-GTKSA-RC (0x000c)
+        BSS Load:
+                 * station count: 0
+                 * channel utilisation: 50/255
+                 * available admission capacity: 0 [*32us]
+        HT capabilities:
+                Capabilities: 0x82c
+                        HT20
+                        SM Power Save disabled
+                        RX HT20 SGI
+                        No RX STBC
+                        Max AMSDU length: 7935 bytes
+                        No DSSS/CCK HT40
+                Maximum RX AMPDU length 65535 bytes (exponent: 0x003)
+                Minimum RX AMPDU time spacing: 8 usec (0x06)
+                HT RX MCS rate indexes supported: 0-15
+                HT TX MCS rate indexes are undefined
+        HT operation:
+                 * primary channel: 1
+                 * secondary channel offset: no secondary
+                 * STA channel width: 20 MHz
+                 * RIFS: 1
+                 * HT protection: no
+                 * non-GF present: 0
+                 * OBSS non-GF present: 0
+                 * dual beacon: 0
+                 * dual CTS protection: 0
+                 * STBC beacon: 0
+                 * L-SIG TXOP Prot: 0
+                 * PCO active: 0
+                 * PCO phase: 0
+        Overlapping BSS scan params:
+                 * passive dwell: 20 TUs
+                 * active dwell: 10 TUs
+                 * channel width trigger scan interval: 300 s
+                 * scan passive total per channel: 200 TUs
+                 * scan active total per channel: 20 TUs
+                 * BSS width channel transition delay factor: 5
+                 * OBSS Scan Activity Threshold: 0.25 %
+        Extended capabilities:
+                 * HT Information Exchange Supported
+                 * Extended Channel Switching
+                 * BSS Transition
+                 * Operating Mode Notification
+        WPS:     * Version: 1.0
+                 * Wi-Fi Protected Setup State: 2 (Configured)
+                 * AP setup locked: 0x01
+                 * Response Type: 3 (AP)
+                 * UUID: 6254a7cc-097f-5b2c-b024-07fdf89096a8
+                 * Manufacturer: Technicolor
+                 * Model: AGHP
+                 * Model Number: 4132
+                 * Serial Number: 1918SA5NM
+                 * Primary Device Type: 6-0050f204-1
+                 * Device name: DGA4132
+                 * Config methods: Label, PBC, Keypad
+                 * RF Bands: 0x3
+                 * Unknown TLV (0x1049, 6 bytes): 00 37 2a 00 01 20
+        WMM:     * Parameter version 1
+                 * BE: CW 15-1023, AIFSN 3
+                 * BK: CW 15-1023, AIFSN 7
+                 * VI: CW 7-15, AIFSN 2, TXOP 3008 usec
+                 * VO: CW 3-7, AIFSN 2, TXOP 1504 usec
+BSS yy:yy:yy:yy:yy:yy(on wlan0)
+ ...
+```
+
+```
+root@s5pv210:~# wpa_passphrase <ESSID> <password>
+network={
+      ssid="testing"
+      #psk="testingPassword"
+      psk=131e1e221f6e06e3911a2d11ff2fac9182665c004de85300f9cac208a6a80531
+}
+root@s5pv210:~# wpa_supplicant -i wlan0 -c /etc/wpa_supplicant.conf -B
+root@s5pv210:~# udhcpc -i wlan0
+```
+
+## Audio
+
+```
+root@s5pv210:~# arecord -l
+**** List of CAPTURE Hardware Devices ****
+card 0: Aries [Aries], device 0: HiFi wm8994-aif1-0 [HiFi wm8994-aif1-0]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+root@s5pv210:~# aplay -l
+**** List of PLAYBACK Hardware Devices ****
+card 0: Aries [Aries], device 0: HiFi wm8994-aif1-0 [HiFi wm8994-aif1-0]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+root@s5pv210:~# aplay -L
+null
+    Discard all samples (playback) or generate zero samples (capture)
+pulse
+    PulseAudio Sound Server
+default
+    Default ALSA Output (currently PulseAudio Sound Server)
+sysdefault:CARD=Aries
+    Aries, HiFi wm8994-aif1-0
+    Default Audio Device
+```
+
+```
+root@s5pv210:~# arecord -f S16_LE -d 10 -r 16000 --device="hw:0,0" /tmp/test-mic.wav
+Recording WAVE '/tmp/test-mic.wav' : Signed 16 bit Little Endian, Rate 16000 Hz, Mono
+```
 ## Linkography
 
  - [Cyanogenmod wiki page](https://web.archive.org/web/20161224193352/https://wiki.cyanogenmod.org/w/Galaxysmtd_Info)
