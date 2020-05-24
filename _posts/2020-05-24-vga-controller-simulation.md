@@ -8,26 +8,34 @@ tags: [VGA, verilator, verilog]
 
 In my two previous posts  I implemented a [simple VGA controller]({% post_url
 2018-01-23-implementing-vga-in-verilog %}) and [one with the text mode]({%
-post_url 2018-06-17-vga-text-mode-verilog %}) but in this post I want to explore
+post_url 2018-06-17-vga-text-mode-verilog %}) but now I want to explore
 the possibility to simulate it using ``verilator``.
+
+I'll simply describe how to generate ``C++`` code from the design and use some
+native code to obtain a graphical output from it. I'm not an expert
+and these are a couple of experiments I did, if you want something more interesting
+go for example to [zipcpu](https://zipcpu.com/)'s site.
 
 ## Verilator
 
-The quick and dirty command is
+In practice ``verilator`` generates ``C++`` code that simulates your design:
+suppose you have a ``verilog`` module, you can use the following commands
 
 ```
-$ verilator -I<path/containing/verilog> -Wall -cc <verilog main module> --exe <c++ simulation file>
+$ verilator -I<path/containing/verilog> -Wall -cc <verilog main module> --exe <c++ simulation files>
 $ make -C obj_dir -j 8 -f V<module name> V<module name>
 ```
 
-this generates a ``obj_dir`` directory with some ``C++`` code
-and a ``Makefile`` that can be used to generate an executable
-using ``module.cpp`` as is done in the second command.
+these generate a ``obj_dir`` directory with some ``C++`` code
+and a ``Makefile`` that can generate an executable using the simulation
+files passed as initial arguments to ``verilator``.
 
 ``verilator`` use the module's name from the verilog file and create a ``C++``
-class which name is the module's name prefixed with with an uppercase ``v``, so
+class whose name is the module's name prefixed with with an uppercase ``v``, so
 if your module is named ``foo`` the corresponding ``C++`` class is named
-``Vfoo``.
+``Vfoo``. You don't have to indicate all the verilog files, but only the "top"
+one, ``verilator`` will use the paths passed using ``-I`` to find the "dependencies"
+for it.
 
 Here an example: to improve from the previous post about the Text mode where I used
 a block memory with Xilinx's primitive, now I'm going to implement the ``ROM`` for
@@ -161,20 +169,11 @@ $ ./obj_dir/Vglyph_rom
 ```
 
 In this case is pretty simple but, in certain cases you want to
-have a trace of the different signals, take for example a ringo counter.
+have a trace of the different signals, take for example a ring counter.
 
 A ring counter is a type of counter composed of flip-flops connected into
 a shift register, with the output of the last flip-flop fed to the input of
-the first, making a "circular" or "ring" structure.
-
-Ring counters are often used in hardware design (e.g. ASIC and FPGA design)
-to create finite-state machines. A binary counter would require an adder
-circuit which is substantially more complex than a ring counter and has
-higher propagation delay as the number of bits increases, whereas the
-propagation delay of a ring counter will be nearly constant regardless of
-the number of bits in the code.
-
-A simple implementation is the following
+the first, making a "circular" or "ring" structure; a simple implementation is the following
 
 ```verilog
 `default_nettype none
@@ -207,7 +206,7 @@ endmodule
 
 and here is the simulation
 
-```
+```c++
 #include <stdlib.h>
 #include "Vring_counter.h"
 #include "verilated_vcd_c.h"
@@ -257,19 +256,20 @@ int main(int argc, char **argv) {
 }
 ```
 
-You must add the ``--trace`` and include ``verilated_vcd_c.h``
+You must add the ``--trace`` flag to verilator and include ``verilated_vcd_c.h``
+in your ``C++`` code in order to be able to generate traces.
 
 The program when launched generates ``ring_counter_trace.vcd`` that can be
-opened into ``gtkwave`` and it's possible to see the signals and their
-temporal evolution
+opened into ``gtkwave`` in order to see the signals and their temporal evolution
 
 ![]({{ site.baseurl }}/public/images/vga-simulation/ring_counter_trace.png)
 
 ## Compiler flags
 
 It's possible to indicate particular flags to the compiler using ``-CFLAGS``
-with ``verilator`` otherwise you could compile you code without seeing any
-warning and thinking there are no issue with you code.
+with ``verilator``, like enabling warnings, otherwise you could compile you code without seeing any
+warning and thinking there are no issue; remember that you can debug with ``gdb``
+your design if you pass ``-g`` to the compiler.
 
 ## VGA simulation
 
@@ -289,7 +289,6 @@ The simulation is the following:
 #define LOG(...) fprintf(stderr, __VA_ARGS__)
 
 bool needDump = false; /* when the vsync signal transition from low to high */
-bool old_hsync = true; /* hsync is useless since it's not moved during the vsync */
 bool old_vsync = true;
 
 int main(int argc, char *argv[]) {
@@ -339,10 +338,10 @@ int main(int argc, char *argv[]) {
 
             close(fd);
 
-            idx = 0;                               // [8]
+            idx = 0;
         }
 
-        image[idx++] = ((vga->pixel & 1) * 0xff);        // [6]
+        image[idx++] = ((vga->pixel & 1) * 0xff);        // [8]
         image[idx++] = ((vga->pixel & 2) >> 1) * 0xff;
         image[idx++] = ((vga->pixel & 4) >> 2) * 0xff;
 
@@ -355,8 +354,16 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-it's very simple: waits for the "positive" ``vsync`` transition in order
-to dump a ``bmp`` with all the pixels transmitted by the controller; take
+As previously, we instantiate the module (``[1]``) and set the ``rst`` signal low so to
+reset the module (``[2]``); to store the frames we allocate in memory
+enough to store 801x526 pixels with 3 colors (``[3]``).
+
+After ten clock cycles we exit from the reset state (``[4]``), meanwhile
+we simulate the module (``[5]``) and save the pixel in memory (``[8]``)
+and check if it's time to dump a frame (``[6]``).
+
+The mechanism it's very simple: waits for the "positive" ``vsync`` transition in order
+to dump a ``bmp`` (``[7]``) with all the pixels transmitted by the controller; take
 in mind that is dumping also the part non directly displayed by a normal
 monitor, including back porch, front porch and sync pulse, so the original
 resolution ``640x480`` becames ``800x550``.
@@ -364,6 +371,13 @@ resolution ``640x480`` becames ``800x550``.
 It dumps a couple of frames and then exits; here an example:
 
 ![]({{ site.baseurl }}/public/images/vga-simulation/frame-00000005.png)
+
+So in theory you could develop your design without going back and forth
+with your FPGA, but take in mind that I'm a n00b in this field so maybe
+I'm missing something :) As always the code is available on [github](https://github.com/gipi/electronics-notes/tree/master/fpga/mojo/VGAGlyph/sim).
+
+My next step is to implement an instruction set and build a processor
+in order to do something with our screen, stay tuned.
 
 ## Links
 
