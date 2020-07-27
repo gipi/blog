@@ -5,15 +5,26 @@ title: "Configuring a IpSec VPN (fortigate client)"
 tags: [VPN, linux]
 ---
 
+I was in need to have a working VPN with Fortigate and here I'm going to
+recollect the procedure that has permited to accomplish such simple but
+incredibly complex task.
 
+My sistem is an Ubuntu 20.04, for example on an Ubuntu 18.10 this doesn't work
+:) if someone knows why I would be glad to be informed.
 
 ## Dependencies
+
+These are the packages that I installed
 
 ```
 strongswan libstrongswan-standard-plugins libstrongswan resolvconf
 ```
 
 ## Configuration
+
+To configure a connection having ``172.16.0.0/16`` as the "enterprise" part of
+the tunnel, and as "local" part your home network (``192.168.1.0/24``) and using
+as authentication an internal ``LDAP``, I used the following ``/etc/ipsec.conf``
 
 ```
 # ipsec.conf - strongSwan IPsec configuration file
@@ -46,7 +57,17 @@ conn myvpn
 	auto = route
 ```
 
+You need also to indicate the ``PSK`` and the actual personal password in the
+``/etc/ipsec.secrets``.
+
+
 ## Start tunnel
+
+The command that I use to start it is
+
+```
+$ ipsec start --no-fork
+```
 
 When just started you see the following
 
@@ -73,6 +94,8 @@ Security Associations (0 up, 0 connecting):
 ```
 
 when the tunnel starts working you can instead see
+(for some reason I need to ping an actual machine to trigger the tunnel
+activation)
 
 ```
 root@stakanov:~# ipsec statusall
@@ -103,16 +126,24 @@ Security Associations (1 up, 0 connecting):
 
 ## Docker
 
+It is possible to use this configuration via a ``Dockerfile`` reproducing the
+steps above but take in mind that it is going to fail with some weird error like
+``The expanding file pattern '/etc/strongswan.d/charon/*.conf' failed: Permission denied``; this is
+caused by ``apparmor`` triggering: indeed if look at the log you will see
+something like the following
+
 ```
 audit: type=1400 audit(1592238171.739:83): apparmor="DENIED" operation="open" profile="/usr/lib/ipsec/charon" name="/var/lib/docker/overlay2/02767f1d398d73371577bf0894a350595be9cecaecdbb9f416b7f421ae7820eb/diff/etc/strongswan.d/charon/" pid=46257 comm="charon" requested_mask="r" denied_mask="r" fsuid=0 ouid=0
 audit: type=1400 audit(1592238171.739:84): apparmor="DENIED" operation="open" profile="/usr/lib/ipsec/charon" name="/var/lib/docker/overlay2/02767f1d398d73371577bf0894a350595be9cecaecdbb9f416b7f421ae7820eb/diff/etc/strongswan.d/" pid=46257 comm="charon" requested_mask="r" denied_mask="r" fsuid=0 ouid=0
 ```
 
-you need to stop ``apparmor``
+the [solution](https://askubuntu.com/a/1250809/1095510) would be to do
 
 ```
-# aa-teardown
+$ sudo aa-complain /etc/apparmor.d/usr.lib.ipsec.charon
 ```
+
+installing ``apparmor-utils``.
 
 ## Linkography
 
