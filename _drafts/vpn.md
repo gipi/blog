@@ -66,7 +66,7 @@ You need also to indicate the ``PSK`` and the actual personal password in the
 The command that I use to start it is
 
 ```
-$ ipsec start --no-fork
+$ ipsec start --nofork
 ```
 
 When just started you see the following
