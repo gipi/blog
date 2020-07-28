@@ -326,6 +326,65 @@ root filesystem installing the packages one by one!
 
 If you want to create a new image, remember to ``export IMAGE_BASENAME``
 
+Also ``meta/classes/core-image.bbclass`` that defines ``core-image``
+
+```
+# Common code for generating core reference images
+#
+# Copyright (C) 2007-2011 Linux Foundation
+
+# IMAGE_FEATURES control content of the core reference images
+# 
+# By default we install packagegroup-core-boot and packagegroup-base-extended packages;
+# this gives us working (console only) rootfs.
+#
+# Available IMAGE_FEATURES:
+#
+# - x11                 - X server
+# - x11-base            - X server with minimal environment
+# - x11-sato            - OpenedHand Sato environment
+# - tools-debug         - debugging tools
+ ...
+# - read-only-rootfs    - tweaks an image to support read-only rootfs
+# - splash              - bootup splash screen
+#
+FEATURE_PACKAGES_x11 = "packagegroup-core-x11"
+  ...
+FEATURE_PACKAGES_ssh-server-openssh = "packagegroup-core-ssh-openssh"
+FEATURE_PACKAGES_hwcodecs = "${MACHINE_HWCODECS}"
+
+
+# IMAGE_FEATURES_REPLACES_foo = 'bar1 bar2'
+# Including image feature foo would replace the image features bar1 and bar2
+IMAGE_FEATURES_REPLACES_ssh-server-openssh = "ssh-server-dropbear"
+
+# IMAGE_FEATURES_CONFLICTS_foo = 'bar1 bar2'
+# An error exception would be raised if both image features foo and bar1(or bar2) are included
+
+
+CORE_IMAGE_BASE_INSTALL = '\
+    packagegroup-core-boot \
+    packagegroup-base-extended \
+    \
+    ${CORE_IMAGE_EXTRA_INSTALL} \
+    '
+
+CORE_IMAGE_EXTRA_INSTALL ?= ""
+
+IMAGE_INSTALL ?= "${CORE_IMAGE_BASE_INSTALL}"
+
+inherit image
+```
+
+### Package groups
+
+Defined in ``meta/classes/packagegroup.bbclass``
+
+### ``DEPENDS`` vs ``RDEPENDS``
+
+[link to mailing list](https://www.yoctoproject.org/pipermail/yocto/2013-August/015792.html)
+
+
 ## Start a new project
 
 First of all you need to have the Yocto base repository cloned
@@ -601,19 +660,25 @@ This is done modifying the ``IMAGE_INSTALL`` variable, that can be done
 with ``_append`` or ``+=``
 
 ```
-IMAGE_INSTALL += "vim"
+IMAGE_INSTALL_append = " vim"
 ```
 
-[take in mind](https://www.yoctoproject.org/pipermail/yocto/2012-June/007363.html)
-that there are ordering issues: ``meta/classes/core-image.bbclass`` contains the line
+but [take in mind](https://www.yoctoproject.org/pipermail/yocto/2012-June/007363.html) that ``_append``
+is preferred (there are ordering issues: ``meta/classes/core-image.bbclass`` contains the line
 
 ```
 IMAGE_INSTALL ?= "${CORE_IMAGE_BASE_INSTALL}"
 ```
 
+so it's possible that your packages are discarded).
+
 [documentation](https://www.yoctoproject.org/docs/3.1/dev-manual/dev-manual.html#usingpoky-extend-customimage-localconf)
 
 However to double check what is installed, look at the ``<image name>.manifest`` in the final directory.
+
+### Enable debian package management
+
+Add ``package-management`` to ``IMAGE_FEATURES`` and ``PACKAGE_CLASSES ?= "package_deb"``.
 
 ### Include your file
 
@@ -637,6 +702,12 @@ formfactor_0.0.bb:
 $ bitbake -s core-image-minimal
 ```
 
+### List packages
+
+```
+$ bitbake -g <image> && cat pn-buildlist | grep -ve "native" | sort | uniq
+```
+
 ### Find appended layers
 
 ```
@@ -654,6 +725,29 @@ $ oe-pkgdata-util find-path $FILE
 ### Find build timestamp
 
 It's located into ``/etc/timestamp``.
+
+### Monitoring disk space usage
+
+```
+# Disk Space Monitoring during the build
+#
+# Monitor the disk space during the build. If there is less that 1GB of space or less
+# than 100K inodes in any key build location (TMPDIR, DL_DIR, SSTATE_DIR), gracefully
+# shutdown the build. If there is less that 100MB or 1K inodes, perform a hard abort
+# of the build. The reason for this is that running completely out of space can corrupt
+# files and damages the build in ways which may not be easily recoverable.
+# It's necesary to monitor /tmp, if there is no space left the build will fail
+# with very exotic errors.
+BB_DISKMON_DIRS ??= "\
+    STOPTASKS,${TMPDIR},1G,100K \
+    STOPTASKS,${DL_DIR},1G,100K \
+    STOPTASKS,${SSTATE_DIR},1G,100K \
+    STOPTASKS,/tmp,100M,100K \
+    ABORT,${TMPDIR},100M,1K \
+    ABORT,${DL_DIR},100M,1K \
+    ABORT,${SSTATE_DIR},100M,1K \
+    ABORT,/tmp,10M,1K"
+```
 
 ## Links
 
