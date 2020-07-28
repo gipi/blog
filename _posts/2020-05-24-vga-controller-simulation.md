@@ -271,6 +271,40 @@ with ``verilator``, like enabling warnings, otherwise you could compile you code
 warning and thinking there are no issue; remember that you can debug with ``gdb``
 your design if you pass ``-g`` to the compiler.
 
+## Defines
+
+Also ``verilog`` can use preprocessing variables and ``verilator`` adds a few of
+them during the compilation, you can use the following one-liner to obtain the
+predefined ones
+
+```
+$ touch foo.v ; verilator -E --dump-defines foo.v
+`define SV_COV_ASSERTION 20
+`define SV_COV_CHECK 3
+`define SV_COV_ERROR -1
+`define SV_COV_FSM_STATE 21
+`define SV_COV_HIER 11
+`define SV_COV_MODULE 10
+`define SV_COV_NOCOV 0
+`define SV_COV_OK 1
+`define SV_COV_OVERFLOW -2
+`define SV_COV_PARTIAL 2
+`define SV_COV_RESET 2
+`define SV_COV_START 0
+`define SV_COV_STATEMENT 22
+`define SV_COV_STOP 1
+`define SV_COV_TOGGLE 23
+`define SYSTEMVERILOG 1
+`define VERILATOR 1
+`define coverage_block_off /*verilator coverage_block_off*/
+`define systemc_clock /*verilator systemc_clock*/
+`define verilator 1
+`define verilator3 1
+```
+
+so, if for example, you want to define a custom ``UART`` baud generator when
+simulating your design, you can put custom code when ``VERILATOR`` is defined.
+
 ## VGA simulation
 
 Now that we have introduced ``verilator`` we can think about simulating the
