@@ -58,8 +58,30 @@ conn myvpn
 ```
 
 You need also to indicate the ``PSK`` and the actual personal password in the
-``/etc/ipsec.secrets``.
+``/etc/ipsec.secrets`` like the following
 
+```
+: PSK "my_love_for_kebab_is_unbounded"
+: XAUTH "password of LDAP"
+```
+
+### Crypto groups
+
+In the field ``ike`` and ``esp`` you have to indicate the diffie-hellman group parameters of your connection
+using the pattern ``<block cipher>-<hash function>-modp<#bit group>``, where the number of bits of a given
+group is given by the table below:
+
+| Groud index | Description |
+|-------------|-------------|
+| 1	| 768-bit group |
+| 2	| 1024-bit group |
+| 5	| 1536-bit group |
+| 14	| 2048-bit group |
+| 15	| 3072-bit group |
+| 19	| 256-bit elliptic curve group |
+| 20	| 384-bit elliptic curve group |
+| 21	| 521-bit elliptic curve group |
+| 24	| 2048-bit, 256 bit subgroup |
 
 ## Start tunnel
 
