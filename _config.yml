@@ -1,9 +1,11 @@
 markdown: kramdown
 kramdown:
   input: GFM
+  syntax_highlighter_opts:
+    default_lang: html
+    css_class   : 'highlight'
   auto_ids: true
   hard_wrap: false # https://stackoverflow.com/questions/25418399/jekyll-converting-every-newline-as-line-break
-highlighter: rouge
 
 # Permalinks
 permalink:        pretty
