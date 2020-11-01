@@ -77,6 +77,9 @@ $ qemu-system-x86_64 \
     -net nic,model=virtio -net user,hostfwd=tcp::2222-:22
 ```
 
+It's also available a script ``output/images/start-qemu.sh`` but only with
+the basic options (no networking for example).
+
 During the package compiling process, Buildroot will record the compiling
 process via some identification files and save those files to the related
 directory of the package. All those identification files are:
@@ -217,12 +220,25 @@ BR2_USE_WCHAR=y
 
 ### Customize filesystem
 
-If you need to add, remove or whatever to the final image, you can indicate
-a post build script, take for example ``pc_x86_64_bios_defconfig``
+If you have configuration files that you want to replace you can indicate an
+**overlay** directory
+
+```
+    System configuration  --->
+         () Root filesystem overlay directories
+```
+
+to use as source.
+
+Another option is to use a post build script: take for example ``pc_x86_64_bios_defconfig``
+
+that uses the following option
 
 ```
 BR2_ROOTFS_POST_BUILD_SCRIPT="board/pc/post-build.sh"
 ```
+
+to indicate a script to copy boot-related files into the image
 
 ```bash
 #!/bin/sh
@@ -271,7 +287,7 @@ $ make KDIR=/path/to/buildroot/output/build/linux-x.y.z/ M=$PWD
 
  - [Official documentation](https://buildroot.org/docs.html)
  - http://nairobi-embedded.org/qemu_serial_port_system_console.html
- - https://www.viatech.com/en/2015/06/buildroot/
+ - [My 6 tips for working with Buildroot](https://www.viatech.com/en/2015/06/buildroot/)
  - https://elinux.org/images/2/2a/Using-buildroot-real-project.pdf
  - http://www.linux-kvm.org/page/USB_Host_Device_Assigned_to_Guest
  - https://stackoverflow.com/questions/31617575/how-to-use-usb-camera-in-qemu
