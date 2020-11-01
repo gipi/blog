@@ -1,12 +1,65 @@
 ---
 layout: post
 comments: true
-title: "Experiments around fault injection"
+title: "Experiments with side channel attacks using the Chipwhisperer"
 tags: [AVR, fault injection, firmware]
 ---
 
-The **target** attached to the chipwhisperer is identified in the wiki as the [CW303](https://wiki.newae.com/CW303_XMEGA_Target).
-It has as microcontroller an Atmel's XMEGA128 ([datasheet](https://static.chipdip.ru/lib/279/DOC000279729.pdf)).
+I own a Chipwhisperer board, the [CWLITE](https://rtfm.newae.com/Capture/ChipWhisperer-Lite/) one, it's an open source, open
+hardware device that allows to quickly setup and execute side channels related
+attacks. 
+
+For the following post I'm using as target the board attached with
+the firmwares already present in the repository, identified in the wiki as the
+[CW303](https://rtfm.newae.com/Targets/CW303%20XMEGA/).  It has as
+microcontroller an Atmel's XMEGA128
+([datasheet](https://static.chipdip.ru/lib/279/DOC000279729.pdf)).
+
+In this post I'll explore some basic concepts: how to install the library,
+update the firmware of the board and practicing with it.
+
+## Model of a processing unit
+
+To understand what follows you need a model of how a processing unit is composed
+and how the single entities with their behaviour can tell us something about
+what is happening during computation.
+
+Obviously this won't be an exhaustive explanation, this is matter of high
+profile study, but as a physicist I can tell you that sometimes from very basic
+assumptions is possible to deduce very important aspects of a system.
+
+You should think of a processing device in the same way you think about an old clock:
+a source of motion, the pendulum, is transmitted via gears to show the correct
+time on the display; in the same way an electronic device has a clock that
+"gives the time" to its internal components!
+
+Let me explain a little better: let's start with the founding entities of modern
+digital electronics, i.e. **transistors**; they have a lot of property and a
+huge usage that would be an enourmous task to explain in detail and it's of not
+importance in our understanding in this case. For now it's important to model a
+transistor as a "switch", as something that allows the flow of current by a
+signal.
+
+![]({{ site.baseurl }}/public/images/computers/npn.png)
+
+![]({{ site.baseurl }}/public/images/computers/switch.png)
+
+Another abstraction useful is that they behave like the **negation operator**
+
+![]({{ site.baseurl }}/public/images/computers/switch.gif)
+
+and this allows to build other logic operator with them
+
+![]({{ site.baseurl }}/public/images/computers/and-or.gif)
+
+From here is possible to construct something that "has memory", a so called
+**latch**: to have memory you need to indicate the "flow of time" and here the
+**clock** enters the game
+
+For now this should be enough to understand the primitive building block of a
+processing device, later I will elaborate a little more where the model just
+described interacts with the physical world what can tell us and what we can do
+to poke it :P
 
 ## Installation steps
 
@@ -140,6 +193,286 @@ class OpenADC(ScopeTemplate, util.DisableNewAttr):
         ...
 ```
 
+## Pinout
+
+| Left | number | number | Right |
+|------|--------|--------|-------|
+| 5V   | 1 | 2 | GND |
+| 3V3  | 3 | 4 | HS1/I |
+| nRST | 5 | 6 | HS2/O (output clock and glitch) |
+| MISO | 7 | 8 | VREF |
+| MOSI | 9 | 10 | IO1 (serial RX) |
+| SCK  | 11 | 12 | IO2 (serial TX) |
+| PC   | 13 | 14 | IO3 |
+| PD   | 15 | 16 | IO4 (used as a trigger) |
+| GND  | 17 | 18 | 3V3 |
+| GND  | 19 | 20 | 5V |
+
+## Updating
+
+```python
+import chipwhisperer as cw
+scope = cw.scope()
+programmer = cw.SAMFWLoader(scope=scope)
+programmer.enter_bootloader(really_enter=True)
+programmer.program('/dev/ttyACM0', hardware_type='cwlite')
+```
+
+```
+[1111253.064641] usb 2-10: USB disconnect, device number 27
+[1111253.449854] usb 2-10: new high-speed USB device number 28 using xhci_hcd
+[1111253.602083] usb 2-10: New USB device found, idVendor=03eb, idProduct=6124, bcdDevice= 1.10
+[1111253.602086] usb 2-10: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+[1111253.630152] cdc_acm 2-10:1.0: ttyACM0: USB ACM device
+[1111253.630322] usbcore: registered new interface driver cdc_acm
+[1111253.630324] cdc_acm: USB Abstract Control Model driver for USB modems and ISDN adapters
+```
+
+## Power analysis
+
+Let's start with something interesting: leak information about the computation
+observing the power consumption of a device.
+
+As I said in the introduction about the model, the "calculations" inside a
+device are done, roughly speaking, switching on and off groups of transistors to
+perform the needed operations; since the transistors are physical entities, they
+interact with the physical world and need **energy** to move electrons around,
+so we can imagine that the power consumption would be in some way connected with
+the internal state of the processor.
+
+### Different instructions
+
+### Correlation
+
+With our model we can now look for correlation between traces and the SBox-es
+output: I'm going to use the following function to calculate it
+
+```python
+def correlation_trace_sbox_for_byte_at(key_guess, traces, texts, bnum, trace_avg, trace_stddev):
+    """Correlation between trace values and hamming value
+    for the bnum-th byte and key "key_guess"."""
+    hws = np.array([[HW[aes_internal(textin[bnum], key_guess)] for textin in texts]]).transpose()
+    hws_avg = mean(hws)
+    
+    return cov(traces, trace_avg, hws, hws_avg)/trace_stddev/std_dev(hws, hws_avg)
+```
+
+Plotting the correlation associated with the greatest value I obtain a very good
+looking image of the internal of the algorithm:
+
+![]({{ site.baseurl }}/public/images/side-channels/correlation-sbox.png)
+
+It's easy to distinguish between the various blocks of the first round of the key.
+
+To check that what we are seeing makes sense, look at the code in ``simpleserial-aes`` that we flashed:
+here there is the code that triggers the capture from the chipwhisperer
+
+
+```c
+/* This is the function that takes our input */
+uint8_t get_pt(uint8_t* pt)
+{
+    aes_indep_enc_pretrigger(pt);
+    
+	trigger_high();
+
+	aes_indep_enc(pt); /* encrypting the data block */
+	trigger_low();
+    
+    aes_indep_enc_posttrigger(pt);
+    
+	simpleserial_put('r', 16, pt);
+	return 0x00;
+}
+```
+
+and here the outer most routines
+
+```c
+void aes_indep_enc(uint8_t * pt)
+{
+	AES128_ECB_indp_crypto(pt);
+}
+
+void AES128_ECB_indp_crypto(uint8_t* input)
+{
+  state = (state_t*)input;
+  BlockCopy(input_save, input);
+  Cipher();
+}
+```
+
+``Cipher`` is what triggers the encryption, and its first operation is to
+initialize the first round key
+
+```c
+// Cipher is the main function that encrypts the PlainText.
+static void Cipher(void)
+{
+    uint8_t round = 0;
+
+    // Add the First round key to the state before starting the rounds.
+    AddRoundKey(0); 
+
+  // There will be Nr rounds.
+  // The first Nr-1 rounds are identical.
+  // These Nr-1 rounds are executed in the loop below.
+  for(round = 1; round < Nr; ++round)
+  {
+    SubBytes();
+    ...
+}
+// This function adds the round key to state.
+// The round key is added to the state by an XOR function.
+static void AddRoundKey(uint8_t round)
+{
+  uint8_t i,j;
+  for(i=0;i<4;++i)
+  {
+    for(j = 0; j < 4; ++j)
+    {
+      (*state)[i][j] ^= RoundKey[round * Nb * 4 + i * Nb + j];
+    }
+  }
+}
+
+// The SubBytes Function Substitutes the values in the
+// state matrix with values in an S-box.
+static void SubBytes(void)
+{
+  uint8_t i, j;
+  for(i = 0; i < 4; ++i)
+  {
+    for(j = 0; j < 4; ++j)
+    {
+      (*state)[j][i] = getSBoxValue((*state)[j][i]);
+    }
+  }
+}
+```
+
+To have an idea of the actual clock cycles we need to look at the assembly code
+produced from the compiler
+
+```
+[0x0000082a]> pdf @ sym.SubBytes 
+            ; CALL XREFS from sym.Cipher @ 0x94e, 0x9c6
+┌ 46: sym.SubBytes ();
+│           0x00000848      20912223       lds r18, 0x2322
+│           0x0000084c      30912323       lds r19, 0x2323
+│           0x00000850      94e0           ldi r25, 0x04
+│           ; CODE XREF from sym.SubBytes @ 0x872
+│       ┌─> 0x00000852      d901           movw r26, r18  (1)
+│       ╎   0x00000854      80e0           ldi r24, 0x00  (1)
+│       ╎   ; CODE XREF from sym.SubBytes @ 0x868
+│      ┌──> 0x00000856      ec91           ld r30, x      (2)
+│      ╎╎   0x00000858      f0e0           ldi r31, 0x00  (1)
+│      ╎╎   0x0000085a      e55f           subi r30, 0xf5 (1)
+│      ╎╎   0x0000085c      fe4d           sbci r31, 0xde (1)
+│      ╎╎   0x0000085e      4081           ld r20, z      (2)
+│      ╎╎   0x00000860      4c93           st x, r20      (2)
+│      ╎╎   0x00000862      8f5f           subi r24, 0xff (1)
+│      ╎╎   0x00000864      1496           adiw r26, 0x04 (1)
+│      ╎╎   0x00000866      8430           cpi r24, 0x04  (1)
+│      └──< 0x00000868      b1f7           brne 0x856     (1/2)
+│       ╎   0x0000086a      9150           subi r25, 0x01 (1)
+│       ╎   0x0000086c      2f5f           subi r18, 0xff (1)
+│       ╎   0x0000086e      3f4f           sbci r19, 0xff (1)
+│      ┌──< 0x00000870      9111           cpse r25, r1   (1/2/3)
+│      │└─< 0x00000872      efcf           rjmp 0x852     (2)
+│      │    ; CODE XREF from sym.SubBytes @ 0x870
+└      └──> 0x00000874      0895           ret
+```
+
+**Note:** look for the [Atmel AVR Instruction Set Manual](http://ww1.microchip.com/downloads/en/devicedoc/atmel-0856-avr-instruction-set-manual.pdf) to have a detailed
+explanation of instructions and clock cycles.
+
+If I plot all the traces above together and manually zoom for the actual time intervals
+
+![]({{ site.baseurl }}/public/images/side-channels/correlation-input-zoom.png)
+
+I obtain the following values (the first row contains the time value of the most
+correlated peak, the second row the difference between the adjacent ones)
+
+```
+1938  1994  2050  2106  2190  2246  2302  2358  2442  2498  2554  2610  2694  2750  2806  2862
+    56    56    56    84    56    56    56    84    56    56    56    84    56    56    56
+```
+
+(I took the highest peaks as "markers"); since the ``ADC`` is capturing 4 times
+the actual device's clock, we have the 14 and 21 clock cycles between the
+operations. **This is what we have found looking at the assembly!**
+
+But wait a moment: for sure there is also some instructions that interact with
+the input bytes and we can do the same reasoning about correlation: using the
+following function
+
+```python
+def correlation_trace_input_for_byte_at(traces, texts, bnum, trace_avg, trace_stddev):
+    """Correlation between trace values and hamming value for the bnum-th byte of input."""
+    hws = np.array([[HW[textin[bnum]] for textin in texts]]).transpose()
+    hws_avg = mean(hws)
+    
+    return cov(traces, trace_avg, hws, hws_avg)/trace_stddev/std_dev(hws, hws_avg)
+```
+
+the following is obtained
+
+![]({{ site.baseurl }}/public/images/side-channels/correlation-input.png)
+
+```c
+static void BlockCopy(uint8_t* output, const uint8_t* input)
+{
+  uint8_t i;
+  for (i=0;i<KEYLEN;++i)
+  {
+    output[i] = input[i];
+  }
+}
+```
+
+what in reality we want is the assembly code
+
+```asm
+000009ea <BlockCopy>:
+ 9ea:   9b 01           movw    r18, r22  (1)
+ 9ec:   20 5f           subi    r18, 0xF0 (1)
+ 9ee:   3f 4f           sbci    r19, 0xFF (1)
+ 9f0:   fb 01           movw    r30, r22  (1)
+ 9f2:   41 91           ld      r20, Z+   (1)
+ 9f4:   bf 01           movw    r22, r30  (1)
+ 9f6:   fc 01           movw    r30, r24  (1)
+ 9f8:   41 93           st      Z+, r20   (1)
+ 9fa:   cf 01           movw    r24, r30  (1)
+ 9fc:   62 17           cp      r22, r18  (1)
+ 9fe:   73 07           cpc     r23, r19  (1)
+ a00:   b9 f7           brne    .-18      (1/2)
+ a02:   08 95           ret               (4/5)
+```
+
+
+## Glitching
+
+Until now I observed the specimen under the microscope provided by the ADC of
+the chipwhisperer, but what if I would poke and perturbe its behaviour?
+
+The model of the processor is fine and good but obviously is a model, its
+**correct** behaviour is dependent of the voltage and clock "quality" that I'm
+providing to it: a latch needs some margins both for clock and voltage
+parameters to work in the way is intended.
+
+It's not used specifically in the attacks that follow but doesn't hurt to know a
+little more in detail: a flip-flop-like device has some specific parameters
+
+ - **setup time** \\(t_s\\): input **must** be present and stable for at least
+   this time before the clock transition
+ - **hold time** \\(t_h\\): input **must** be present and stable for at least this time
+   after the clock transition
+ - **propagation time** \\(t_p\\): the time after which the output is expected
+   to be stable after the clock transition
+
+the maximum usable clock frequency of a processor is determined by the maximum delay among its elements
+
 ## Code
 
 [Application note AVR1307](http://ww1.microchip.com/downloads/en/AppNotes/doc8049.pdf)
@@ -177,7 +510,11 @@ Disassemblamento della sezione .data:
 
 the first line is the original instruction, I choosen this as a alias
 for ``nop``, and then follow the 16 one-bit-distant instructions; lucky
-us they aren't flow related
+us they aren't flow related. The original instruction executes in 1 cycle.
+
+Now I need some instruction to actual printing out of the UART some data from
+which I can deduce the effects of glitching: from the actual code of the
+firmware
 
 ```c
 #define USART USARTC0
@@ -186,19 +523,46 @@ us they aren't flow related
 	USART_PutChar(&USART, 'A');
 ```
 
-we obtain this code
+results in this code
 
 ```
-.-> 74a:   80 91 a1 08     lds     r24, 0x08A1
-|   74e:   85 ff           sbrs    r24, 5
-'-- 750:   fc cf           rjmp    .-8
-    752:   81 e4           ldi     r24, 0x41
-    754:   80 93 a0 08     sts     0x08A0, r24
-    758:   80 e0           ldi     r24, 0x00
-    75a:   90 e0           ldi     r25, 0x00
-    75c:   08 95           ret
+.-> 74a:   80 91 a1 08     lds     r24, 0x08A1 (2)
+|   74e:   85 ff           sbrs    r24, 5      (1/2/3)
+'-- 750:   fc cf           rjmp    .-8         (2)
+    752:   81 e4           ldi     r24, 0x41   (1)
+    754:   80 93 a0 08     sts     0x08A0, r24 (2)
+    758:   80 e0           ldi     r24, 0x00   (1)
+    75a:   90 e0           ldi     r25, 0x00   (1)
+    75c:   08 95           ret                 (4/5)
 ```
 
+note that this is the "slower" part of the code since the target uses a baud
+rate of 38400 baud, this means the in one second can send 38400 bits or 4800
+bytes.
+
+If the target run at speed of 8MHz (as indicated by the value in
+``scope.clock.clkgen_freq``) we have each cycle takes 1667 cycle for each bytes
+so, since we are printing the string "hello" we have a total of around 8.3k cycles
+
+Thsi is the macro to set a register with a predefined value:
+
+```
+/* nice: ldi can be used only with registers r16-r31 */
+#define set_r(r,value) __asm__( \
+    "ldi r31, " #value "\n\  (1)
+     mov r" #r ", r31 "   \  (1)
+    )
+```
+
+it executes in two clock cycles, since there are 32 of them, we have 64 clock
+cycles
+
+To summarise: we have three part in our firmware:
+
+ 1. the setup part where we initialize the hardware and print out "hello"
+ 2. the setup of the registers with predefined value ~ 64 clock cycles
+ 3. a nop sled with 1 clock cycle for entry
+ 4. print out the content of the registers
 
 ```
 $ ./chipw.py hardware/victims/firmware/simpleserial-experiments/simpleserial-experiments-CW303.hex 
@@ -213,9 +577,12 @@ Verified flash OK, 2459 bytes
 
 [Chipwisperer documentation about glitch module](https://chipwhisperer.readthedocs.io/en/latest/api.html#chipwhisperer.scopes.OpenADC.glitch)
 
+
 ## Links
 
  - [AVR instruction set manual](http://ww1.microchip.com/downloads/en/devicedoc/atmel-0856-avr-instruction-set-manual.pdf)
  - https://pbpython.com/interactive-dashboards.html
  - https://jakevdp.github.io/PythonDataScienceHandbook/04.08-multiple-subplots.html
  - https://towardsdatascience.com/subplots-in-matplotlib-a-guide-and-tool-for-planning-your-plots-7d63fa632857
+ - [Correlation Power Analysis with a Leakage Model](https://www.researchgate.net/publication/221291676_Correlation_Power_Analysis_with_a_Leakage_Model) paper introducing the CPA in 2004
+ - [Tamper Resistance - a Cautionary Note](https://www.cl.cam.ac.uk/~rja14/tamper.html)
