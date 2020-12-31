@@ -264,6 +264,24 @@ opened into ``gtkwave`` in order to see the signals and their temporal evolution
 
 ![]({{ site.baseurl }}/public/images/vga-simulation/ring_counter_trace.png)
 
+## eval
+
+From the [documentation about ``eval``](https://veripool.org/projects/verilator/wiki/Manual-verilator#EVALUATION-LOOP)
+
+
+    When eval() is called Verilator looks for changes in clock signals and evaluates
+    related sequential always blocks, such as computing always_ff @ (posedge...)
+    outputs. Then Verilator evaluates combinatorial logic.
+
+    Note combinatorial logic is not computed before sequential always blocks are
+    computed (for speed reasons). Therefore it is best to set any non-clock inputs
+    up with a separate eval() call before changing clocks.
+
+    Alternatively, if all always_ff statements use only the posedge of clocks, or
+    all inputs go directly to always_ff statements, as is typical, then you can
+    change non-clock inputs on the negative edge of the input clock, which will be
+    faster as there will be fewer eval() calls.
+
 ## Compiler flags
 
 It's possible to indicate particular flags to the compiler using ``-CFLAGS``
