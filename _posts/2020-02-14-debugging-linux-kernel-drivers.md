@@ -60,6 +60,12 @@ However, if you are in hurry, that is to compile for ``x86_64``:
 $ make ARCH=x86_64 defconfig
 ```
 
+Remember to clean before launching a completely new build:
+
+```
+$ make mrproper
+```
+
 Now some configuration values that can be useful when debugging
 
 ```
@@ -106,6 +112,8 @@ actually find the binary; if you are in a Debian distribution you can
 use [snapshot.debian.org](https://snapshot.debian.org/). YMMV but I'm
 not sure it will work at all :)
 
+Remeber that is ``vmlinux`` that contains the debug symbol.
+
 ## Cross Compile
 
 This is something I forget about a lot
@@ -114,6 +122,10 @@ This is something I forget about a lot
 $ make ARCH=mips CROSS_COMPILE=mips-linux-gnu- defconfig
 $ make ARCH=mips CROSS_COMPILE=mips-linux-gnu- -j 4
 ```
+
+## Initrd via buildroot
+
+Enable ``BR2_TARGET_ROOTFS_CPIO`` with the right architecture
 
 ### GDB scripts
 
