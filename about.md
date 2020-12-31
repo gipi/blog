@@ -17,7 +17,6 @@ but I want always to hack all the things.
 Below some sites where I have fun solving challenges about cryptography, security,
 reverse engineering etc... 
 
- - [Stockfighter](https://www.stockfighter.io/ui/profile/gipi_) really cool simulation of a stock exchange
  - [Root Me](http://www.root-me.org/gipi?inc=statistiques&lang=en) a site of *capture the flag* and information security
  - [Microcorruption](https://microcorruption.com/profile/1609) *capture the flag* with a simulated embedded environment
  - [Project Euler](https://projecteuler.net/progress=gipi) math challenges
