@@ -62,6 +62,32 @@ and the second probability is taken over uniform choice of \\(r\in\\{0, 1\\}^{l(
 
 \\(s\\) is called **seed**, \\(l\\) is called **expansion factor** of \\(G\\).
 
+Another important concept is **pseudorandom function**: a function 
+
+$$
+F\colon\{0,1\}^{l_{\hbox{key}}(n)}\times\{0,1\}^{l_{\hbox{in}}(n)}\to\{0,1\}^{l_{\hbox{out}}(n)}
+$$
+
+has such property if for all polynomial-time distinguisher \\(D\\), there is a
+negligible function \\(\negl{}\\) such that
+
+$$
+\left\|\Pr{D^{F_k(\cdot)}(1^n) = 1} - \Pr{D^{f(\cdot)}(1^n) = 1}\right\|\leq\negl{}(n)
+$$
+
+where the first probability is taken over uniform choice of \\(k\in\\{0,1\\}^n\\) and the randomness of \\(D\\), and the second probability
+is taken over uniform choice of \\(f\in\hbox{Func}_n\\) and the randomness of \\(D\\).
+
+\\(\def\l#1{l_{\scriptsize\hbox{#1}}(n)}\\)
+
+\\(F\\) is called a **keyed function**: \\(F(k,x) = F_k(x)\\); obviously there
+are \\(2^{\l{key}}\\) of them, instead in the general case of all
+possible functions we have \\(2^{\l{out}\cdot2^{\l{in}}}\\).
+
+The pseudo is chosen from a distribution over at most \\(2^n\\) distinct
+functions, whereas the real random function is chosen from  all \\(2^{n\cdot2^n}\\) functions in \\(\hbox{Func}_n\\).
+
+
 ## **3.1**
 
 Prove proposition \\(3.6\\)
@@ -185,7 +211,7 @@ and following the same procedure of the previous exercise we can find that is eq
 Let \\(G\\) be a pseudorandom generator with expansion factor \\(l(n) > 2n\\). In each of the following cases, say whether \\(G^\prime\\)
 is necessarily a pseudorandom generator. If yes, give a proof; if not, show a counterexample.
 
- - (a) Define \\(G^\prime (s){\buildrel\rm def\over=} G(s_1\dots s_{\lfloor n/2\rfloor})\\)
+ - (a) Define \\(G^\prime (s){\buildrel\rm def\over=} G(s_1\dots s_{\lceil n/2\rceil})\\)
  - (b) Define \\(G^\prime (s){\buildrel\rm def\over=} G(0^{\|s\|}\Vert s)\\)
  - (c) Define \\(G^\prime (s){\buildrel\rm def\over=} G(s)\Vert G(s + 1)\\)
 
@@ -193,7 +219,9 @@ is necessarily a pseudorandom generator. If yes, give a proof; if not, show a co
 
 Let's first of all calculate the expansion factor:
 
- - (a) \\(l^\prime(n) = l^\prime(\|s\|) = l(\lfloor\|s\|/2\rfloor) > 2\lfloor\|s\|/2\rfloor = \|s\| = n\\)
+ - (a) there are two cases
+   - \\(n\\) even: \\(l^\prime(n) = l^\prime(\|s\|) = l(\lceil\|s\|/2\rceil) > 2\lceil\|s\|/2\rceil = 2\lceil 2k/2\rceil = 2\lceil k\rceil = 2k = n\\)
+   - \\(n\\) odd: \\(l^\prime(n) = l^\prime(\|s\|) = l(\lceil\|s\|/2\rceil) > 2\lceil\|s\|/2\rceil = 2\lceil {2k + 1\over2}\rceil = 2\lceil k + {1\over 2}\rceil = 2(k + 1) = (2k + 1) + 1 = n + 1\\)
  - (b) \\(l^\prime(n) = l^\prime(\|s\|) = l(2\|s\|) > 4\|s\| = 4n\\)
  - (c) \\(l^\prime(n) = l^\prime(\|s\|) = l(\|s\|) + l(\|s\|) = 2 l(\|s\|) > 4\|s\| = 4n\\)
 
@@ -209,7 +237,10 @@ can generate the same pseudo random string via \\(G\\) but the probability is ne
 For case (b) seems the same but there is also the intuition that something is off: if we had a PRG that takes only half
 of its seed to generate its value we would have a counterexample, but which PRG would do that.... wait a minute! if we
 use for \\(G\\) the \\(G^\prime\\) defined for case (a) we have such counterexample :) This generator will output always
-the same string making it distinct from a random string.
+the same string making it distinct from a random string. As a further argument
+think that we cannot use the pseudorandomness of the original \\(G\\) in the
+proof since we should use a random distributed seed, but \\(0^{\|s\|}\Vert s\\)
+is not random distributed. 
 
 For case (c) we can take a PRG like the case (a) but with the higher-bits: if we interpret the seed as a binary digit
 with addition modulo \\(\|s\|\\) in that case only when the "discarded" bits are all set the \\(s + 1\\) part generates
@@ -223,3 +254,51 @@ does not have indistinguishable encryption in the presence of an eavesdropper.
 ### Solution
 
 It seems obvious from the final step of the proof itself TODO
+
+## 3.9
+
+Prove unconditionally the existence of a pseudorandom function \\(F:\,\\{0,1\\}^\star\times\\{0,1\\}^\star\to\\{0,1\\}\\)
+with \\(l_{\hbox{key}}(n) = n\\) and \\(l_{\rm in}(n) = O(\log n)\\).
+
+**Hint:** Implement a uniform function with logarithmic input length.
+
+### Solution
+
+Expliciting the function form we have \\(F:\,\\{0,1\\}^n\times\\{0,1\\}^{O(\log n)}\to\\{0,1\\}\\); A simple solution is
+defining the function as taking an \\(N=2^n\\) bits key and input an \\(n\\) bit
+string and returning the bit indicated by the input:
+
+$$
+F(k, x) = k[x]
+$$
+
+In this case we have the number of pseudorandom functions (i.e. \\(2^n\\)) equal
+to the number of possible functions (i.e. \\(2^{1\cdot{2^{\log n}}} = 2^n\\))
+and the key acts as a random "index".
+
+## 3.10
+
+Let \\(F\\) be a length preserving pseudorandom function. For the following
+constructions of a keyed function
+\\(F^\prime\colon\\{0,1\\}^n\times\\{0,1\\}^{n - 1}\to\\{0,1\\}^{2n}\\)
+state whether \\(F^\prime\\) is a pseudorandom function If yes, prove it; if not show an attack.
+
+ - (a) \\(F^\prime_k(x) {\buildrel {\rm def}\over=} F_k(0\Vert x)\Vert F_k(1\Vert x)\\)
+ - (b) \\(F^\prime_k(x) {\buildrel \hbox{def}\over=} F_k(0\Vert x)\Vert F_k(x\Vert 1)\\)
+
+For case (a) it's a pseudorandom function since any attack for it would work also
+on the original \\(F\\).
+
+For case (b) we can defeat the randomness simply by evaluating \\(F^\prime\\)
+with argument \\(x_A = 1\cdots1\\) and \\(x_B = 01\cdots1\\) so to obtain
+
+$$
+\eqalign{
+F_k^\prime(x_A) &= F_k(01\cdots1)\Vert F_k(1\cdots11) \cr
+F_k^\prime(x_B) &= F_k(001\cdots1)\Vert F_k(01\cdots11) \cr
+}
+$$
+
+This allows to distinguish this function from one chosen at random since the
+first half of \\(F^\prime_k(x_A)\\) is equal to the second half of
+\\(F^\prime_k(x_B)\\).
