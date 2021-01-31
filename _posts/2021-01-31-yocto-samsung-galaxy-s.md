@@ -5,13 +5,16 @@ title: "Reusing old shit: creating a BSP using Yocto for the Samsung Galaxy S (S
 tags: [embedded, yocto]
 ---
 
+In this post I'll describe my esperiments in reusing my old Samsung Galaxy S;
+don't expected anything sophisticated, it's more a brain dump.
 
- - http://www.friendlyarm.net/products/mini210
+If you are interested exists a development board that should match the
+specification of this cellphone: the [Mini210](http://www.friendlyarm.net/products/mini210).
 
 ## Specifications
 
-Obviously there are a lot of componentes in a smartphone, like
-the follwing (table copied from the [replicant's page](https://redmine.replicant.us/projects/replicant/wiki/GalaxySGTI9000)
+Obviously there are a lot of components in a smartphone, like
+the following (table copied from the [replicant's page](https://redmine.replicant.us/projects/replicant/wiki/GalaxySGTI9000)
 
 
 | Component | Name | Source | Status |
@@ -49,7 +52,8 @@ In our case we want to access the UART and the bootloaders so we can use
 a value of 619K as a resistor.
 
 I tried to create a jig in order to make development a little easier, otherwise
-I have to plug/unplug cables to switch from flashing to serial, 
+I have to plug/unplug cables to switch from flashing to serial, risking damaging
+the connector itself 
 
 ![]({{ site.baseurl }}/public/images/samsung-galaxy-s/usb_serial_mux.jpg)
 
@@ -58,7 +62,8 @@ in my case one is a serial interface but doesn't matter.
 
 ### PBL&SBL
 
-It's possible to activate in this configuration ``SBoot`` pressing enter during boot;
+Now is possible to access the primary and secondary bootloaders' console;
+pressing enter during the early boot activates a terminal for interacting with ``SBoot``;
 take in mind that the new line is ``CR`` otherwise it doesn't work!
 
 ```
@@ -326,9 +331,17 @@ $ make -j8
 
 ### PIT
 
+The ``PIT``, as far as I understood it, is a kind of partition for the system as
+seen by the bootloader and I don't know how much of it is translated for the
+filesystem as seen by a running Linux system.
+
+However these are a couple links for more information
+
  - [XDA - Investigation Into PIT Files](https://forum.xda-developers.com/showthread.php?t=816449)
  - [XDA - The reality of PIT files](https://forum.xda-developers.com/showthread.php?t=999097)
  - https://github.com/xc-racer99/android_kernel_samsung_aries/blob/aosp-7.1/drivers/mtd/onenand/samsung_gsm.h
+
+The rough layout should be the following
 
 | PIT | Description |
 |-----|-------------|
@@ -344,6 +357,9 @@ $ make -j8
 | DBDATAFS | Android application data |
 | CACHE   |  Android cache partition |
 | MODEM   |  modem firmware partition 
+
+and it's possible to see the actual organization in the cellphone using
+this one-liner
 
 ```
  ./heimdall/heimdall print-pit
@@ -630,6 +646,8 @@ If booting fails with ``undefined instruction`` could be
  - wrong load address
  - device tree not appended to the zImage
 
+
+Below a couple of possible commands to boot a system from sd card
 
 ```
 Aries # fatls mmc 0:1
@@ -1181,3 +1199,8 @@ Recording WAVE '/tmp/test-mic.wav' : Signed 16 bit Little Endian, Rate 16000 Hz,
  - https://redmine.replicant.us/projects/replicant/wiki/ExynosModemIsolation
  - https://forum.xda-developers.com/wiki/Samsung_Galaxy_S/GT-I9000
  - https://redmine.replicant.us/projects/replicant/wiki/GalaxySI9000LoadedFirmwares
+ - https://bootlin.com/blog/creating-flashing-ubi-ubifs-images/
+ - https://wiki.dave.eu/index.php/Memory_Tecnology_Device_(MTD)
+ - https://bootlin.com/blog/managing-flash-storage-with-linux/
+ - linux-mtd.infradead.org
+ - https://forum.xda-developers.com/showthread.php?t=1699506
