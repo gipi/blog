@@ -18,14 +18,17 @@ microcontroller an Atmel's XMEGA128
 In this post I'll explore some basic concepts: how to install the library,
 update the firmware of the board and practicing with it.
 
+But before all of those, an introduction about the inner workings of processing
+units and side channels.
+
 ## Model of a processing unit
 
 To understand what follows you need a model of how a processing unit is composed
 and how the single entities with their behaviour can tell us something about
-what is happening during computation.
+what is happening during computation that wasn't supposed to leak to you.
 
 Obviously this won't be an exhaustive explanation, this is matter of high
-profile study, but as a physicist I can tell you that sometimes from very basic
+profile studies, but as a physicist I can tell you that sometimes from very basic
 assumptions is possible to deduce very important aspects of a system.
 
 You should think of a processing device in the same way you think about an old clock:
@@ -48,13 +51,36 @@ Another abstraction useful is that they behave like the **negation operator**
 
 ![]({{ site.baseurl }}/public/images/computers/switch.gif)
 
-and this allows to build other logic operator with them
+and composing the allows to build other logic operators, here for example we
+have the ``AND`` and ``OR`` operators
 
 ![]({{ site.baseurl }}/public/images/computers/and-or.gif)
 
-From here is possible to construct something that "has memory", a so called
-**latch**: to have memory you need to indicate the "flow of time" and here the
-**clock** enters the game
+All the above are what is called **combinatorial logic**, from the input I
+obtain an output based entirely on it, it's **stateless**; but to build
+something more complex we need **memory**.
+
+A "primitive" circuit that accomplishes that is the following:
+
+![]({{ site.baseurl }}/public/images/side-channels/latch.png)
+
+you notice that has two **stable** state and you can trigger them with the right
+inputs; it's not immediate but from here is possible to construct something, so called
+**flip-flop** that set the output from the input only at the **rising edge** of the clock:
+
+From it the simplest "object" that is possible to build is the **register**: in the
+example below four flip-flops are used to create a 4bits register
+
+![]({{ site.baseurl }}/public/images/side-channels/4-bits-register.png)
+
+There is a lot of things possible with these objects but in general a
+**sequential logic** has the following structure
+
+![]({{ site.baseurl }}/public/images/side-channels/combinatorial-logic.png)
+
+in practice how many flip-flops as the number of bits needed to represent 
+the internal state and a combinatorial logic part that does the calculation
+needed in order to obtain the new state from the old one and the inputs.
 
 For now this should be enough to understand the primitive building block of a
 processing device, later I will elaborate a little more where the model just
@@ -240,9 +266,25 @@ interact with the physical world and need **energy** to move electrons around,
 so we can imagine that the power consumption would be in some way connected with
 the internal state of the processor.
 
+The cwlite uses the [AD8331](https://www.analog.com/media/en/technical-documentation/data-sheets/AD8331_8332_8334.pdf) chip
+and the [AD9215](https://www.analog.com/media/en/technical-documentation/data-sheets/AD9215.pdf)
+
 ### Different instructions
 
+![]({{ site.baseurl }}/public/images/side-channels/comparison-instructions.png)
+
 ### Correlation
+
+In the last section I showed that different instructions have different
+"footprints", probably the only possible way to use that is by timing analysis
+or differential power analysis: for example if we had a piece of code that ask
+for a password we could capture the power traces for each input character and
+we should see only one trace having a different trace (this of course if the
+algorithm is not costant-time).
+
+But we can do better: as I described above, during the execution the transistors
+composing the device are "turn on/off" based on the values of the computation,
+in particular by the actual bits set and reset by the operations done.
 
 With our model we can now look for correlation between traces and the SBox-es
 output: I'm going to use the following function to calculate it
@@ -584,5 +626,17 @@ Verified flash OK, 2459 bytes
  - https://pbpython.com/interactive-dashboards.html
  - https://jakevdp.github.io/PythonDataScienceHandbook/04.08-multiple-subplots.html
  - https://towardsdatascience.com/subplots-in-matplotlib-a-guide-and-tool-for-planning-your-plots-7d63fa632857
+ - [Power Analysis, What Is Now Possible...](https://link.springer.com/content/pdf/10.1007/3-540-44448-3_38.pdf), paper from ``ASIACRYPT2000``
+ - [Investigations of Power Analysis Attacks on Smartcards](https://www.usenix.org/legacy/events/smartcard99/full_papers/messerges/messerges.pdf)
+ - [Differential Power Analysis](https://www.paulkocher.com/doc/DifferentialPowerAnalysis.pdf), paper by Paul Kocher
  - [Correlation Power Analysis with a Leakage Model](https://www.researchgate.net/publication/221291676_Correlation_Power_Analysis_with_a_Leakage_Model) paper introducing the CPA in 2004
  - [Tamper Resistance - a Cautionary Note](https://www.cl.cam.ac.uk/~rja14/tamper.html)
+ - [Understanding Power Trace](https://forum.newae.com/t/understanding-power-trace/1905), post from NewAE forum explaining the meaning of the power traces
+ - [CHIP.FAIL – GLITCHING THE SILICON OF THE CONNECTED WORLD](https://sector.ca/sessions/chip-fail-glitching-the-silicon-of-the-connected-world/)
+ - [Fault diagnosis and tolerance in cryptography (FDTC) 2014](https://fdtc.deib.polimi.it/FDTC14/slides.html) with some slides:
+   - https://fdtc.deib.polimi.it/FDTC11/shared/FDTC-2011-session-4-3.pdf
+   - https://fdtc.deib.polimi.it/FDTC11/shared/FDTC-2011-session-2-1.pdf
+   - https://fdtc.deib.polimi.it/FDTC14/shared/FDTC-2014-session_1_1.pdf
+ - [POWER ANALYSIS BASED SOFTWARE REVERSE ENGINEERING ASSISTED BY FUZZING II](https://www.schutzwerk.com/en/43/posts/poweranalysis_2/)
+ - [Power Analysis For Cheapskates](https://media.blackhat.com/us-13/US-13-OFlynn-Power-Analysis-Attacks-for-Cheapskates-WP.pdf)
+ - [Side-channel Attacks Using the Chipwhisperer](https://www.robopenguins.com/chip-whisperer/)
