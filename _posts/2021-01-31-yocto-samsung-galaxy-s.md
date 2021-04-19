@@ -49,7 +49,7 @@ and Accessory Detection"; in practice uses the value of resistance between the
 pin ``ID`` and ``GND`` to enable a different internal subsystem.
 
 In our case we want to access the UART and the bootloaders so we can use
-a value of 619K as a resistor.
+a value of 619K as a resistor. The ``D-`` signal is ``TX`` and ``D+`` is ``RX``.
 
 I tried to create a jig in order to make development a little easier, otherwise
 I have to plug/unplug cables to switch from flashing to serial, risking damaging
