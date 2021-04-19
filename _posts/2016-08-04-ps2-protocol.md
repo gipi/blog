@@ -5,8 +5,10 @@ tags: [keyboard, PS/2, electronics, protocol, WIP]
 title: "PS/2 protocol"
 ---
 
-In this post I will experiment with the [PS/2](https://en.wikipedia.org/wiki/PS/2_port) port, for
-now is a **work in progress** probably will be completed in a not far future.
+In this post I will experiment with the [PS/2](https://en.wikipedia.org/wiki/PS/2_port) protocol.
+
+If you want view live experimenting with it look this [video from Ben Eater](https://www.youtube.com/watch?v=7aXbh9VUB3U)
+where he builds a receiver.
 
 The ``PS/2`` physical interface is implemented with 4 wires (the connector can have more but unused)
 that are
@@ -57,3 +59,7 @@ if you *sample* the ``DATA`` signal at the failing edge of the ``CLK`` line you 
     0 | 0 0 1 1 1 0 0 0 | 0 1
 
 that correspond to the ``1C`` hexdecimal value (binary ``00011100``).
+
+## FPGA
+
+TODO: build a receiver in verilog
