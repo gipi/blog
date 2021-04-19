@@ -25,6 +25,36 @@ The first thing to learn is the versions available:
 **Note:** Debian 9 is indicated as a compatible distribution but bad enough without ``libc6:2.28`` is not
 able to compile ``pseudo-native``.
 
+## Getting started
+
+```
+FROM ubuntu:18.04
+
+RUN apt update && apt -y install gawk \
+    wget \
+    git-core \
+    diffstat \
+    unzip \
+    texinfo \
+    gcc-multilib \
+     build-essential \
+     chrpath \
+     socat \
+     libsdl1.2-dev \
+     cpio \
+     locales \
+     python \
+     python-pip \
+     python3-pip
+RUN locale-gen en_US.UTF-8
+RUN update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+RUN pip3 install kas
+```
+
+```
+$ docker run -it -u 1000:1000 -v $PWD:/app gp/yocto /bin/bash
+```
+
 ## Bitbake
 
 This is the program that handles the build process, it is written in python and
@@ -118,6 +148,12 @@ the evaluation orders is:
  - the ``*-initial`` are the initial versions of the compiler required to bootstrap the toolchain separately for the standard cross-compiler and for the SDK.
  - ``gcc-runtime`` builds the runtime components that come as part of gcc (e.g. libstdc++).
  - ``gccmakedep`` isn't really part of gcc itself, it's a script that comes as part of the X11 utilities that some projects need to determine dependencies for each source file.
+
+You can select the version with ``GCCVERSION`` or ``BUILD_CC``, see [this
+post "How to Set the Toolchain Version in Yocto"](https://preemptable.org/post/2019/10/31/yocto-toolchain-version) for a little explanation.
+
+see ``poky/tree/meta/classes/native.bbclass``
+
 
 ## Shared state cache
 
@@ -772,6 +808,7 @@ BB_DISKMON_DIRS ??= "\
  - http://www.wiki.xilinx.com/Yocto
  - https://stackoverflow.com/questions/37347808/how-to-use-an-own-device-tree-and-modified-kernel-config-in-yocto
 
+```
 Scanning mmc 0:1...
 Found /extlinux/extlinux.conf
 Retrieving file: /extlinux/extlinux.conf
@@ -788,7 +825,7 @@ Kernel image @ 0x32000000 [ 0x000000 - 0x398450 ]
    Loading Device Tree to 34ff5000, end 34fff779 ... OK
 
 Starting kernel ...
-
+```
 
 
 
