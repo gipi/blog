@@ -8,6 +8,9 @@ tags: [Linux, programming, debug, kernel, WIP]
 This post includes a couple of notes about linux kernel debugging, in
 particular the things that I keep forgetting.
 
+Just in case take a look at this
+[video](https://www.youtube.com/watch?v=m7SduY2XrKM): "Linux Kernel Debugging:
+Going Beyond Printk Messages".
 
 ## Navigation
 
@@ -96,6 +99,7 @@ CONFIG_DEBUG_KERNEL:
 ```
 
 It's important to know that you need ``gcc`` to compile the kernel
+since the code uses a [couple of extensions](https://developer.ibm.com/tutorials/l-gcc-hacks/) of this compiler
 and in particular, depending on the version of the kernel you are trying
 to compile, a specific version; to find out which version is supported
 look in the directory ``include/linux/`` for some file named ``compiler-gccX.h``.
@@ -127,7 +131,7 @@ $ make ARCH=mips CROSS_COMPILE=mips-linux-gnu- -j 4
 
 Enable ``BR2_TARGET_ROOTFS_CPIO`` with the right architecture
 
-### GDB scripts
+## GDB scripts
 
 To help with debugging running systems it's possible to enable
 some scripts to use with ``gdb``; this is possible with the
@@ -167,7 +171,7 @@ lx-version --  Report the Linux Version of the current kernel
 I think that are working correctly only after the system has completed
 the initialization process.
 
-### Dynamic debug
+## Dynamic debug
 
 It's possible to have the debug messages enabled only when and where necessary:
 [here the documentation](https://kernel.org/doc/html/v4.15/admin-guide/dynamic-debug-howto.html)
@@ -233,13 +237,11 @@ To use ``pr_debug`` you can abilitate it with
 CFLAGS_<filename>.o = -DDEBUG
 ```
 
+## Tracing
 
+Once you have enabled the ``debugfs`` you can find a subdirectory named
+``tracing``; it also contains a ``README`` that explains
 
-### Enable configuration option that is not selectable
-
-If you build an external module that needs some options that
-isn't selectable directly you can manually add a ``prompt`` line;
-an example is ``VIDEOBUF_DMA_SG``
 
 ## Debugging
 
@@ -414,6 +416,13 @@ If you want to install the modules in another path use this
 $ make INSTALL_MOD_PATH=/path/where/to/install/modules modules_install
 ```
 
+### Enable configuration option that is not selectable
+
+If you build an external module that needs some options that
+isn't selectable directly you can manually add a ``prompt`` line;
+an example is ``VIDEOBUF_DMA_SG``
+
+
 ### Errors
 
 ``gcc: error: elf_x86_64: No such file or directory`` -> change ``-m elf_x86_64`` to ``-m64``.
@@ -434,3 +443,5 @@ is fixed changing ``if (!defined(@val)) {`` to ``if (!@val) {``.
  - https://sysprogs.com/VisualKernel/documentation/kernelsymbols
  - https://www.oreilly.com/library/view/linux-device-drivers/0596005903/ch04.html
  - http://www.makelinux.net/ldd3/
+ - [Kernel dynamic memory analysis](https://elinux.org/Kernel_dynamic_memory_analysis)
+ - [drgn](https://drgn.readthedocs.io/) is a debugger with an emphasis on programmability. drgn exposes the types and variables in a program for easy, expressive scripting in Python

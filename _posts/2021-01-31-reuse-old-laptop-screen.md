@@ -67,6 +67,19 @@ Read accurately the description of the product and the resolutions supported,
 sometimes you can see that is possible to "update" the board with a specific
 firmware to support specific a resolution.
 
+### V29 Universal LCD Controller Board
+
+The one used by me is the **V29 controller board**, usually comes with a remote
+and a "keyboard", that has the possibility to
+flash a different firmware to adapt to the correct resolution of the screen; the
+procedure is the following
+
+ - put the firmware (usually named ``LAMV29_something.bin``) into an USB drive
+ - connect the USB drive to the USB slot of the board disconnected from the
+   power supply
+ - turn on the power and you should see the light of the keyboard blinking
+ - when the led stops blinking then the update is completed
+
 ## FPGA
 
 **TODO:** An interesting project for the future would be to implement a LDVS controller

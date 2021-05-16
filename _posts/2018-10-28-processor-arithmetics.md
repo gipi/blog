@@ -305,7 +305,7 @@ For the equal condition is sufficient to check the ``ZF``.
 
 Our discussion is about how processors consume numbers but obvioulsy you usually
 write code in some high-level language like ``C`` and this presents with the problem
-of how the variable we declare in the code are implemented with the assembly language
+of how the variables we declare in the code are "translated" into assembly language
 by the compiler and how the different operations between variables interact with each
 other (taking into consideration also that generally you have variables of different
 size and "signess").
@@ -433,6 +433,18 @@ The following piece of code run indefinetly
 
 ### Conversion
 
+For example left shift ``<<`` of variables with ranking less than integers are
+converted to **signed integers** also in the case they were unsigned so they
+give unexpected result: for example in  this code
+
+```c
+uint8_t src = 0x80;
+uint64_t dst = src << 24;
+```
+
+``dst`` will contain the value ``0xffffffff80000000`` since the sign bit is
+"extended".
+
 ### Undefined behaviour
 
 Having an asymmetry between the size of the greatest positive and lowest negative in two's complement arithmetics
@@ -456,6 +468,7 @@ if (abs(arg1) < MAX_VALUE) {
 
 ## Links
 
+ - [A common C integer shifting mistake](https://smackerelofopinion.blogspot.com/2021/03/a-common-c-integer-shifting-mistake.html)
  - [The CARRY flag and OVERFLOW flag in binary arithmetic](http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt)
  - [Intel x86 JUMP quick reference](http://unixwiz.net/techtips/x86-jumps.html)
  - [SEI CERT C Coding Standard](https://wiki.sei.cmu.edu/confluence/display/c/SEI+CERT+C+Coding+Standard)

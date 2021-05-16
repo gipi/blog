@@ -18,6 +18,8 @@ and more exercises will follow in future, when I finally find time to solve more
 
 \\(\def\Pr#1{\hbox{Pr}\left[#1\right]}\\)
 
+\\(\def\l#1#2{l_{\rm #1}({#2})}\\)
+
 Let's start with some notes about this chapter: here the book starts the serious business and introduces
 the idea of **realistic expectation of security**; in the previous chapter talked about
 **perfect secrecy**, here instead it's introducing a **security parameter** \\(n\\) linked to
@@ -30,6 +32,8 @@ Since we can relax the security for practical cases the book is going to talk ab
 i.e. encryption schemes that "behave" well for \\(n\\) "large enough". Linking a scheme with the security
 parameter allows to modulate its security also for situation in which technological improvements
 helps the attackers.
+
+The book introduces some fundamental concepts:
 
 **Efficient algorithms:** an algorithm \\(A\\) is efficient if runs in **polynomial time** i.e. there exists
 a polynomial \\(p\\) such that for every input \\(x\in \\{0, 1\\}^\star\\), the computation of \\(A(x)\\) terminates
@@ -65,7 +69,7 @@ and the second probability is taken over uniform choice of \\(r\in\\{0, 1\\}^{l(
 Another important concept is **pseudorandom function**: a function 
 
 $$
-F\colon\{0,1\}^{l_{\hbox{key}}(n)}\times\{0,1\}^{l_{\hbox{in}}(n)}\to\{0,1\}^{l_{\hbox{out}}(n)}
+F\colon\{0,1\}^{\l{key}n}\times\{0,1\}^{\l{in}n}\to\{0,1\}^{\l{out}n}
 $$
 
 has such property if for all polynomial-time distinguisher \\(D\\), there is a
@@ -78,15 +82,52 @@ $$
 where the first probability is taken over uniform choice of \\(k\in\\{0,1\\}^n\\) and the randomness of \\(D\\), and the second probability
 is taken over uniform choice of \\(f\in\hbox{Func}_n\\) and the randomness of \\(D\\).
 
-\\(\def\l#1{l_{\scriptsize\hbox{#1}}(n)}\\)
 
 \\(F\\) is called a **keyed function**: \\(F(k,x) = F_k(x)\\); obviously there
-are \\(2^{\l{key}}\\) of them, instead in the general case of all
-possible functions we have \\(2^{\l{out}\cdot2^{\l{in}}}\\).
+are \\(2^{\l{key}n}\\) of them, instead in the general case of all
+possible functions we have \\(2^{\l{out}n\cdot2^{\l{in}n}}\\).
 
 The pseudo is chosen from a distribution over at most \\(2^n\\) distinct
 functions, whereas the real random function is chosen from  all \\(2^{n\cdot2^n}\\) functions in \\(\hbox{Func}_n\\).
 
+At this point is introduced the concept of **CPA-security**: i.e. the idea that
+an encryption scheme is secure also in the case the attacker
+has the "power" to obtain ciphertext from plaintext of her choice.
+
+The simplest example of attack possible in case of **not** \\(CPA\\)-secure
+schemes is the **replay attack**; the necessity of \\(CPA\\)-secure scheme is
+for **randomness** to be added to a scheme! We need the encryption to be
+    non-deterministic with respect to only \\(m\\).
+
+**Note** that randomness in this case comes from the pseudorandom generator, the
+pseudorandom function are used as encryption primitive.
+
+Another useful concept is the security for **multiple encryptions**: the case
+when, with the same key, more than one message is exchanged.
+
+The main idea for the \\(CPA\\)-indistinguishability experiment is that the
+attacker has access to an **encryption oracle**, i.e. a function that encrypts
+messages of her choice.
+
+**Theorem:** Any private-key encryption scheme that is \\(CPA\\)-secure is also
+\\(CPA\\)-secure for multiple encryptions.
+
+Reusing the one time pad we can define the following encryption scheme that is
+\\(CPA\\)-secure:
+
+Let \\(F\\) be a pseudorandom function. Define a private-key encryption scheme
+for messages of length \\(n\\) and key \\(k\in\\{0,1\\}^n\\) as follow:
+
+ - \\(\rm Gen\\): on input \\(1^n\\), choose uniform key and output it
+ - \\(\rm Enc\\): on input a key and a message
+   \\(m\in\\{0,1\\}^n\\), choose uniform \\(r\in\\{0,1\\}^n\\) and output the
+   ciphertext \\(c := \langle r, F_k(r)\oplus m\rangle\\).
+ - \\(\rm Dec\\): on input a key and a ciphertext \\(c = \langle r, s\rangle\\),
+   output the plaintext message \\(m :=F_k(r)\oplus s\\).
+
+$$
+\Pr{ {\rm PrivK}^{\rm cpa}_{A, \Pi}(n) = 1} \leq {1\over2} + {q(n)\over 2^n} + \negl{}(n)
+$$
 
 ## **3.1**
 
@@ -258,7 +299,7 @@ It seems obvious from the final step of the proof itself TODO
 ## 3.9
 
 Prove unconditionally the existence of a pseudorandom function \\(F:\,\\{0,1\\}^\star\times\\{0,1\\}^\star\to\\{0,1\\}\\)
-with \\(l_{\hbox{key}}(n) = n\\) and \\(l_{\rm in}(n) = O(\log n)\\).
+with \\(\l{key}{n} = n\\) and \\(\l{in}{n} = O(\log n)\\).
 
 **Hint:** Implement a uniform function with logarithmic input length.
 
@@ -286,6 +327,8 @@ state whether \\(F^\prime\\) is a pseudorandom function If yes, prove it; if not
  - (a) \\(F^\prime_k(x) {\buildrel {\rm def}\over=} F_k(0\Vert x)\Vert F_k(1\Vert x)\\)
  - (b) \\(F^\prime_k(x) {\buildrel \hbox{def}\over=} F_k(0\Vert x)\Vert F_k(x\Vert 1)\\)
 
+### Solution
+
 For case (a) it's a pseudorandom function since any attack for it would work also
 on the original \\(F\\).
 
@@ -302,3 +345,15 @@ $$
 This allows to distinguish this function from one chosen at random since the
 first half of \\(F^\prime_k(x_A)\\) is equal to the second half of
 \\(F^\prime_k(x_B)\\).
+
+## 3.20
+
+Consider a stateful variant of \\(CBC\\)-mode encryption where the sender simply
+increments the \\(IV\\) by 1 each time a message is encrypted (rather than
+choosing \\(IV\\) at random each time). Show that the resulting scheme is not
+\\(CPA\\)-secure.
+
+### Solution
+
+This seems a more constrained case of \\(CBC\\)-chained mode (that the textbook
+gives an attack): in practice we can provide a message as \\(m = (IV + 1)\oplus\\)

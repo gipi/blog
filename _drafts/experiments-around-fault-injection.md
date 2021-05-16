@@ -266,6 +266,8 @@ interact with the physical world and need **energy** to move electrons around,
 so we can imagine that the power consumption would be in some way connected with
 the internal state of the processor.
 
+For an extensive explanation you can use the book "Nanometer CMOS ICs, From Basics to ASICs" pg 161
+
 The cwlite uses the [AD8331](https://www.analog.com/media/en/technical-documentation/data-sheets/AD8331_8332_8334.pdf) chip
 and the [AD9215](https://www.analog.com/media/en/technical-documentation/data-sheets/AD9215.pdf)
 
@@ -513,6 +515,8 @@ little more in detail: a flip-flop-like device has some specific parameters
  - **propagation time** \\(t_p\\): the time after which the output is expected
    to be stable after the clock transition
 
+![]({{ site.baseurl }}/public/images/side-channels/data-clock-timing.png)
+
 the maximum usable clock frequency of a processor is determined by the maximum delay among its elements
 
 ## Code
@@ -626,6 +630,8 @@ Verified flash OK, 2459 bytes
  - https://pbpython.com/interactive-dashboards.html
  - https://jakevdp.github.io/PythonDataScienceHandbook/04.08-multiple-subplots.html
  - https://towardsdatascience.com/subplots-in-matplotlib-a-guide-and-tool-for-planning-your-plots-7d63fa632857
+ - [Optimal statistical power analysis](https://eprint.iacr.org/2003/152.pdf)
+ - [Statistics and Secret Leakage](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.59.3849&rep=rep1&type=pdf)
  - [Power Analysis, What Is Now Possible...](https://link.springer.com/content/pdf/10.1007/3-540-44448-3_38.pdf), paper from ``ASIACRYPT2000``
  - [Investigations of Power Analysis Attacks on Smartcards](https://www.usenix.org/legacy/events/smartcard99/full_papers/messerges/messerges.pdf)
  - [Differential Power Analysis](https://www.paulkocher.com/doc/DifferentialPowerAnalysis.pdf), paper by Paul Kocher
@@ -640,3 +646,4 @@ Verified flash OK, 2459 bytes
  - [POWER ANALYSIS BASED SOFTWARE REVERSE ENGINEERING ASSISTED BY FUZZING II](https://www.schutzwerk.com/en/43/posts/poweranalysis_2/)
  - [Power Analysis For Cheapskates](https://media.blackhat.com/us-13/US-13-OFlynn-Power-Analysis-Attacks-for-Cheapskates-WP.pdf)
  - [Side-channel Attacks Using the Chipwhisperer](https://www.robopenguins.com/chip-whisperer/)
+ - [Evaluation of the Masked Logic Style MDPL on a Prototype Chip](https://www.iacr.org/archive/ches2007/47270081/47270081.pdf)

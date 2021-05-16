@@ -5,6 +5,9 @@ title: "How Linux handle memory"
 tags: [WIP, low level, linux, mmu]
 ---
 
+ - https://blog.twitter.com/engineering/en_us/topics/open-source/2021/dropping-cache-didnt-drop-cache.html
+ - https://drgn.readthedocs.io/
+
 A very important aspect in an operating system is the way the memory is handled,
 both as a developer, security researcher; it's important to understand how the
 system manages to provide memory from the software point of view (kernel-space

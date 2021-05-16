@@ -95,3 +95,19 @@ $ sudo virt-make-fs --format=qcow2 --size=+200M /tmp/rootfs-ppc/ /tmp/rootfs.img
 
 Probably in a following up post I will write about using projects like [OpenEmbedded](https://www.openembedded.org) or
 [buildroot](https://buildroot.org/) to have a complete and customizable running systems.
+
+## ``The following signatures couldn't be verified`` error
+
+Depending on the system you are in, ``multistrap`` can fail with this error,
+from [here](https://github.com/volumio/Build/issues/348#issuecomment-462271607)
+the advise is to add above the line in ``/usr/sbin/multistrap`` that contains
+
+```
+$config_str .= " -o Apt::Get::AllowUnauthenticated=true"
+```
+
+this line
+
+```
+$config_str .= " -o Acquire::AllowInsecureRepositories=true";
+```
