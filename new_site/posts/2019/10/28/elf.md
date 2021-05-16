@@ -1,0 +1,1706 @@
+<!--
+.. title: ELF file format and a pratical study of the execution view
+.. slug: elf
+.. date: 2019-10-28 00:00:00
+.. tags: ELF,Linux,file format,WIP
+.. category: 
+.. link: 
+.. description: 
+.. type: text
+-->
+
+
+In the post about [pratical approach to binary exploitation](link://slug/pratical-approach-exploitation)
+I talked of how an executable is a memory archive describing a (future) running process. In this post
+I want to study how this memory archive is loaded in memory in a Linux system, in particular
+my interest will be directed upon the most used format in \*nix system, i.e. the **Executable and linkage
+format** (``ELF``); for other systems, different formats are used: for example the Mac OS X uses the Mach format and
+the Windows OS uses the PE format. It's reasonable to say that each platform has its own format,
+and it's the main reason of compatibility issue in running binaries between different
+operating systems.
+
+The actual specification for ``ELF`` is [here](https://refspecs.linuxbase.org/elf/elf.pdf)
+but [each specific architecture has its own addendum to it](https://refspecs.linuxbase.org/elf/)
+(I hope will be more clear later). Probably they are not the most updated one
+though (``ARM`` I'm looking at you).
+
+## What we need from the OS
+
+To understand what is needed to "cook a process" I need to describe how an executable
+"connects" with the OS (where with "OS" I mean a kernel implementing memory, process and
+privileges management, not a real time OS where, I know I'm over-simplifying, is pratically
+possible to do anything).
+
+The only way a process can interact with the OS is using the so called **syscalls**: they
+are in practice the API of the OS; probably you haven't ever invoked directly a syscall
+in your code but used the standard libraries that your distribution provides; if you are
+a mainstream person, you are using the glibc as standard C library.
+
+This adds a layer of complexity to all the execution-time concept: who is going to
+"connect" the library with your executable? the answer is the **loader**: when the kernel
+tries to start an ELF file, it loads the needed parts in memory and then it passes the
+execution to this program that will "resolve" the missing dots and returns to
+the initial process starting point.
+
+This doesn't apply to executable compiled statically, where the "resolution" is done
+at compile time and all the libraries' code is contained in the executable itself.
+
+Obviously the interpreter must be a binary without external reference otherwise
+would be a recursive task to solve.
+
+This complication is necessary since it allows to avoid including the code
+of the needed libraries on all executables, reducing disk footprint;
+this by the way has also effect on memory usage: thanks to the way paging
+works, a library loaded in memory for a given executable can be used
+for another executable without re-loading it from disk and without allocating
+new memory! This is why a process has three different memory associated
+with it, i.e. **resident**, **shared** and **virtual**.
+
+## First look at an ELF
+
+To understand why the format is the way it is, you need to understand that this
+format serves two main scopes: one at compilation time and one at runtime, or
+the **linking view** and **execution view**.
+
+In this discussion I'm more interested in the execution view, but I will need to talk
+a little bit also of the linking view.
+
+First of all the specification describes the fundamental data types that
+are used on disk
+
+| Name | Purpose |
+|------|---------|
+| ``Elf32_Addr`` | Unsigned program address |
+| ``Elf32_Half`` | Unsigned medium integer |
+| ``Elf32_Off``  | Unsigned file offset |
+| ``Elf32_Sword`` | Signed large integer |
+| ``Elf32_Word`` | Unsigned large integer |
+| ``unsigned char`` | Unsigned smal integer |
+
+i.e. **offsets**, **addresses** and generic **integers**.
+
+**Note:** take in consideration that in this post I'll use the definitions for
+the 32bit architectures, the 64bit ones are different but the meaning of each
+struct remains the same; just keep in mind that corresponding structs could
+have the fields ordered differently, just saying ;)
+
+The binary format is composed of three parts: the **header**, the **sections**,
+and the **segments**. The last two have headers of their own.
+
+The header simply describes the major information regarding the executable
+file, like **entry point**, **architecture**, **endianess** etc... and
+its definition is the following
+
+```c
+#define EI_NIDENT (16)
+
+typedef struct
+{
+  unsigned char	e_ident[EI_NIDENT];	/* Magic number and other info */
+  Elf32_Half	e_type;			/* Object file type */
+  Elf32_Half	e_machine;		/* Architecture */
+  Elf32_Word	e_version;		/* Object file version */
+  Elf32_Addr	e_entry;		/* Entry point virtual address */
+  Elf32_Off	e_phoff;		/* Program header table file offset */
+  Elf32_Off	e_shoff;		/* Section header table file offset */
+  Elf32_Word	e_flags;		/* Processor-specific flags */
+  Elf32_Half	e_ehsize;		/* ELF header size in bytes */
+  Elf32_Half	e_phentsize;		/* Program header table entry size */
+  Elf32_Half	e_phnum;		/* Program header table entry count */
+  Elf32_Half	e_shentsize;		/* Section header table entry size */
+  Elf32_Half	e_shnum;		/* Section header table entry count */
+  Elf32_Half	e_shstrndx;		/* Section header string table index */
+} Elf32_Ehdr;
+```
+
+you can see it using the ``readelf(1)`` command with the ``-h`` option
+
+```
+$ $ readelf -h public/code/simplest_excalation 
+Intestazione ELF:
+  Magic:   7f 45 4c 46 01 01 01 00 00 00 00 00 00 00 00 00 
+  Classe:                            ELF32
+  Dati:                              complemento a 2, little endian
+  Version:                           1 (current)
+  SO/ABI:                            UNIX - System V
+  Versione ABI:                      0
+  Tipo:                              EXEC (file eseguibile)
+  Macchina:                          Intel 80386
+  Versione:                          0x1
+  Indirizzo punto d'ingresso:        0x8049090
+  Inizio intestazioni di programma   52 (byte nel file)
+  Inizio intestazioni di sezione:    16636 (byte nel file)
+  Flag:                              0x0
+  Size of this header:               52 (bytes)
+  Size of program headers:           32 (bytes)
+  Number of program headers:         11
+  Size of section headers:           40 (bytes)
+  Number of section headers:         35
+  Section header string table index: 34
+```
+
+explaining all the entries is out of scope of this post: here I'm interested
+only in what affects directly the runtime of a process, so in this case
+I want to know the point from which starts the execution of the program
+(indicated by the field ``e_entry``) and where to look for the portions
+of the application to be loaded in memory (described by the **program header** that
+starts at offset ``e_phoff`` and contains ``e_phnum`` entries of
+size ``e_phentsize`` each).
+
+The sections are more a compiler concept and are not directly connected
+to the process runtime, however the tools involved with the ``ELF`` treat
+them as a first-citizen subject and this some times can be misleading.
+
+### Segments
+
+What a program header describes is a segment, i.e., a portion of the file
+loaded at a given address at runtime, or **some metadata about it**. This last point
+will be clear in a moment.
+
+The data type describing it is the following
+
+```
+typedef struct{
+    Elf32_Word  p_type;
+    Elf32_Off   p_offset;
+    Elf32_Addr  p_vaddr;
+    Elf32_Addr  p_paddr;
+    Elf32_Word  p_filesz;
+    Elf32_Word  p_memsz;
+    Elf32_Word  p_flags;
+    Elf32_Word  p_align;
+} Elf32_Phdr;
+```
+
+a brief description of the meaning of each field is in the following
+table
+
+| Field | Description |
+|-------|-------------|
+| ``p_type`` | type of segment (see table below) |
+| ``p_offset`` | position in the file |
+| ``p_vaddr`` | virtual address (the real virtual address could be different) |
+| ``p_paddr`` | physical address |
+| ``p_filesz`` | size of the segment in the file |
+| ``p_memsz`` | size of the segment in memory (can be different from ``p_filesz``)|
+| ``p_flags`` | indicate RWX permissions |
+| ``p_align`` | indicate the alignment |
+
+What each segment does is indicated by the field ``p_type`` that
+can assume one of the following values (this list is not complete
+since there are values architecture specific):
+
+| Type | Descriptor |
+|------|------------|
+| ``PT_NULL``    | this entry can be ignored                |
+| ``PT_LOAD``    | loadable segment                         |
+| ``PT_DYNAMIC`` | contains the dynamic linking information |
+| ``PT_INTERP``  | contains the path of the interpreter.    |
+| ``PT_NOTE``    | contains auxiliary information           |
+| ``PT_SHLIB``   | reserved                                 |
+| ``PT_PHDR``    | indicates the program header             |
+
+for now is important to know the ``PT_INTERP`` indicates the path
+of the loader to the kernel and that ``PT_LOAD`` indicates that
+the segment has to be loaded in memory. You can use ``readelf(1)``
+as in the example below to see them:
+
+```
+$ readelf --segments public/code/simplest_excalation 
+ ...
+Intestazioni di programma:
+  Tipo           Offset   IndirVirt  IndirFis   DimFile DimMem  Flg Allin
+  PHDR           0x000034 0x08048034 0x08048034 0x00160 0x00160 R   0x4
+  INTERP         0x000194 0x08048194 0x08048194 0x00013 0x00013 R   0x1
+      [Requesting program interpreter: /lib/ld-linux.so.2]
+  LOAD           0x000000 0x08048000 0x08048000 0x0032c 0x0032c R   0x1000
+  LOAD           0x001000 0x08049000 0x08049000 0x002b8 0x002b8 R E 0x1000
+  LOAD           0x002000 0x0804a000 0x0804a000 0x001a4 0x001a4 R   0x1000
+  LOAD           0x002f0c 0x0804bf0c 0x0804bf0c 0x00118 0x0011c RW  0x1000
+  DYNAMIC        0x002f14 0x0804bf14 0x0804bf14 0x000e8 0x000e8 RW  0x4
+  NOTE           0x0001a8 0x080481a8 0x080481a8 0x00044 0x00044 R   0x4
+  GNU_EH_FRAME   0x002024 0x0804a024 0x0804a024 0x0004c 0x0004c R   0x4
+  GNU_STACK      0x000000 0x00000000 0x00000000 0x00000 0x00000 RWE 0x10
+  GNU_RELRO      0x002f0c 0x0804bf0c 0x0804bf0c 0x000f4 0x000f4 R   0x1
+
+ Mappatura da sezione a segmento:
+  Sezioni del segmento...
+   00     
+   01     .interp 
+   02     .interp .note.ABI-tag .note.gnu.build-id .gnu.hash .dynsym .dynstr .gnu.version .gnu.version_r .rel.dyn .rel.plt 
+   03     .init .plt .plt.got .text .fini 
+   04     .rodata .eh_frame_hdr .eh_frame 
+   05     .init_array .fini_array .dynamic .got .got.plt .data .bss 
+   06     .dynamic 
+   07     .note.ABI-tag .note.gnu.build-id 
+   08     .eh_frame_hdr 
+   09     
+   10     .init_array .fini_array .dynamic .got
+```
+
+**Important note:** the segment of type ``PT_DYNAMIC`` is not directly loaded in memory
+as such, it's only used as reference by who needs relocation info; its content it's mapped
+in the last ``PT_LOAD`` segment (in this example, I don't know if it's the general case),
+indeed if you notice the range of the addresses of the
+``PT_DYNAMIC`` is comprised inside the last ``PT_LOAD``. This is clear if you look
+in the mapping sections<->segments in which ``.dynamic`` appears two times!
+
+## Look Ma' the code: kernel side
+
+If you want to know precisely how the kernel loads the ELF and calls the executable,
+wait no more and look at ``fs/binfmt_elf.c`` in the Linux source code: below the stripped down code
+where is clear that the kernel loads the interpreter and the passes to it
+the execution (look at the ``elf_entry`` variable)
+
+```c
+static int load_elf_binary(struct linux_binprm *bprm)
+{
+    ...
+    struct {
+        struct elfhdr elf_ex;
+        struct elfhdr interp_elf_ex;
+    } *loc;
+    ...
+    /* Get the exec-header */
+    loc->elf_ex = *((struct elfhdr *)bprm->buf);
+    ...
+    elf_phdata = load_elf_phdrs(&loc->elf_ex, bprm->file);
+    if (!elf_phdata)
+        goto out;
+    ...
+    for (i = 0; i < loc->elf_ex.e_phnum; i++) {
+        if (elf_ppnt->p_type == PT_INTERP) {
+            ...
+            
+            elf_interpreter = kmalloc(elf_ppnt->p_filesz,
+                          GFP_KERNEL);
+            ...
+            interpreter = open_exec(elf_interpreter);                    [0]
+            ...
+            }
+            ...
+        }
+
+    ...
+
+    /* Do this so that we can load the interpreter, if need be.  We will
+       change some of these later */
+    retval = setup_arg_pages(bprm, randomize_stack_top(STACK_TOP),       [1]
+                 executable_stack);
+    ...
+    /* Now we do a little grungy work by mmapping the ELF image into
+       the correct location in memory. */
+    for(i = 0, elf_ppnt = elf_phdata;
+        i < loc->elf_ex.e_phnum; i++, elf_ppnt++) {
+        int elf_prot = 0, elf_flags, elf_fixed = MAP_FIXED_NOREPLACE;
+        unsigned long k, vaddr;
+        unsigned long total_size = 0;
+
+        if (elf_ppnt->p_type != PT_LOAD)                                 [2a]
+            continue;
+            ...
+        error = elf_map(bprm->file, load_bias + vaddr, elf_ppnt,         [2b]
+                elf_prot, elf_flags, total_size);
+        ...
+    }
+    ...
+    if (elf_interpreter) {
+        unsigned long interp_map_addr = 0;
+
+        elf_entry = load_elf_interp(&loc->interp_elf_ex,                 [3]
+                        interpreter,
+                        &interp_map_addr,
+                        load_bias, interp_elf_phdata);
+        if (!IS_ERR((void *)elf_entry)) {
+            /*
+             * load_elf_interp() returns relocation
+             * adjustment
+             */
+            interp_load_addr = elf_entry;
+            elf_entry += loc->interp_elf_ex.e_entry;                     [4a]
+        }
+    } else {
+        elf_entry = loc->elf_ex.e_entry;                                 [4b]
+        ...
+    }
+    ...
+#ifdef ARCH_HAS_SETUP_ADDITIONAL_PAGES
+    retval = arch_setup_additional_pages(bprm, !!elf_interpreter);       [5]
+    if (retval < 0)
+        goto out;
+#endif /* ARCH_HAS_SETUP_ADDITIONAL_PAGES */
+
+    retval = create_elf_tables(bprm, &loc->elf_ex,                       [6]
+              load_addr, interp_load_addr);
+    ...
+    current->mm->end_code = end_code;                                    [7a]
+    current->mm->start_code = start_code;
+    current->mm->start_data = start_data;
+    current->mm->end_data = end_data;
+    current->mm->start_stack = bprm->p;
+
+    if ((current->flags & PF_RANDOMIZE) && (randomize_va_space > 1)) {
+        ...
+        current->mm->brk = current->mm->start_brk =                      [7b]
+            arch_randomize_brk(current->mm);
+    ...
+    start_thread(regs, elf_entry, bprm->p);
+    ...
+}
+```
+
+Indeed at ``[0]`` the kernel opens the file containing the loader, meanwhile
+it loops over the segment of type ``PT_LOAD`` (``[2a]``) and maps it in user space(``[2b]``);
+the entry point of the application is set to that indicated by the interpreter (``[4a]``)
+or to the executable (``[4b]``).
+
+Moreover at ``[7a]`` the process memory mapping is set and in particular if the
+system is configured in such way the **heap** is randomized (``[7b]``).
+
+A little note about three particular functions that appear:
+
+ - ``setup_arg_pages()``(``[1]``): setup the stack for the process (randomizing it)
+ - ``arch_setup_additional_pages()`` (``[5]``): create the virtual gate for the syscall (the virtual library named ``linux-vdso.so.1``)
+ - ``create_elf_tables()`` (``[6]``): put the ``argc``, ``argv`` and ``envp`` in the stack for the program and then the **auxiliary vector** information in the stack just after the previous;
+ this is the data with which the kernel communicates with the program and with the loader
+
+At this point the execution flow switches from the kernel, high privileged code, to user-land where the loader
+will try to resolve the libraries and symbols. If you want a more elaborated description
+of what happens during an ``execve()`` [this article by LWN](https://lwn.net/Articles/631631/)
+is enough to get started.
+
+**Note:** have you notice that the kernel doesn't care at all of the sections
+of the executable?
+
+## Dynamic loader stuff
+
+Before I pass to analyze the loader and its code, we need to talk a little more
+about the segment with type ``PT_DYNAMIC``: it contains an array of elements (``_DYNAMIC``)
+described using the following data type
+
+```c
+typedef struct{
+    Elf32_Sword d_tag;
+    union{
+        Elf32_Word d_val;
+        Elf32_Addr d_ptr;
+    } d_un;
+} Elf32_Dyn;
+
+externElf32_Dyn _DYNAMIC[]
+```
+
+the ``d_tag`` field indicates the purpouse of the entry as indicated
+in the following (uncomplete) table:
+
+| Type | Description |
+|------|-------------|
+| ``DT_NULL``       | This element marks the end of the ``_DYNAMIC`` array. |
+| ``DT_NEEDED``     | This element holds the string table offset of a null-terminated string, giving the name of a needed library. The offset is an index into the table recorded in the ``DT_STRTAB`` entry |
+| ``DT_STRTAB``     | This element holds the address of the string table. Symbol names, library names, and other strings reside in this table. |
+| ``DT_STRSZ``      | the size of the string table |
+| ``DT_SYMTAB``     | This element holds the address of the symbol table |
+| ``DT_SYMENT``     | the size of an entry in the symbol table |
+| ``DT_INIT``       | address of the initialization function |
+| ``DT_FINI``       | address of the de-initialization function |
+| ``DT_INIT_ARRAY`` | address of an array of initialization functions (it's not described in the original specification) |
+| ``DT_FINI_ARRAY`` | address of an array of de-initialization functions (it's not described in the original specification) |
+| ``DT_PLTGOT`` | holds an address associated with the procedure linkage table and/or the global offset table |
+| ``DT_PLTREL`` | specifies the type of relocation entry to which the procedure linkage table refers |
+| ``DT_JMPREL`` | If present, this entries’ ``d_ptr`` member holds the address of relocation entries associated solely with the procedure linkage table. |
+
+Note that ``DT_JMPREL`` and ``DT_PLTGOT`` are both relocations; separating these
+relocation entries lets the dynamic linker ignore them during process
+initialization, if lazy binding is enabled. In the linker source code is
+indicated that ``DT_JUMPREL`` portion can be inside the ``DT_PLTGOT`` part
+(at the end of it) or out of it (with the end of the second matching the start
+of it or totally disconnected).
+``DT_JMPREL`` points to the ``PLT`` and its size is indicated by ``DT_PLTRELSZ``
+
+Note that can exist more than one section containing relocation tables but in
+the dynamic segment are only one containing all of them; in particular
+relocations in object files are united by the linker (during compilation).
+
+The ``.got`` and ``.plt`` sections with type ``SHT_PROGBITS`` hold two separate
+tables: the global offset table and the procedure linkage table. The
+architecture-specific document (Chapter 3) discusses how programs use the global
+offset table for position-independent code.
+
+Obviously you can see this information for an ``ELF`` file using
+our friend ``readelf(1)``
+
+```
+$ readelf -d public/code/simplest_excalation 
+
+Dynamic section at offset 0x2f14 contains 24 entries:
+  Tag        Tipo                         Nome/Valore
+ 0x00000001 (NEEDED)                     Libreria condivisa: [libc.so.6]
+ 0x0000000c (INIT)                       0x8049000
+ 0x0000000d (FINI)                       0x80492a4
+ 0x00000019 (INIT_ARRAY)                 0x804bf0c
+ 0x0000001b (INIT_ARRAYSZ)               4 (byte)
+ 0x0000001a (FINI_ARRAY)                 0x804bf10
+ 0x0000001c (FINI_ARRAYSZ)               4 (byte)
+ 0x6ffffef5 (GNU_HASH)                   0x80481ec
+ 0x00000005 (STRTAB)                     0x804827c
+ 0x00000006 (SYMTAB)                     0x804820c
+ 0x0000000a (STRSZ)                      89 (byte)
+ 0x0000000b (SYMENT)                     16 (byte)
+ 0x00000015 (DEBUG)                      0x0
+ 0x00000003 (PLTGOT)                     0x804c000
+ 0x00000002 (PLTRELSZ)                   32 (byte)
+ 0x00000014 (PLTREL)                     REL
+ 0x00000017 (JMPREL)                     0x804830c
+ 0x00000011 (REL)                        0x8048304
+ 0x00000012 (RELSZ)                      8 (byte)
+ 0x00000013 (RELENT)                     8 (byte)
+ 0x6ffffffe (VERNEED)                    0x80482e4
+ 0x6fffffff (VERNEEDNUM)                 1
+ 0x6ffffff0 (VERSYM)                     0x80482d6
+ 0x00000000 (NULL)                       0x0
+```
+
+### Loader's code path for libraries resolution
+
+Now I'm going to follow the code run by the loader, I know that it is pretty
+difficult to follow (for my own fault) and skip it freely if you want, I'm
+doing this only in order to try to improve my understanding.
+
+The code here is from the ``glibc`` but obviously they exist other loaders; in a Debian
+system is possible to obtain the source code with ``apt source libc6``.
+**Remember that loader and libc must match otherwise you will obtain a segmentation
+fault**: use the following one liner to launch a program with a custom loader and/or
+libc
+
+```
+$ /path/to/loader --library-path path/to/dir/containing/libc <executable>
+```
+
+bad enough this will result in a static execution. To debug with source code you
+can use the ``gdb --args`` prefix launching it from the root directory of the
+unziped debian package; the entry point is ``dl_main()``.
+
+The fundamental data type used in the following analysis is the ``struct link_map``,
+it represents a shared library loaded by the loader:
+
+```c
+/* Structure describing a loaded shared object.  The `l_next' and `l_prev'
+   members form a chain of all the shared objects loaded at startup.
+
+   These data structures exist in space used by the run-time dynamic linker;
+   modifying them may have disastrous results.
+
+   This data structure might change in future, if necessary.  User-level
+   programs must avoid defining objects of this type.  */
+
+struct link_map
+  {
+    /* These first few members are part of the protocol with the debugger.
+       This is the same format used in SVR4.  */
+
+    ElfW(Addr) l_addr;		/* Difference between the address in the ELF
+				   file and the addresses in memory.  */
+    char *l_name;		/* Absolute file name object was found in.  */
+    ElfW(Dyn) *l_ld;		/* Dynamic section of the shared object.  */
+    struct link_map *l_next, *l_prev; /* Chain of loaded objects.  */
+
+    /* All following members are internal to the dynamic linker.
+       They may change without notice.  */
+    ...
+
+    /* Indexed pointers to dynamic section.
+       [0,DT_NUM) are indexed by the processor-independent tags.
+       [DT_NUM,DT_NUM+DT_THISPROCNUM) are indexed by the tag minus DT_LOPROC.
+       [DT_NUM+DT_THISPROCNUM,DT_NUM+DT_THISPROCNUM+DT_VERSIONTAGNUM) are
+       indexed by DT_VERSIONTAGIDX(tagvalue).
+       [DT_NUM+DT_THISPROCNUM+DT_VERSIONTAGNUM,
+	DT_NUM+DT_THISPROCNUM+DT_VERSIONTAGNUM+DT_EXTRANUM) are indexed by
+       DT_EXTRATAGIDX(tagvalue).
+       [DT_NUM+DT_THISPROCNUM+DT_VERSIONTAGNUM+DT_EXTRANUM,
+	DT_NUM+DT_THISPROCNUM+DT_VERSIONTAGNUM+DT_EXTRANUM+DT_VALNUM) are
+       indexed by DT_VALTAGIDX(tagvalue) and
+       [DT_NUM+DT_THISPROCNUM+DT_VERSIONTAGNUM+DT_EXTRANUM+DT_VALNUM,
+	DT_NUM+DT_THISPROCNUM+DT_VERSIONTAGNUM+DT_EXTRANUM+DT_VALNUM+DT_ADDRNUM)
+       are indexed by DT_ADDRTAGIDX(tagvalue), see <elf.h>.  */
+
+    ElfW(Dyn) *l_info[DT_NUM + DT_THISPROCNUM + DT_VERSIONTAGNUM
+		      + DT_EXTRANUM + DT_VALNUM + DT_ADDRNUM];
+    const ElfW(Phdr) *l_phdr;	/* Pointer to program header table in core.  */
+    ElfW(Addr) l_entry;		/* Entry point location.  */
+    ElfW(Half) l_phnum;		/* Number of program header entries.  */
+    ElfW(Half) l_ldnum;		/* Number of dynamic segment entries.  */
+
+    /* Array of DT_NEEDED dependencies and their dependencies, in
+       dependency order for symbol lookup (with and without
+       duplicates).  There is no entry before the dependencies have
+       been loaded.  */
+    struct r_scope_elem l_searchlist;
+
+    /* We need a special searchlist to process objects marked with
+       DT_SYMBOLIC.  */
+    struct r_scope_elem l_symbolic_searchlist;
+
+    /* Dependent object that first caused this object to be loaded.  */
+    struct link_map *l_loader;
+    ...
+
+    enum			/* Where this object came from.  */
+      {
+	lt_executable,		/* The main executable program.  */
+	lt_library,		/* Library needed by main executable.  */
+	lt_loaded		/* Extra run-time loaded shared object.  */
+      } l_type:2;
+      ...
+    /* Start and finish of memory map for this object.  l_map_start
+       need not be the same as l_addr.  */
+    ElfW(Addr) l_map_start, l_map_end;
+    /* End of the executable part of the mapping.  */
+    ElfW(Addr) l_text_end;
+    ...
+    /* List of object in order of the init and fini calls.  */
+    struct link_map **l_initfini;
+
+    /* List of the dependencies introduced through symbol binding.  */
+    struct link_map_reldeps
+      {
+	unsigned int act;
+	struct link_map *list[];
+      } *l_reldeps;
+    unsigned int l_reldepsmax;
+
+    /* Nonzero if the DSO is used.  */
+    unsigned int l_used;
+    ...
+}
+```
+
+What follows is the entry point of the ``ld`` executable, i.e. where the
+kernel sets the real start point of the executable
+
+```c
+/* This is a list of all the modes the dynamic loader can be in.  */
+enum mode { normal, list, verify, trace };
+...
+static void
+dl_main (const ElfW(Phdr) *phdr,
+	 ElfW(Word) phnum,
+	 ElfW(Addr) *user_entry,
+	 ElfW(auxv_t) *auxv)
+{
+    bool rtld_is_main = false;
+    ...
+
+  if (*user_entry == (ElfW(Addr)) ENTRY_POINT)                              [1]
+    {
+      /* Ho ho.  We are not the program interpreter!  We are the program
+	 itself!  This means someone ran ld.so as a command.  Well, that
+	 might be convenient to do sometimes.  We support it by
+	 interpreting the args like this:
+
+	 ld.so PROGRAM ARGS...
+     ...
+     */
+     ...
+     rtld_is_main = true;
+     ...
+
+    }
+  else
+    {
+      /* Create a link_map for the executable itself.
+	 This will be what dlopen on "" returns.  */
+      main_map = _dl_new_object ((char *) "", "", lt_executable, NULL,
+				 __RTLD_OPENEXEC, LM_ID_BASE);
+      assert (main_map != NULL);
+      main_map->l_phdr = phdr;
+      main_map->l_phnum = phnum;
+      main_map->l_entry = *user_entry;
+      ...
+    }
+  ...
+
+  /* Scan the program header table for the dynamic section.  */              [2]
+  for (ph = phdr; ph < &phdr[phnum]; ++ph)
+    switch (ph->p_type)
+      {
+      case PT_PHDR:
+	/* Find out the load address.  */
+	main_map->l_addr = (ElfW(Addr)) phdr - ph->p_vaddr;
+	break;
+      case PT_DYNAMIC:
+	/* This tells us where to find the dynamic section,
+	   which tells us everything we need to do.  */
+	main_map->l_ld = (void *) main_map->l_addr + ph->p_vaddr;
+	break;
+    ...
+      }
+  ...
+  if (! rtld_is_main)
+     {
+       /* Extract the contents of the dynamic section for easy access.  */
+       elf_get_dynamic_info (main_map, NULL);                                [X]
+       /* Set up our cache of pointers into the hash table.  */
+       _dl_setup_hash (main_map);
+     }
+  ...
+  /* Load all the libraries specified by DT_NEEDED entries.  If LD_PRELOAD
+     specified some libraries to load, these are inserted before the actual
+     dependencies in the executable's searchlist for symbol resolution.  */
+  ...
+  _dl_map_object_deps (main_map, preloads, npreloads, mode == trace, 0);     [3]
+  ...
+  if (__builtin_expect (mode, normal) != normal)
+    {
+      ...
+      _exit (0);
+    }
+  ...
+  if (prelinked)
+    {
+      ...
+    }
+  else                                                                        [4]
+    {
+      /* Now we have all the objects loaded.  Relocate them all except for
+	 the dynamic linker itself.  We do this in reverse order so that copy
+	 relocs of earlier objects overwrite the data written by later
+	 objects.  We do not re-relocate the dynamic linker itself in this
+	 loop because that could result in the GOT entries for functions we
+	 call being changed, and that would break us.  It is safe to relocate
+	 the dynamic linker out of order because it has no copy relocs (we
+	 know that because it is self-contained).  */
+     ...
+      unsigned i = main_map->l_searchlist.r_nlist;
+      while (i-- > 0)
+	{
+	  struct link_map *l = main_map->l_initfini[i];
+      ...
+	  if (l != &GL(dl_rtld_map))
+	    _dl_relocate_object (l, l->l_scope, GLRO(dl_lazy) ? RTLD_LAZY : 0,     [5]
+				 consider_profiling);
+      ...
+	}
+    ...
+}
+```
+
+At ``[1]`` there is a check if the loader has been called explicitely from
+command line (not our case) or by the kernel, then it starts to load
+the link map with the basic info from the executable (``[2]``) and finally
+use the ``DT_NEEDED`` segment to load the shared libraries the executable
+depends on at ``[3]``.
+
+After that is possible to relocate all the undefined symbols
+if there is not prelinking (``[4]``) using the ``_dl_relocate_object()``
+function at ``[5]``.
+
+**Note:** at ``[X]`` the loader reads the entries inside the dinamic section
+(``DT_FLAG`` for example :)).
+
+The shared libraries dependencies take the following path:
+
+```c
+void
+_dl_map_object_deps (struct link_map *map,
+		     struct link_map **preloads, unsigned int npreloads,
+		     int trace_mode, int open_mode)
+{
+  struct list *known = __alloca (sizeof *known * (1 + npreloads + 1));
+  struct list *runp, *tail;
+  ...
+  /* First load MAP itself.  */
+  preload (known, &nlist, map);
+  ...
+  for (runp = known; runp; )
+    {
+      struct link_map *l = runp->map;
+    ...
+      if (l->l_info[DT_NEEDED] || l->l_info[AUXTAG] || l->l_info[FILTERTAG])
+	{
+        ...
+	  for (d = l->l_ld; d->d_tag != DT_NULL; ++d)
+	    if (__builtin_expect (d->d_tag, DT_NEEDED) == DT_NEEDED)
+	      {
+		/* Map in the needed object.  */
+		struct link_map *dep;
+
+		/* Recognize DSTs.  */
+		name = expand_dst (l, strtab + d->d_un.d_val, 0);
+		/* Store the tag in the argument structure.  */
+		args.name = name;
+
+		int err = _dl_catch_exception (&exception, openaux, &args);
+        ...
+		  dep = args.aux;
+
+		if (! dep->l_reserved)
+		  {
+		    /* Allocate new entry.  */
+		    struct list *newp;
+
+		    newp = alloca (sizeof (struct list));
+
+		    /* Append DEP to the list.  */
+		    newp->map = dep;
+		    newp->done = 0;
+		    newp->next = NULL;
+		    tail->next = newp;
+		    tail = newp;
+		    ++nlist;
+		    /* Set the mark bit that says it's already in the list.  */
+		    dep->l_reserved = 1;
+		  }
+
+		/* Remember this dependency.  */
+		if (needed != NULL)
+		  needed[nneeded++] = dep;
+	      }
+        } else ... {
+            ...
+        }
+       ...
+    }
+
+      /* Terminate the list of dependencies and store the array address.  */
+      if (needed != NULL)
+	{
+	  needed[nneeded++] = NULL;
+
+	  struct link_map **l_initfini = (struct link_map **)
+	    malloc ((2 * nneeded + 1) * sizeof needed[0]);
+	  if (l_initfini == NULL)
+	    {
+	      scratch_buffer_free (&needed_space);
+	      _dl_signal_error (ENOMEM, map->l_name, NULL,
+				N_("cannot allocate dependency list"));
+	    }
+	  l_initfini[0] = l;
+	  memcpy (&l_initfini[1], needed, nneeded * sizeof needed[0]);
+	  memcpy (&l_initfini[nneeded + 1], l_initfini,
+		  nneeded * sizeof needed[0]);
+	  atomic_write_barrier ();
+	  l->l_initfini = l_initfini;
+	  l->l_free_initfini = 1;
+	}
+
+}
+```
+
+and using a wrapper are going to call ``elf/dl-load.c:openaux()``
+
+```c
+static void
+openaux (void *a)
+{
+  struct openaux_args *args = (struct openaux_args *) a;
+
+  args->aux = _dl_map_object (args->map, args->name,
+			      (args->map->l_type == lt_executable
+			       ? lt_library : args->map->l_type),
+			      args->trace_mode, args->open_mode,
+			      args->map->l_ns);
+}
+```
+
+that calls ``_dl_map_object()``
+
+```
+/* Map in the shared object file NAME.  */
+
+struct link_map *
+_dl_map_object (struct link_map *loader, const char *name,
+		int type, int trace_mode, int mode, Lmid_t nsid)
+{
+  ...
+  <this code deals with the library search path and opens up a file descriptor fd>
+  ...
+  void *stack_end = __libc_stack_end;
+  return _dl_map_object_from_fd (name, origname, fd, &fb, realname, loader,
+				 type, mode, &stack_end, nsid);
+}
+```
+
+and finally the most important function ``elf/dl-load.c:_dl_map_object_from_fd()``:
+it parses the segments and sets what is necessary in the ``link_map`` struct
+
+```c
+struct link_map *
+_dl_map_object_from_fd (const char *name, const char *origname, int fd,
+			struct filebuf *fbp, char *realname,
+			struct link_map *loader, int l_type, int mode,
+			void **stack_endp, Lmid_t nsid)
+{
+  ...
+  /* Print debugging message.  */
+  if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_FILES))
+    _dl_debug_printf ("file=%s [%lu];  generating link map\n", name, nsid);
+
+  /* This is the ELF header.  We read it in `open_verify'.  */
+  header = (void *) fbp->buf;
+  ...
+  /* Extract the remaining details we need from the ELF header
+     and then read in the program header table.  */
+  l->l_entry = header->e_entry;
+  type = header->e_type;
+  l->l_phnum = header->e_phnum;
+
+  maplength = header->e_phnum * sizeof (ElfW(Phdr));
+  if (header->e_phoff + maplength <= (size_t) fbp->len)
+    phdr = (void *) (fbp->buf + header->e_phoff);
+  else
+    {
+      phdr = alloca (maplength);
+      ...
+    }
+  ...
+  {
+    /* Scan the program header table, collecting its load commands.  */
+    ...
+    for (ph = phdr; ph < &phdr[l->l_phnum]; ++ph)
+      switch (ph->p_type)
+	{
+        ...
+	case PT_PHDR:
+	  l->l_phdr = (void *) ph->p_vaddr;
+	  break;
+
+	case PT_LOAD:
+	  /* A load command tells us to map in part of the file.
+	     We record the load commands and process them all later.  */
+      ...
+
+	  struct loadcmd *c = &loadcmds[nloadcmds++];
+	  c->mapstart = ALIGN_DOWN (ph->p_vaddr, GLRO(dl_pagesize));
+	  c->mapend = ALIGN_UP (ph->p_vaddr + ph->p_filesz, GLRO(dl_pagesize));
+	  c->dataend = ph->p_vaddr + ph->p_filesz;
+	  c->allocend = ph->p_vaddr + ph->p_memsz;
+	  c->mapoff = ALIGN_DOWN (ph->p_offset, GLRO(dl_pagesize));
+
+	  /* Determine whether there is a gap between the last segment
+	     and this one.  */
+	  if (nloadcmds > 1 && c[-1].mapend != c->mapstart)
+	    has_holes = true;
+        ...
+        break
+    ...
+	case PT_GNU_STACK:
+	  stack_flags = ph->p_flags;
+	  break;
+
+	case PT_GNU_RELRO:
+	  l->l_relro_addr = ph->p_vaddr;
+	  l->l_relro_size = ph->p_memsz;
+	  break;
+      ...
+	}
+
+    ...
+
+    /* Now process the load commands and map segments into memory.
+       This is responsible for filling in:
+       l_map_start, l_map_end, l_addr, l_contiguous, l_text_end, l_phdr
+     */
+    errstring = _dl_map_segments (l, fd, header, type, loadcmds, nloadcmds,
+				  maplength, has_holes, loader);
+    ...
+  }
+  ...
+}
+```
+
+Finally in ``elf/dl-map-segments.h`` the code "allocates the memory" for the needed
+segments
+
+```c
+/* This implementation assumes (as does the corresponding implementation
+   of _dl_unmap_segments, in dl-unmap-segments.h) that shared objects
+   are always laid out with all segments contiguous (or with gaps
+   between them small enough that it's preferable to reserve all whole
+   pages inside the gaps with PROT_NONE mappings rather than permitting
+   other use of those parts of the address space).  */
+
+static __always_inline const char *
+_dl_map_segments (struct link_map *l, int fd,
+                  const ElfW(Ehdr) *header, int type,
+                  const struct loadcmd loadcmds[], size_t nloadcmds,
+                  const size_t maplength, bool has_holes,
+                  struct link_map *loader)
+{
+  const struct loadcmd *c = loadcmds;
+
+  if (__glibc_likely (type == ET_DYN))
+    {
+      /* This is a position-independent shared object.  We can let the
+         kernel map it anywhere it likes, but we must have space for all
+         the segments in their specified positions relative to the first.
+         So we map the first segment without MAP_FIXED, but with its
+         extent increased to cover all the segments.  Then we remove
+         access from excess portion, and there is known sufficient space
+         there to remap from the later segments.
+
+         As a refinement, sometimes we have an address that we would
+         prefer to map such objects at; but this is only a preference,
+         the OS can do whatever it likes. */
+      ElfW(Addr) mappref
+        = (ELF_PREFERRED_ADDRESS (loader, maplength,
+                                  c->mapstart & GLRO(dl_use_load_bias))
+           - MAP_BASE_ADDR (l));
+
+      /* Remember which part of the address space this object uses.  */
+      l->l_map_start = (ElfW(Addr)) __mmap ((void *) mappref, maplength,
+                                            c->prot,
+                                            MAP_COPY|MAP_FILE,
+                                            fd, c->mapoff);
+      if (__glibc_unlikely ((void *) l->l_map_start == MAP_FAILED))
+        return DL_MAP_SEGMENTS_ERROR_MAP_SEGMENT;
+
+      l->l_map_end = l->l_map_start + maplength;
+      l->l_addr = l->l_map_start - c->mapstart;
+
+      if (has_holes)
+        {
+          /* Change protection on the excess portion to disallow all access;
+             the portions we do not remap later will be inaccessible as if
+             unallocated.  Then jump into the normal segment-mapping loop to
+             handle the portion of the segment past the end of the file
+             mapping.  */
+          if (__glibc_unlikely
+              (__mprotect ((caddr_t) (l->l_addr + c->mapend),
+                           loadcmds[nloadcmds - 1].mapstart - c->mapend,
+                           PROT_NONE) < 0))
+            return DL_MAP_SEGMENTS_ERROR_MPROTECT;
+        }
+
+      l->l_contiguous = 1;
+
+      goto postmap;
+    }
+
+  /* Remember which part of the address space this object uses.  */
+  l->l_map_start = c->mapstart + l->l_addr;
+  l->l_map_end = l->l_map_start + maplength;
+  l->l_contiguous = !has_holes;
+
+  while (c < &loadcmds[nloadcmds])
+    {
+      if (c->mapend > c->mapstart
+          /* Map the segment contents from the file.  */
+          && (__mmap ((void *) (l->l_addr + c->mapstart),
+                      c->mapend - c->mapstart, c->prot,
+                      MAP_FIXED|MAP_COPY|MAP_FILE,
+                      fd, c->mapoff)
+              == MAP_FAILED))
+        return DL_MAP_SEGMENTS_ERROR_MAP_SEGMENT;
+
+    postmap:
+      _dl_postprocess_loadcmd (l, header, c);
+
+      if (c->allocend > c->dataend)
+        {
+          /* Extra zero pages should appear at the end of this segment,
+             after the data mapped from the file.   */
+          ElfW(Addr) zero, zeroend, zeropage;
+
+          zero = l->l_addr + c->dataend;
+          zeroend = l->l_addr + c->allocend;
+          zeropage = ((zero + GLRO(dl_pagesize) - 1)
+                      & ~(GLRO(dl_pagesize) - 1));
+
+          if (zeroend < zeropage)
+            /* All the extra data is in the last page of the segment.
+               We can just zero it.  */
+            zeropage = zeroend;
+
+          if (zeropage > zero)
+            {
+              /* Zero the final part of the last page of the segment.  */
+              if (__glibc_unlikely ((c->prot & PROT_WRITE) == 0))
+                {
+                  /* Dag nab it.  */
+                  if (__mprotect ((caddr_t) (zero
+                                             & ~(GLRO(dl_pagesize) - 1)),
+                                  GLRO(dl_pagesize), c->prot|PROT_WRITE) < 0)
+                    return DL_MAP_SEGMENTS_ERROR_MPROTECT;
+                }
+              memset ((void *) zero, '\0', zeropage - zero);
+              if (__glibc_unlikely ((c->prot & PROT_WRITE) == 0))
+                __mprotect ((caddr_t) (zero & ~(GLRO(dl_pagesize) - 1)),
+                            GLRO(dl_pagesize), c->prot);
+            }
+
+          if (zeroend > zeropage)
+            {
+              /* Map the remaining zero pages in from the zero fill FD.  */
+              caddr_t mapat;
+              mapat = __mmap ((caddr_t) zeropage, zeroend - zeropage,
+                              c->prot, MAP_ANON|MAP_PRIVATE|MAP_FIXED,
+                              -1, 0);
+              if (__glibc_unlikely (mapat == MAP_FAILED))
+                return DL_MAP_SEGMENTS_ERROR_MAP_ZERO_FILL;
+            }
+        }
+
+      ++c;
+    }
+
+  /* Notify ELF_PREFERRED_ADDRESS that we have to load this one
+     fixed.  */
+  ELF_FIXED_ADDRESS (loader, c->mapstart);
+
+  return NULL;
+}
+```
+
+### Symbols and relocation
+
+Now we have the libraries the executable depends on, with their segments loaded in
+their own addresses; at this point we need to fix the references between objects
+and this process is called **relocation**.
+
+**Relocation is the process of connecting symbolic references with symbolic
+definitions.**
+
+The process of relocation can happen in two steps:
+
+ 1. at loading time in which the loader relocates symbols related to
+global objects (think of ``extern`` like variable) and functions
+related to the initizialition/termination procedure of the executable
+(and dependent libraries)
+ 2. at runtime; for performance reason some functions are resolved
+ dynamically by a so called **procedure linkage table** (``PLT``).
+
+While the first step happens always, the second case depends on
+different cases: primarly can be influcenced for example by the
+``BIND_NOW`` environment variable that tells the loader
+to resolve immediately all the relocations; the default is the opposite
+and it is called **lazy binding**; moreover if ``DT_FLAG`` dynamic entry
+has value ``DF_BIND_NOW`` then we are in ``FULL_RELRO``!
+
+The ``ELF`` format has its own datatype for the relocation
+
+```
+typedef struct {
+    Elf32_Addr r_offset;
+    Elf32_Word r_info;
+} Elf32_Rel;
+
+typedef struct {
+    Elf32_Addr r_offset;
+    Elf32_Word r_info;
+    Elf32_Sword r_addend;
+} Elf32_Rela;
+```
+
+| Field | Description |
+|-------|-------------|
+| ``r_offset`` | offset at which apply the relocation action |
+| ``r_info``   | the first 8bit give the relocation type, the remaining the simbol index |
+| ``r_addend`` | constant value to add during the relocation final address calculation |
+
+
+**Note:** the relocation concept is also used a compile time by the so called
+(by the specification) **linker editor**: when you compile the source code to
+obtain ``.o`` files, the calls and the references have to be linked together in
+the final executable file; there is no dynamic **segment** here but the
+relocation are indicated by the section of type ``SH_RELA``.
+
+The linker, to resolve the relocations, looks at
+the ``DT_PLTREL`` dynamic segment entry type that indicates which kind of relocation
+the executable needs (``REL`` or ``RELA``), then it looks for the corresponding
+relocations entries (``DT_REL`` or ``DT_RELA``).
+
+What is missing from the picture are the **symbols**, defined with the following
+datatype
+
+```
+typedef struct {
+    Elf64_Word st_name;
+    unsigned char st_info;
+    unsigned char st_other;
+    Elf64_Half st_shndx;
+    Elf64_Addr st_value;
+    Elf64_Xword st_size;
+} Efl64_Sym;
+```
+
+| Name | Description |
+|------|-------------|
+| ``st_name``  | index inside the corresponding string table |
+| ``st_info``  | symbol bind and type attributes |
+| ``st_other`` | symbol visibility |
+| ``st_shndx`` | section this symbol refers to |
+| ``st_value`` | can indicate a section offset (``ET_REL``) or a virtual address (``ET_EXEC``/``ET_DYN``) |
+| ``st_size``  | symbol's size |
+
+The symbols, in particular the **name** of the symbols, are the interface by
+which the loader is capable to connecting the libraries between them.
+
+**Note:** an ``ELF`` file can have two symbol tables, one for the dynamic linking
+that cannot be removed and one for the compilation linking; each has its own string table.
+
+ - ``.symtab`` for the local symbols with table ``.strtab``
+ - ``.dynsym`` for the dynamic symbols with string table in ``.dynstr``
+
+### Runtime relocations
+
+Once the loader has completed its job and all the segments are mapped and the execution
+is passed to the executable something remains to do.
+
+When I introduced the dynamic segment I talked about the **procedure linkage
+table** and the **global offset table**, now it's the moment to explain a little
+bit more!
+
+The relocation, roughly speaking, consists on "writing somewhere" the actual
+address of references, since it's possible to do that "lazily" the designer of
+the format came up with this mechanism: look at one example of ``PLT`` and
+``GOT``
+
+```
+$ objdump -j .plt -d public/code/simplest_excalation 
+
+public/code/simplest_excalation:     formato del file elf32-i386
+
+
+Disassemblamento della sezione .plt:
+
+08049030 <.plt>:
+ 8049030:       ff 35 04 c0 04 08       pushl  0x804c004
+ 8049036:       ff 25 08 c0 04 08       jmp    *0x804c008
+ 804903c:       00 00                   add    %al,(%eax)
+        ...
+
+08049040 <printf@plt>:
+ 8049040:       ff 25 0c c0 04 08       jmp    *0x804c00c
+ 8049046:       68 00 00 00 00          push   $0x0
+ 804904b:       e9 e0 ff ff ff          jmp    8049030 <.plt>
+
+08049050 <gets@plt>:
+ 8049050:       ff 25 10 c0 04 08       jmp    *0x804c010
+ 8049056:       68 08 00 00 00          push   $0x8
+ 804905b:       e9 d0 ff ff ff          jmp    8049030 <.plt>
+
+08049060 <__libc_start_main@plt>:
+ 8049060:       ff 25 14 c0 04 08       jmp    *0x804c014
+ 8049066:       68 10 00 00 00          push   $0x10
+ 804906b:       e9 c0 ff ff ff          jmp    8049030 <.plt>
+
+08049070 <putchar@plt>:
+ 8049070:       ff 25 18 c0 04 08       jmp    *0x804c018
+ 8049076:       68 18 00 00 00          push   $0x18
+ 804907b:       e9 b0 ff ff ff          jmp    8049030 <.plt>
+$ objdump -j .got.plt -d public/code/simplest_excalation
+
+public/code/simplest_excalation:     formato del file elf32-i386
+
+
+Disassemblamento della sezione .got.plt:
+
+0804c000 <_GLOBAL_OFFSET_TABLE_>:
+ 804c000:       14 bf 04 08 00 00 00 00 00 00 00 00 46 90 04 08     ............F...
+ 804c010:       56 90 04 08 66 90 04 08 76 90 04 08                 V...f...v...
+```
+
+As you can see the scheme is the following (take in mind that the entry point
+is the ``whatever@plt`` label)
+
+```
+.plt:
+   pushl GOT + 4
+   jmp *(GOT + 8) i.e. loader
+
+...
+
+whatever@plt:
+    jmp *(GOT + index)
+    push index
+    jmp .plt
+...
+```
+
+When a function is called the first time via the ``PLT``, the address at ``GOT +
+index`` contains the address of the next instruction that follows (i.e. ``push
+index``) and then jump to ``.plt``; from there some data is passed in order to
+call the loader resolution function. At the end of the process ``GOT +
+index`` will contain the real relocated address so that the following calls will
+be directly executed.
+
+Take in mind that the ``GOT`` has some "values" reserved for internal use:
+
+ - ``GOT[0]``: the dynamic segment address (i.e. ``_DYNAMIC``)
+ - ``GOT[1]``: A pointer to an internal data structure, of type
+``link_map``, which is used internally by the dynamic
+loader and contains information about the current
+ELF object needed to carry out symbol resolution.
+ - ``GOT[2]``: A pointer to a function of the dynamic loader,
+called ``_dl_runtime_resolve()``.
+
+In summary, PLT entries basically perform the following
+function call: ``_dl_runtime_resolve(link_map_obj , reloc_index)``
+
+
+### Linker's code path for relocations
+
+Now let's take a look what the linker does to obtain what I have just described:
+
+```c
+/* Search loaded objects' symbol tables for a definition of the symbol
+   UNDEF_NAME, perhaps with a requested version for the symbol.
+
+   We must never have calls to the audit functions inside this function
+   or in any function which gets called.  If this would happen the audit
+   code might create a thread which can throw off all the scope locking.  */
+lookup_t
+_dl_lookup_symbol_x (const char *undef_name, struct link_map *undef_map,
+		     const ElfW(Sym) **ref,
+		     struct r_scope_elem *symbol_scope[],
+		     const struct r_found_version *version,
+		     int type_class, int flags, struct link_map *skip_map)
+{
+  ...
+  struct r_scope_elem **scope = symbol_scope;
+  ...
+  /* Search the relevant loaded objects for a definition.  */
+  for (size_t start = i; *scope != NULL; start = 0, ++scope)
+    {
+      int res = do_lookup_x (undef_name, new_hash, &old_hash, *ref,
+			     &current_value, *scope, start, version, flags,
+			     skip_map, type_class, undef_map);
+      if (res > 0)
+	break;
+    ...
+}
+
+
+/* Inner part of the lookup functions.  We return a value > 0 if we
+   found the symbol, the value 0 if nothing is found and < 0 if
+   something bad happened.  */
+static int
+__attribute_noinline__
+do_lookup_x (const char *undef_name, uint_fast32_t new_hash,
+	     unsigned long int *old_hash, const ElfW(Sym) *ref,
+	     struct sym_val *result, struct r_scope_elem *scope, size_t i,
+	     const struct r_found_version *const version, int flags,
+	     struct link_map *skip, int type_class, struct link_map *undef_map)
+{
+  size_t n = scope->r_nlist;
+  ...
+  struct link_map **list = scope->r_list;
+  do
+    {
+      const struct link_map *map = list[i]->l_real;
+      ...
+      /* Print some debugging info if wanted.  */
+      if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_SYMBOLS))
+	_dl_debug_printf ("symbol=%s;  lookup in file=%s [%lu]\n",
+			  undef_name, DSO_FILENAME (map->l_name),
+			  map->l_ns);
+    ....
+			sym = check_match (undef_name, ref, version, flags,        [1]
+					   type_class, &symtab[symidx], symidx,
+					   strtab, map, &versioned_sym,
+					   &num_versions);
+			if (sym != NULL)
+			  goto found_it;
+              ...
+    }
+  while (++i < n);
+}
+```
+
+``[1]`` is the real symbol retrieving implementation (the complete code is wrapped
+around the hash table related indexing).
+
+From now on the code is pretty polluted by macros and is a little hard to
+understand.
+
+The following code is from ``elf/dl-runtime.c`` and it's responsible for the
+actual process of relocation:
+
+```c
+void
+_dl_relocate_object (struct link_map *l, struct r_scope_elem *scope[],
+		     int reloc_mode, int consider_profiling)
+{
+  ...
+  if (l->l_relocated)
+    return;
+  ...
+
+  /* DT_TEXTREL is now in level 2 and might phase out at some time.
+     But we rewrite the DT_FLAGS entry to a DT_TEXTREL entry to make
+     testing easier and therefore it will be available at all time.  */
+  if (__glibc_unlikely (l->l_info[DT_TEXTREL] != NULL))
+    {
+    ...
+    }
+    ...
+  {
+    /* Do the actual relocation of the object's GOT and other data.  */
+
+    /* String table object symbols.  */
+    const char *strtab = (const void *) D_PTR (l, l_info[DT_STRTAB]);
+    /* This macro is used as a callback from the ELF_DYNAMIC_RELOCATE code.  */
+#define RESOLVE_MAP(ref, version, r_type) \
+ ...
+
+#include "dynamic-link.h"
+
+    ELF_DYNAMIC_RELOCATE (l, lazy, consider_profiling, skip_ifunc);
+    ...
+  }
+
+  /* Mark the object so we know this work has been done.  */
+  l->l_relocated = 1;
+
+  ...
+
+   /* In case we can protect the data now that the relocations are
+     done, do it.  */
+  if (l->l_relro_size != 0)
+    _dl_protect_relro (l);
+}
+```
+
+At the end you can see where happens the read-only protection to the relocation
+
+```c
+void
+_dl_protect_relro (struct link_map *l)
+{
+  ElfW(Addr) start = ALIGN_DOWN((l->l_addr
+				 + l->l_relro_addr),
+				GLRO(dl_pagesize));
+  ElfW(Addr) end = ALIGN_DOWN((l->l_addr
+			       + l->l_relro_addr
+			       + l->l_relro_size),
+			      GLRO(dl_pagesize));
+  if (start != end
+      && __mprotect ((void *) start, end - start, PROT_READ) < 0)
+    {
+      static const char errstring[] = N_("\
+cannot apply additional memory protection after relocation");
+      _dl_signal_error (errno, l->l_name, NULL, errstring);
+    }
+}
+```
+
+Indeed with partial RELRO, the non-PLT part of the ``GOT`` section (``.got`` from readelf
+output) is read only but ``.got.plt`` is still writeable. Whereas in complete
+RELRO, the entire ``GOT`` (``.got`` and ``.got.plt`` both) is marked as read-only.
+
+The segment with type ``GNU_RELRO`` indicate which part of the memory must be
+set **read only** after relocation. Moreover if this is set then ``DT_DEBUG``
+entry contains the pointer to the r_debug variable holding the link_map
+reference.
+
+
+Here instead the macros that actually relocate are showed in their full form:
+
+```
+/* This can't just be an inline function because GCC is too dumb
+   to inline functions containing inlines themselves.  */
+# define ELF_DYNAMIC_RELOCATE(map, lazy, consider_profile, skip_ifunc) \
+  do {									      \
+    int edr_lazy = elf_machine_runtime_setup ((map), (lazy),		      \
+					      (consider_profile));	      \
+    ELF_DYNAMIC_DO_REL ((map), edr_lazy, skip_ifunc);			      \
+    ELF_DYNAMIC_DO_RELA ((map), edr_lazy, skip_ifunc);			      \
+  } while (0)
+
+```
+
+```c
+#  define ELF_DYNAMIC_DO_REL(map, lazy, skip_ifunc) \
+  _ELF_DYNAMIC_DO_RELOC (REL, Rel, map, lazy, skip_ifunc, _ELF_CHECK_REL)
+
+#  define ELF_DYNAMIC_DO_RELA(map, lazy, skip_ifunc) \
+  _ELF_DYNAMIC_DO_RELOC (RELA, Rela, map, lazy, skip_ifunc, _ELF_CHECK_REL)
+
+/* On some machines, notably SPARC, DT_REL* includes DT_JMPREL in its
+   range.  Note that according to the ELF spec, this is completely legal!
+
+   We are guarenteed that we have one of three situations.  Either DT_JMPREL
+   comes immediately after DT_REL*, or there is overlap and DT_JMPREL
+   consumes precisely the very end of the DT_REL*, or DT_JMPREL and DT_REL*
+   are completely separate and there is a gap between them.  */
+
+# define _ELF_DYNAMIC_DO_RELOC(RELOC, reloc, map, do_lazy, skip_ifunc, test_rel) \
+  do {									      \
+    struct { ElfW(Addr) start, size;					      \
+	     __typeof (((ElfW(Dyn) *) 0)->d_un.d_val) nrelative; int lazy; }  \
+      ranges[2] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };			      \
+									      \
+    if ((map)->l_info[DT_##RELOC])					      \
+      {									      \
+	ranges[0].start = D_PTR ((map), l_info[DT_##RELOC]);		      \
+	ranges[0].size = (map)->l_info[DT_##RELOC##SZ]->d_un.d_val;	      \
+	if (map->l_info[VERSYMIDX (DT_##RELOC##COUNT)] != NULL)		      \
+	  ranges[0].nrelative						      \
+	    = map->l_info[VERSYMIDX (DT_##RELOC##COUNT)]->d_un.d_val;	      \
+      }									      \
+    if ((map)->l_info[DT_PLTREL]					      \
+	&& (!test_rel || (map)->l_info[DT_PLTREL]->d_un.d_val == DT_##RELOC)) \
+      {									      \
+	ElfW(Addr) start = D_PTR ((map), l_info[DT_JMPREL]);		      \
+	ElfW(Addr) size = (map)->l_info[DT_PLTRELSZ]->d_un.d_val;	      \
+									      \
+	if (ranges[0].start + ranges[0].size == (start + size))		      \
+	  ranges[0].size -= size;					      \
+	if (ELF_DURING_STARTUP						      \
+	    || (!(do_lazy)						      \
+		&& (ranges[0].start + ranges[0].size) == start))	      \
+	  {								      \
+	    /* Combine processing the sections.  */			      \
+	    ranges[0].size += size;					      \
+	  }								      \
+	else								      \
+	  {								      \
+	    ranges[1].start = start;					      \
+	    ranges[1].size = size;					      \
+	    ranges[1].lazy = (do_lazy);					      \
+	  }								      \
+      }									      \
+									      \
+    if (ELF_DURING_STARTUP)						      \
+      elf_dynamic_do_##reloc ((map), ranges[0].start, ranges[0].size,	      \
+			      ranges[0].nrelative, 0, skip_ifunc);	      \
+    else								      \
+      {									      \
+	int ranges_index;						      \
+	for (ranges_index = 0; ranges_index < 2; ++ranges_index)	      \
+	  elf_dynamic_do_##reloc ((map),				      \
+				  ranges[ranges_index].start,		      \
+				  ranges[ranges_index].size,		      \
+				  ranges[ranges_index].nrelative,	      \
+				  ranges[ranges_index].lazy,		      \
+				  skip_ifunc);				      \
+      }									      \
+  } while (0)
+```
+
+At the end of the day they simply call ``elf_dynamic_do_Rel()`` and
+``elf_machine_runtime_setup()`` and it's here that finally the loader fills the
+``GOT`` with the value needed in order to be able to do runtime relocation.
+
+**Note:** this is code highly architecture-dependent!
+
+**Note2:** there is a specific data structure ``struct linkmap_machine`` in the
+field ``l_mach``
+
+```c
+/* Set up the loaded object described by L so its unrelocated PLT
+   entries will jump to the on-demand fixup code in dl-runtime.c.  */
+
+static inline int __attribute__ ((unused, always_inline))
+elf_machine_runtime_setup (struct link_map *l, int lazy, int profile)
+{
+  Elf64_Addr *got;
+  ...
+  if (l->l_info[DT_JMPREL] && lazy)
+    {
+      /* The GOT entries for functions in the PLT have not yet been filled
+	 in.  Their initial contents will arrange when called to push an
+	 offset into the .rel.plt section, push _GLOBAL_OFFSET_TABLE_[1],
+	 and then jump to _GLOBAL_OFFSET_TABLE_[2].  */
+      got = (Elf64_Addr *) D_PTR (l, l_info[DT_PLTGOT]);
+      /* If a library is prelinked but we have to relocate anyway,
+	 we have to be able to undo the prelinking of .got.plt.
+	 The prelinker saved us here address of .plt + 0x16.  */
+      if (got[1])
+	{
+	  l->l_mach.plt = got[1] + l->l_addr;
+	  l->l_mach.gotplt = (ElfW(Addr)) &got[3];
+	}
+      /* Identify this shared object.  */
+      *(ElfW(Addr) *) (got + 1) = (ElfW(Addr)) l;
+
+      /* The got[2] entry contains the address of a function which gets
+	 called to get the address of a so far unresolved function and
+	 jump to it.  The profiling extension of the dynamic linker allows
+	 to intercept the calls to collect information.  In this case we
+	 don't store the address in the GOT so that all future calls also
+	 end in this function.  */
+      if (__glibc_unlikely (profile))
+	{
+       ...
+	}
+      else
+	{
+	  /* This function will get called to fix up the GOT entry
+	     indicated by the offset on the stack, and then jump to
+	     the resolved address.  */
+	  if (GLRO(dl_x86_cpu_features).xsave_state_size != 0)
+	    *(ElfW(Addr) *) (got + 2)
+	      = (HAS_ARCH_FEATURE (XSAVEC_Usable)
+		 ? (ElfW(Addr)) &_dl_runtime_resolve_xsavec
+		 : (ElfW(Addr)) &_dl_runtime_resolve_xsave);
+	  else
+	    *(ElfW(Addr) *) (got + 2)
+	      = (ElfW(Addr)) &_dl_runtime_resolve_fxsave;
+	}
+    }
+}
+```
+
+``elf/do-rel.h``
+
+```c
+/* Perform the relocations in MAP on the running program image as specified
+   by RELTAG, SZTAG.  If LAZY is nonzero, this is the first pass on PLT
+   relocations; they should be set up to call _dl_runtime_resolve, rather
+   than fully resolved now.  */
+
+auto inline void __attribute__ ((always_inline))
+elf_dynamic_do_Rel (struct link_map *map,
+		    ElfW(Addr) reladdr, ElfW(Addr) relsize,
+		    __typeof (((ElfW(Dyn) *) 0)->d_un.d_val) nrelative,
+		    int lazy, int skip_ifunc)
+{
+  const ElfW(Rel) *r = (const void *) reladdr;
+  const ElfW(Rel) *end = (const void *) (reladdr + relsize);
+  ElfW(Addr) l_addr = map->l_addr;
+  ...
+
+	  for (; r < end; ++r)
+	    {
+	      ElfW(Half) ndx = version[ELFW(R_SYM) (r->r_info)] & 0x7fff;
+	      elf_machine_rel (map, r, &symtab[ELFW(R_SYM) (r->r_info)],
+			       &map->l_versions[ndx],
+			       (void *) (l_addr + r->r_offset), skip_ifunc);
+	    }
+
+}
+```
+
+
+## Debug
+
+By the way, if you want to see the trace of the process just described
+you can use the ``LD_DEBUG`` environment variable to set the loader
+in debug mode
+
+```
+$ LD_DEBUG=libs,bindings,files,symbols id
+     14911:     
+     14911:     WARNING: Unsupported flag value(s) of 0x8000000 in DT_FLAGS_1.
+     14911:     
+     14911:     file=libselinux.so.1 [0];  needed by id [0]
+     14911:     find library=libselinux.so.1 [0]; searching
+     14911:      search cache=/etc/ld.so.cache
+     14911:       trying file=/lib/x86_64-linux-gnu/libselinux.so.1
+     14911:     
+     14911:     file=libselinux.so.1 [0];  generating link map
+     14911:       dynamic: 0x00007f875d1d2d30  base: 0x00007f875cfae000   size: 0x0000000000227ab0
+     14911:         entry: 0x00007f875cfb4b40  phdr: 0x00007f875cfae040  phnum:                  8
+     14911:     
+     14911:     
+     14911:     file=libc.so.6 [0];  needed by id [0]
+     14911:     find library=libc.so.6 [0]; searching
+     14911:      search cache=/etc/ld.so.cache
+     14911:       trying file=/lib/x86_64-linux-gnu/libc.so.6
+     14911:     
+     14911:     file=libc.so.6 [0];  generating link map
+     14911:       dynamic: 0x00007f875cfa7b80  base: 0x00007f875cded000   size: 0x00000000001c0800
+     14911:         entry: 0x00007f875ce111b0  phdr: 0x00007f875cded040  phnum:                 12
+     14911:     
+     14911:     
+     14911:     file=libpcre.so.3 [0];  needed by /lib/x86_64-linux-gnu/libselinux.so.1 [0]
+     14911:     find library=libpcre.so.3 [0]; searching
+     14911:      search cache=/etc/ld.so.cache
+     14911:       trying file=/lib/x86_64-linux-gnu/libpcre.so.3
+     ...
+     14911:     symbol=_res;  lookup in file=id [0]
+     14911:     symbol=_res;  lookup in file=/lib/x86_64-linux-gnu/libselinux.so.1 [0]
+     14911:     symbol=_res;  lookup in file=/lib/x86_64-linux-gnu/libc.so.6 [0]
+     14911:     binding file /lib/x86_64-linux-gnu/libc.so.6 [0] to /lib/x86_64-linux-gnu/libc.so.6 [0]: normal symbol `_res' [GLIBC_2.2.5]
+     ...
+     14911:     symbol=_ITM_registerTMCloneTable;  lookup in file=id [0]
+     14911:     symbol=_ITM_registerTMCloneTable;  lookup in file=/lib/x86_64-linux-gnu/libselinux.so.1 [0]
+     14911:     symbol=_ITM_registerTMCloneTable;  lookup in file=/lib/x86_64-linux-gnu/libc.so.6 [0]
+     14911:     symbol=_ITM_registerTMCloneTable;  lookup in file=/lib/x86_64-linux-gnu/libpcre.so.3 [0]
+     14911:     symbol=_ITM_registerTMCloneTable;  lookup in file=/lib/x86_64-linux-gnu/libdl.so.2 [0]
+     14911:     symbol=_ITM_registerTMCloneTable;  lookup in file=/lib64/ld-linux-x86-64.so.2 [0]
+     14911:     symbol=_ITM_registerTMCloneTable;  lookup in file=/lib/x86_64-linux-gnu/libpthread.so.0 [0]
+```
+
+If you want to know, the options that are available are the following:
+
+```
+Valid options for the LD_DEBUG environment variable are:
+
+  libs        display library search paths
+  reloc       display relocation processing
+  files       display progress for input file
+  symbols     display symbol table processing
+  bindings    display information about symbol binding
+  versions    display version dependencies
+  scopes      display scope information
+  all         all previous options combined
+  statistics  display relocation statistics
+  unused      determined unused DSOs
+  help        display this help message and exit
+
+To direct the debugging output into a file instead of standard output
+a filename can be specified using the LD_DEBUG_OUTPUT environment variable
+```
+
+If you want to use a debugger and see live what happens, the real cool trick is to use the ``starti``
+command inside ``gdb``: it stops at the first instruction after the kernel ``exec``, i.e. in the loader!
+
+Moreover, if you want to compile yourself some fine-tuned executable, this is an
+example with ``gcc``
+
+```
+$ gcc -Wall \
+	public/code/simplest_excalation.c \
+	-o public/code/simplest_excalation \
+	-Wl,-z,relro,-z,now
+```
+
+### TLS
+
+All fine and good, but you know, kids these days have computers with more than one processor
+and it is possible to launch multiple threads inside a single process, then how is possible
+to handle data
+
+ - https://fuchsia.dev/fuchsia-src/zircon/tls
+
+## And now?
+
+A part from being an exercise in understanding, the reader could ask "what's the aim of
+knowning the internal of the loading executable?" well, first of all it allows the developer
+to remove the layer of magic from a given process.
+
+Moreover, depending of your field of interest, I assure you that is rewarding
+**seeing**: if you are a developer you know where to look if a library, a symbol,
+is not found at runtime, if you are an exploit researcher you can discover
+that the dynamic section is writable and with no ``pie`` executable is possible
+to overwrite the ``fini`` pointer and this allows one-shot exploit also
+in 64 bit architectures.
+
+## Further links
+
+ - [ELF specification](https://refspecs.linuxbase.org/elf/elf.pdf)
+ - [System V ABIs](https://wiki.osdev.org/System_V_ABI)
+ - [The ELF format - how programs look from the inside](https://greek0.net/elf.html)
+ - [Vendor-specific ELF Note Elements](https://www.netbsd.org/docs/kernel/elf-notes.html)
+ - [ELFkickers](https://github.com/BR903/ELFkickers): a collection of programs that access and manipulate ELF files
+ - [Howto write shared libraries](https://akkadia.org/drepper/dsohowto.pdf)
+ - [ELF Binaries and Relocation Entries](https://stffrdhrn.github.io/hardware/embedded/openrisc/2019/11/29/relocs.html)
+ - [Thread Local Storage](https://stffrdhrn.github.io/hardware/embedded/openrisc/2020/01/19/tls.html)
+ - http://www.phrack.org/archives/issues/58/4.txt
+ - http://www.phrack.org/archives/issues/67/13.txt
+ - https://davidad.github.io/blog/2014/02/19/relocatable-vs-position-independent-code-or/
+ - http://netwinder.osuosl.org/users/p/patb/public_html/elf_relocs.html
+ - [Linux gate](https://web.archive.org/web/20170128060623/http://www.trilithium.com/johan/2005/08/linux-gate/)
+ - [System calls in the Linux kernel. Part 3](https://0xax.gitbooks.io/linux-insides/SysCall/linux-syscall-3.html)
+ - [THE INSIDE STORY ON SHARED LIBRARIES AND DYNAMIC LOADING](https://www.dabeaz.com/papers/CiSE/c5090.pdf)
+ - https://amir.rachum.com/blog/2016/09/17/shared-libraries/
+ - [Cheating the ELF](https://grugq.github.io/docs/subversiveld.pdf) Subversive Dynamic Linking to Libraries
+ - [Hardening ELF binaries using Relocation Read-Only (RELRO)](https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro)
+ - [How the ELF Ruined Christmas](https://sites.cs.ucsb.edu/~chris/research/doc/usenix15_elf.pdf)
+ - [Secure Code Partitioning With ELF binaries](http://bitlackeys.org/papers/secure_code_partitioning_2018.txt)
+ - [Finding Function's Load Address](https://uaf.io/exploitation/misc/2016/04/02/Finding-Functions.html)
+ - [ELF obfuscation: let analysis tools show wrong external symbol calls](https://h4des.org/blog/index.php?/archives/346-ELF-obfuscation-let-analysis-tools-show-wrong-external-symbol-calls.html)
+ - [Position Independent Code (PIC) in shared libraries](https://eli.thegreenplace.net/2011/11/03/position-independent-code-pic-in-shared-libraries/)
+ - [Dynamic Linking in ELF](http://dandylife.net/blog/archives/660)
