@@ -21,6 +21,8 @@ a C++ application and the USB protocol that it uses to update the firmware
 on the device. I don't think this will be useful to anyone, let me know in
 case it has changed your life :)
 
+<!-- TEASER_END -->
+
 I will use Ghidra and I will try to show how to do some specific steps and how
 I approach reversing in general.
 

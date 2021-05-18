@@ -15,6 +15,8 @@ In this post I want to add some pratical notes (and maybe a new tool) to the
 about exploiting modern browsers; in particular I'll focus on Webkit and as in
 his paper, I'll deep dive into the source code of that version of webkit.
 
+<!-- TEASER_END -->
+
 Since seems that doesn't exist a documentation for the WebKit's source code you
 can take this as a getting started if you want to hack its code. Do not take
 this post as source of truth though, it contains my notes that I collected during

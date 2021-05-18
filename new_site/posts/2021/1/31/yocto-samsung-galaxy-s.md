@@ -13,6 +13,8 @@
 In this post I'll describe my esperiments in reusing my old Samsung Galaxy S;
 don't expected anything sophisticated, it's more a brain dump.
 
+<!-- TEASER_END -->
+
 If you are interested exists a development board that should match the
 specification of this cellphone: the [Mini210](http://www.friendlyarm.net/products/mini210).
 

@@ -15,6 +15,8 @@ anymore) laptops that otherwise would have been thrown in the garbage; my idea
 for them was of reusing some parts that are more valuable: battery, disks,
     keyboards, etc...
 
+<!-- TEASER_END -->
+
 One of the things more valuable are the LCD displays: the first thing to do is
 tear down the laptop and uncover the LCD panel itself; in the back there are few
 labels, one of them contains a code that identifies the model of the panel

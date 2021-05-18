@@ -14,6 +14,8 @@ I was in need to have a working VPN with Fortigate and here I'm going to
 recollect the procedure that has permited to accomplish such simple but
 incredibly complex task.
 
+<!-- TEASER_END -->
+
 My sistem is an Ubuntu 20.04, for example on an Ubuntu 18.10 this doesn't work
 :) if someone knows why I would be glad to be informed.
 

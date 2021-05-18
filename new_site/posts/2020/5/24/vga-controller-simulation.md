@@ -14,6 +14,8 @@
 In my two previous posts  I implemented a [simple VGA controller](link://slug/implementing-vga-in-verilog) and [one with the text mode](link://slug/vga-text-mode-verilog) but now I want to explore
 the possibility to simulate it using ``verilator``.
 
+<!-- TEASER_END -->
+
 I'll simply describe how to generate ``C++`` code from the design and use some
 native code to obtain a graphical output from it. I'm not an expert
 and these are a couple of experiments I did, if you want something more interesting

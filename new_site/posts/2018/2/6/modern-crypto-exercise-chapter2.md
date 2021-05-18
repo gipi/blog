@@ -18,6 +18,8 @@ I'm not sure are correct but if anyone find any error let me know. It's a work i
 and more exercises will follow in future, when I finally find time to solve more. Also,
 enjoy my hand made diagrams :).
 
+<!-- TEASER_END -->
+
 ## Notes
 
 An encryption scheme \\((\hbox{Gen}, \hbox{Enc}, \hbox{Dec})\\) with message space \\(M\\)

@@ -15,6 +15,8 @@ These are some solved exercises of chapter 3 of the book ["Introduction to
 modern cryptography"](http://www.cs.umd.edu/~jkatz/imc.html) (second edition) by Jonathan Katz and Yehuda Lindell.
 For chapter 2 go [here](link://slug/modern-crypto-exercise-chapter2).
 
+<!-- TEASER_END -->
+
 I'm not sure are correct but if anyone find any error let me know. It's a work in progress
 and more exercises will follow in future, when I finally find time to solve more.
 
