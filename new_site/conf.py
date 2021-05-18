@@ -1091,6 +1091,16 @@ PRETTY_URLS = True
 # });
 # </script>
 # """
+MATHJAX_CONFIG = """
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Register.MessageHook("TeX Jax - parse error",function (message) {
+        console.log(message);
+    });
+    MathJax.Hub.Register.MessageHook("Math Processing Error",function (message) {
+        console.log(message);
+    });
+</script>
+"""
 
 # Want to use KaTeX instead of MathJax? While KaTeX may not support every
 # feature yet, it's faster and the output looks better.
