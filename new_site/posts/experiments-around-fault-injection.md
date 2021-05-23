@@ -48,7 +48,45 @@ time on the display; in the same way an electronic device has a clock that
 Let me explain a little better: let's start with the founding entities of modern
 digital electronics, i.e. **transistors**; they have a lot of property and a
 huge usage that would be an enourmous task to explain in detail and it's of not
-importance in our understanding in this case. For now it's important to model a
+importance in our understanding in this case.
+
+In modern ICs are used a type of transistor named **MOSFET**, the first half of
+the name it's an acronym for **M**etal **O**xide **S**emiconductor, the second
+half it's an acronym for **F**ield **E**ffect **T**ransitor; I would like to
+start from the semiconductor part: not all materials are good in conducting
+current, at one side of the spectrum there are metals (like copper, silver,
+gold, etc...) and to the other side there are isolants (like glass, wood,
+etc...). Each element has its own chemical properties characterized by the
+external shell of electrons, in particular the property of forming bonds and
+conductivity.
+
+It's well known fact that digital devices are built from silicon: it's an
+element with four electrons in its outer shell, this means that can bond with
+another four atoms of the same type. Silicon it's a semiconductor and its
+conductivity can be improved by **doping** it using element with one more or one
+less electron in the outer shell, like boron or phosporous.
+
+FET can have the following
+
+ - polarity: p or n
+ - gate insulation: JFET or MOSFET
+ - channel doping: depletion or enhancement
+
+{{% media url=https://www.youtube.com/watch?v=Bfvyj88Hs_o %}}
+
+N-channel MOS transistors have the sub-strate material of p-type and the drain and gate voltages
+are positive with respect to the source during normal operation. The substrate is
+the most negative electrode of an nMOS transistor.
+
+P-channel MOS transistors are produced on an n-type substrate. The voltages
+at the gate and drain of these pMOS transistors are negative with respect to the
+source during normal operation. The substrate is the most positive electrode.
+
+Generally NMOS are faster than PMOS [^1]
+
+[^1]: p26-27 nanometer CMOS ICs
+
+For now it's important to model a
 transistor as a "switch", as something that allows the flow of current by a
 signal.
 
@@ -63,12 +101,20 @@ import schemdraw.elements as elm
 d = schemdraw.Drawing()
 d.add(elm.NFet()
     .reverse()
+    .label("gate", loc="gate")
     .label("drain", loc="drain")
+    .label("source", loc="source")
 )
 d.draw()
 {{% /pyplots %}}
 
+Another thing to take into account is the fact that ICs are built using ``CMOS``
+technology, i.e., for each NMOS there is a PMOS (the **C** means **complementary**).
+This has some advantages like power consumption. For example the typical
+inverter is implemented in this way in a ``CMOS`` chip
+
 {{% pyplots %}}
+# CMOS inverter
 import matplotlib
 matplotlib.use('Agg')
 
@@ -95,16 +141,93 @@ d += elm.Ground().at((nmos, 'source'))
 d.draw()
 {{% /pyplots %}}
 
-![](/images/computers/switch.png)
+This part is actually not needed to understand what follows but I put it here
+anyway as my personal notes: the final die of an IC is costituted by at least
+three different layers (from the top to the bottom)
 
-Another abstraction useful is that they behave like the **negation operator**
+ - **metal**: conducting material, pratically the inteconnecting wires
+ - **polysilicon**: used for gates
+ - **active**: doped silicon for drains and sources
 
-![](/images/computers/switch.gif)
+This could be out of scope but it's interesting to see an actual implementation
+in a IC of some digital components: take a look at the
+[challenge by FlyLogic](http://www.siliconzoo.org/tutorial.html#flylogic) with the
+[solution by Jeri Ellsworth](https://www.flickr.com/photos/jeriellsworth/2856054068/)
+as shown in this image
 
-and composing the allows to build other logic operators, here for example we
-have the ``AND`` and ``OR`` operators
+![](/images/side-channels/dff.png)
 
-![](/images/computers/and-or.gif)
+If you are interested in stuff like this you can take a look at the
+[reversing an FM synthesizer](https://www.wdj-consulting.com/blog/nmos-sample/)
+that is a little more analogic.
+
+From left to right we have an inverter having as input the ``RESET`` signal, followed
+by two transmission gates
+
+{{% pyplots %}}
+import matplotlib
+matplotlib.use('Agg')
+
+import schemdraw
+import schemdraw.elements as elm
+d = schemdraw.Drawing()
+
+d += (pfet_left := elm.PFet().up())
+d += (nfet_left := elm.NFet().down())
+
+d += (nfet_right := elm.NFet().up().at(nfet_left.drain))
+d += (pfet_right := elm.PFet().down())
+
+d += (clk_not := elm.Line().at(pfet_left.gate).to(nfet_right.gate))
+d += (clk := elm.Line().at(nfet_left.gate).to(pfet_right.gate))
+
+# CLK and NOT CLK lines
+d += elm.LineDot().length(2).left().at(clk_not.start).label('$\overline{CLK}$', 'left')
+d += elm.LineDot().length(2).left().at(clk.start).label('$CLK$', 'left')
+
+# input and output
+d += elm.LineDot().length(2).left().at(pfet_left.source).label('$input$', 'left')
+d += elm.LineDot().length(2).right().at(pfet_right.source).label('$output$', 'right')
+
+# extra reference points
+d += elm.Dot().at(nfet_left.drain).label('$A$', 'top')
+d += elm.Dot().at(pfet_right.source).label('$B$', 'top')
+
+d.draw()
+{{% /pyplots %}}
+
+That (?) elements form a ``NAND`` gate:
+
+{{% pyplots %}}
+import matplotlib
+matplotlib.use('Agg')
+
+import schemdraw
+import schemdraw.elements as elm
+d = schemdraw.Drawing()
+
+# place the PMOS in parallel
+d += (pmos_a := elm.PFet().reverse().at((0, 0)).label('$A$', 'gate'))
+d += (pmos_b := elm.PFet().reverse().at((d.unit, 0)).label('$B$', 'gate'))
+d += (vdd_line := elm.Line().at(pmos_a.source).to(pmos_b.source))
+d += (out_line := elm.Line().at(pmos_a.drain).to(pmos_b.drain))
+
+# place the two NMOS in series
+# (tricky placement of the NMOS_a in the middle of the output line)
+d += (nmos_a := elm.NFet().reverse().anchor('drain').at(out_line.center).label('$A$', 'gate'))
+d += (nmos_b := elm.NFet().reverse().label('$B$', 'gate'))
+
+# VDD and GND
+d += elm.LineDot().length(1).at(vdd_line.center).up().label('$V_{cc}$', 'right')
+d += elm.Ground().at((nmos_b, 'source'))
+
+# output
+d += elm.LineDot().length(2).at(out_line.end).right().label('$out$', 'right')
+
+d.draw()
+{{% /pyplots %}}
+
+https://www.eeweb.com/low-power-low-voltage-d-type-flip-flop/
 
 All the above are what is called **combinatorial logic**, from the input I
 obtain an output based entirely on it, it's **stateless**; but to build
@@ -337,6 +460,8 @@ algorithm is not costant-time).
 But we can do better: as I described above, during the execution the transistors
 composing the device are "turn on/off" based on the values of the computation,
 in particular by the actual bits set and reset by the operations done.
+
+![](/images/side-channels/correlation-ldi.png)
 
 With our model we can now look for correlation between traces and the SBox-es
 output: I'm going to use the following function to calculate it
@@ -697,3 +822,11 @@ Verified flash OK, 2459 bytes
  - [Power Analysis For Cheapskates](https://media.blackhat.com/us-13/US-13-OFlynn-Power-Analysis-Attacks-for-Cheapskates-WP.pdf)
  - [Side-channel Attacks Using the Chipwhisperer](https://www.robopenguins.com/chip-whisperer/)
  - [Evaluation of the Masked Logic Style MDPL on a Prototype Chip](https://www.iacr.org/archive/ches2007/47270081/47270081.pdf)
+ - [CMOS fabrication processs](https://bjpcjp.github.io/pdfs/cmos_layout_sim/ch07-fabrication.pdf)
+ - [Reverse-Engineering Custom Logic (Part 1)](https://web.archive.org/web/20130331010506/http://www.flylogic.net/blog/?p=32)
+ - [An Introduction to the MAGIC VLSI Design Layout System](http://terpconnect.umd.edu/~newcomb/vlsi/magic_tut/Magic_x3.pdf)
+ - [EE-612: CMOS Circuit Essentials](https://web.archive.org/web/20150509004607/http://nanohub.org/resources/5929/download/2008.11.20-ece612-l22.pdf)
+ - [Latches inside: Reverse-engineering the Intel 8086's instruction register](http://www.righto.com/2020/08/latches-inside-reverse-engineering.html)
+ - [Reverse-engineering the 8085's ALU and its hidden registers](http://www.righto.com/2013/07/reverse-engineering-8085s-alu-and-its.html)
+ - [Silicon reverse engineering: The 8085's undocumented flags](http://www.righto.com/2013/02/looking-at-silicon-to-understanding.html)
+ - [8085 die shots](http://visual6502.org/images/pages/8085_die_shots.html)
