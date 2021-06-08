@@ -23,7 +23,7 @@ labels, one of them contains a code that identifies the model of the panel
 itself. Which one? I don't know but you can try all of them, is a problem
 solvable in polynomial time :)
 
-![]({{ site.baseurl }}/public/images/lcd-label.png)
+![](/images/lcd-label.png)
 
 At this point you can use the site [panelook.com](http://www.panelook.com/) to
 find the technical details: in my case the code is ``CLAA154WA01AQ``
@@ -31,7 +31,7 @@ corresponding to this
 [model](http://www.panelook.com/CLAA154WA01AQ_CPT_15.4_LCM_parameter_2716.html);
 the important parameters are the ones indicated in the image below
 
-![](/public/images/lcd-parameters.png)
+![](/images/lcd-parameters.png)
 
  - resolution: will be used to configure the controller board
  - signal interface: to choose the correct cable between the controller board and the LCD

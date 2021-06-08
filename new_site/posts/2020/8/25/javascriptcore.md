@@ -378,7 +378,7 @@ static const PropertyOffset firstOutOfLineOffset = 100;
 
 To understand where the properties are located looks in the code
 
-```
+```c++
 WriteBarrierBase<Unknown>* JSObject::locationForOffset(PropertyOffset offset)
 {
     if (isInlineOffset(offset))
@@ -389,7 +389,7 @@ WriteBarrierBase<Unknown>* JSObject::locationForOffset(PropertyOffset offset)
 
 we have the **inline** storage
 
-```
+```c++
 inline bool JSC::isInlineOffset(PropertyOffset offset)
 {
     checkOffset(offset);
@@ -410,7 +410,7 @@ PropertyStorage JSObject::inlineStorage()
 
 and the **outline** storage
 
-```
+```c++
 static const PropertyOffset firstOutOfLineOffset = 100;
 
 ConstPropertyStorage outOfLineStorage() const

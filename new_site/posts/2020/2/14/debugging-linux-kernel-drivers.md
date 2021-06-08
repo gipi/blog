@@ -13,6 +13,8 @@
 This post includes a couple of notes about linux kernel debugging, in
 particular the things that I keep forgetting.
 
+<!-- TEASER_END -->
+
 Just in case take a look at this
 [video](https://www.youtube.com/watch?v=m7SduY2XrKM): "Linux Kernel Debugging:
 Going Beyond Printk Messages".

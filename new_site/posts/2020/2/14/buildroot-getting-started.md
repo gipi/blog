@@ -13,6 +13,8 @@
 [Buildroot](https://buildroot.org/) is an integration system used to obtain complete bootable
 embedded systems; it uses a KConfig configuration mechanism (the ``menuconfig`` thing).
 
+<!-- TEASER_END -->
+
 This post is a simple way for me to take notes about it, refer to the [official documentation](https://buildroot.org/docs.html)
 for anything serious.
 

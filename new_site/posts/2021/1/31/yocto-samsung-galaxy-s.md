@@ -21,7 +21,7 @@ specification of this cellphone: the [Mini210](http://www.friendlyarm.net/produc
 ## Specifications
 
 Obviously there are a lot of components in a smartphone, like
-the following (table copied from the [replicant's page](https://redmine.replicant.us/projects/replicant/wiki/GalaxySGTI9000)
+the following (table copied from the [replicant's page](https://redmine.replicant.us/projects/replicant/wiki/GalaxySGTI9000))
 
 
 | Component | Name | Source | Status |
@@ -62,7 +62,7 @@ I tried to create a jig in order to make development a little easier, otherwise
 I have to plug/unplug cables to switch from flashing to serial, risking damaging
 the connector itself 
 
-![]({{ site.baseurl }}/public/images/samsung-galaxy-s/usb_serial_mux.jpg)
+![](/images/samsung-galaxy-s/usb_serial_mux.jpg)
 
 the core is the ``TS3USB211`` chip that multiplexes between two high speed usb devices;
 in my case one is a serial interface but doesn't matter.
@@ -73,7 +73,7 @@ Now is possible to access the primary and secondary bootloaders' console;
 pressing enter during the early boot activates a terminal for interacting with ``SBoot``;
 take in mind that the new line is ``CR`` otherwise it doesn't work!
 
-```
+```text
 $ python -m serial.tools.miniterm /dev/ttyUSB0 115200
 1
 -----------------------------------------------------------
@@ -274,7 +274,7 @@ save param.blk successfully.
 You have explicitely call ``loadkernel`` and ``boot`` to start the booting
 process
 
-```
+```text
 SBL> loadkernel
 FOTA Check Bit 
  Read BML page=, NumPgs=
@@ -299,7 +299,7 @@ The cool thing is that the kernel is supported in mainline
 using the ``s5pv210`` configuration, so building it is
 pretty simple
 
-```
+```text
 $ export CROSS_COMPILE=arm-linux-gnueabi-
 $ export ARCH=arm
 $ make s5pv210_defconfig
@@ -368,7 +368,7 @@ The rough layout should be the following
 and it's possible to see the actual organization in the cellphone using
 this one-liner
 
-```
+```text
  ./heimdall/heimdall print-pit
  Heimdall v1.4.0
 
@@ -611,7 +611,7 @@ this one-liner
  Rebooting device...
  Releasing device interface...
  Re-attaching kernel driver...
- ```
+```
 
  - https://bootlin.com/blog/creating-flashing-ubi-ubifs-images/
  - https://elinux.org/UBIFS
@@ -656,7 +656,7 @@ If booting fails with ``undefined instruction`` could be
 
 Below a couple of possible commands to boot a system from sd card
 
-```
+```text
 Aries # fatls mmc 0:1
             extlinux/
     30586   s5pv210-galaxys.dtb
@@ -764,7 +764,7 @@ root@s5pv210:~# modprobe i2c-dev
 i2c /dev entries driver
 ```
 
-```
+```text
 root@s5pv210:~# for x in $(find /sys/bus/i2c/devices/ ); do echo -en $x"\t";cat $x/name; done
 /sys/bus/i2c/devices/   cat: can't open '/sys/bus/i2c/devices//name': No such file or directory
 /sys/bus/i2c/devices/11-0044    gp2ap002a00f
@@ -793,7 +793,7 @@ root@s5pv210:~# for x in $(find /sys/bus/i2c/devices/ ); do echo -en $x"\t";cat 
 /sys/bus/i2c/devices/i2c-5      i2c-gpio-3
 ```
 
-```
+```text
 root@s5pv210:~# i2cdetect -l
 i2c-6   i2c             i2c-gpio-0                              I2C adapter
 i2c-2   i2c             s3c2410-i2c                             I2C adapter
@@ -847,7 +847,7 @@ Continue? [Y/n]
 The device has two cameras (front and back); the front one is a ``s5ka3dfx`` sensor
 that can be enabled via ``CONFIG_VIDEO_S5KA3DFX``.
 
-```
+```text
 root@s5pv210:~# dmesg | grep video
 videodev: Linux video capture interface: v2.00
 s5p-jpeg fb600000.jpeg-codec: encoder device registered as /dev/video0
@@ -1036,7 +1036,7 @@ root@s5pv210:~# DISPLAY=:0.0 gst-launch-1.0 videotestsrc ! timeoverlay font-desc
 
 First of all you need ``rfkill`` enabled with ``CONFIG_RFKILL``
 
-```
+```text
 root@s5pv210:~# rfkill
 ID TYPE      DEVICE    SOFT      HARD
  0 bluetooth hci0   blocked unblocked
@@ -1051,7 +1051,7 @@ ID TYPE      DEVICE      SOFT      HARD
 
 ### Wifi
 
-```
+```text
 root@s5pv210:~# ip link
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
@@ -1147,7 +1147,7 @@ BSS yy:yy:yy:yy:yy:yy(on wlan0)
  ...
 ```
 
-```
+```text
 root@s5pv210:~# wpa_passphrase <ESSID> <password>
 network={
       ssid="testing"
@@ -1160,7 +1160,7 @@ root@s5pv210:~# udhcpc -i wlan0
 
 ## Audio
 
-```
+```text
 root@s5pv210:~# arecord -l
 **** List of CAPTURE Hardware Devices ****
 card 0: Aries [Aries], device 0: HiFi wm8994-aif1-0 [HiFi wm8994-aif1-0]
@@ -1183,10 +1183,11 @@ sysdefault:CARD=Aries
     Default Audio Device
 ```
 
-```
+```text
 root@s5pv210:~# arecord -f S16_LE -d 10 -r 16000 --device="hw:0,0" /tmp/test-mic.wav
 Recording WAVE '/tmp/test-mic.wav' : Signed 16 bit Little Endian, Rate 16000 Hz, Mono
 ```
+
 ## Linkography
 
  - [Cyanogenmod wiki page](https://web.archive.org/web/20161224193352/https://wiki.cyanogenmod.org/w/Galaxysmtd_Info)

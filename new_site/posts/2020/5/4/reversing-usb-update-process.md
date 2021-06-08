@@ -48,7 +48,7 @@ https://www.iezvu.com/upgrade/ota_rx.php
 
 right now I don't remember how (probably I stumbled upon some json strings), but I found the right payload for a request
 
-```
+```text
 $ curl -X POST -H "Content-type: application/json; charset=utf-8" -i https://www.iezvu.com/upgrade/ota_rx.php -d'{
         "version":      1,
         "vendor":       "ezcast",
@@ -105,7 +105,7 @@ the one the uses the url described above).
 Maybe the address is indicated somewhere, or the code is not disassembled yet;
 using Ghidra you can look for direct reference using the menu ``Search > For Direct References``
 
-![]({{ site.baseurl }}/public/images/reversing-usb-update-process/menu-search-direct-references.png)
+![](/images/reversing-usb-update-process/menu-search-direct-references.png)
 
 and found that at ``0x004e02a4`` there is 4 bytes value corresponding at that address.
 
@@ -116,7 +116,7 @@ I suggest you one for ``dword``).
 
 Continuing to define as ``dword`` the values next to it you can see there is a pattern
 
-![]({{ site.baseurl }}/public/images/reversing-usb-update-process/message-map-raw.png)
+![](/images/reversing-usb-update-process/message-map-raw.png)
 
 As I said previously, it is all about recognizing patterns, **reversing patterns**, and
 in this case if you search for something related to reversing ``MFC`` you can find
@@ -141,7 +141,7 @@ describe "callback" from element of the GUi of the program represented by the MF
 
 At the end the layout in memory of a MFC class is the following
 
-```
+```text
 + CRuntimeClass      <------------------------------.
 + Message Map data   <----------------------------------------.
  + ptr to MFC42.DLL::<super class>::messageMap()     |        |
@@ -170,7 +170,7 @@ function referencing the vtable:
 
 All the destructors have a structure like
 
-```
+```c
 CDialog * __thiscall FUN_0040a4d0(void *this,byte param_1)
 
 {
@@ -185,7 +185,7 @@ CDialog * __thiscall FUN_0040a4d0(void *this,byte param_1)
 Some of these tables have as the first function something that ghidra doesn't recognize
 as a ``GetRuntimeClass()``:
 
-```
+```text
 					 **************************************************************
 					 *                          FUNCTION                          *
 					 **************************************************************
@@ -200,7 +200,7 @@ as a ``GetRuntimeClass()``:
 but in reality this is a custom object so the function returns the [CRuntimeStructure](https://docs.microsoft.com/en-us/cpp/mfc/reference/cobject-class?view=vs-2019#getruntimeclass)
 for that object:
 
-```
+```c
 char *  m_lpszClassName 
 dword   m_nObjectSize   
 dword * m_pBaseClass    
@@ -214,7 +214,7 @@ and find out the size of the class so to have an idea of how much space a class
 is going to occupy in memory (and in particular it's very useful for local variables
 in the stack).
 
-```
+```text
 					 PTR_s_CPage_ECDkey_004e0c90                     XREF[2]:     FUN_004192b0:004192b0(*), 
 																				  FUN_004192b0:004192b0(*)  
 004e0c90          f4 fc 55 00     addr       s_CPage_ECDkey_0055fcf4                          = "CPage_ECDkey"
@@ -255,7 +255,7 @@ The classes that are used in the application are
 | ``CDialogUpdateClass`` | |
 
 
-```
+```c
 explicit CDialog(
     UINT nIDTemplate,
     CWnd* pParentWnd = NULL);
@@ -278,7 +278,7 @@ after ``doModal()`` there is ``initDialog()``
 
 The general organization of the vtable is the following
 
-```
+```text
 GetRuntimeClass
 ???
 nullsub
@@ -356,7 +356,7 @@ Internally this application uses all the possible families of calling convention
 that I list here
 
 | Name | Arguments | Stack cleaning | Return value |
-|------|-------------|
+|------|-------------|---|----|
 | ``cdecl``   | passed on the stack in reverse order | by the caller | ``eax`` |
 | ``stdcall`` | passed on the stack in reverse order | callee | ``eax`` |
 | ``fastcall`` | passed via registers | by the caller | ``eax`` |
@@ -376,7 +376,7 @@ exists the function ``loadRsrc()`` that takes a parameter identifying the resour
 and set a particular field of the class to the resource: you can see that is possible
 to directly see what icon corresponds to what resource from ghidra
 
-![]({{ site.baseurl }}/public/images/reversing-usb-update-process/resources.png)
+![](/images/reversing-usb-update-process/resources.png)
 
 Strange that from the symbol tree pane I see the PNGs and them have the xref to the
 function but the call to ``loadRsrc()`` doesn't have the xref back (if not a ``= <PNG-Image>`` comment
@@ -385,7 +385,7 @@ in the listing window that doesn't jump to the resource).
 It's possible also to reconstruct some custom dialog using the resource
 id passed as argument to the constructor of ``CDialog()``
 
-![]({{ site.baseurl }}/public/images/reversing-usb-update-process/dialog.png)
+![](/images/reversing-usb-update-process/dialog.png)
 
 ## Internal state
 
@@ -531,7 +531,7 @@ A interesting part is the handling of the ``CHECKSUM`` section: if there isn't
 such section there is some code to decrypt, however if there is a section
 with that name then read some values and calculate the checksum
 
-```
+```text
 
 00000020 43 48 45 43 4b  char[16]  "CHECKSUM"              checksum
          53 55 4d 00 00 
@@ -544,7 +544,7 @@ with that name then read some values and calculate the checksum
 
 the function is at ``0x00407510``
 
-```
+```c
 int __cdecl checksum(void *buffer,uint size)
 
 {
@@ -579,7 +579,7 @@ int __cdecl checksum(void *buffer,uint size)
 
 After that check for the sections named ``LINUX`` and ``FIRM``, with the last one **mandatory**.
 
-```
+```text
 00000120        46 49 52 4d         section_t
                 00 00 00 00 
                 9a 0b f0 dc 
@@ -592,7 +592,7 @@ After that check for the sections named ``LINUX`` and ``FIRM``, with the last on
    0000013c df c6 16 00     ddw       16C6DFh                 unk1
 ```
 
-```
+```text
 00000160        72 6f 6f 74         section_t
                 66 73 00 00 
                 00 00 00 00 
@@ -618,7 +618,7 @@ After that check for the sections named ``LINUX`` and ``FIRM``, with the last on
 The ``LINUX`` parsing is done at ``0x00417ae0`` and it's the more puzzling piece
 because some values don't make sense: this is an example
 
-```
+```text
 00000140        4c 49 4e 55         section_t
                 58 00 00 00 
                 00 00 00 00 
@@ -649,7 +649,7 @@ At this point the smart reader could ask about the other sections, like ``ADECad
 
 This is particular function that I encountered during my trip in the assembly land
 
-```
+```text
         004dbf50   0    51                  PUSH                         ECX             <-- it's going to use ECX
         004dbf51 004    3d 00 10 00 00      CMP                          EAX,0x1000      <-- EAX must be passed as argument
         004dbf56 004    8d 4c 24 08         LEA                          ECX,[ESP + 0x8] <-- ECX = addr of 1st arg
@@ -696,7 +696,7 @@ It's the first time I recognize the format following the [specification](https:/
 ## AWK
 
 Function at ``0x004111d0`` does some magic with ``awk`` to parse
-```
+```text
 %s -v BS=\ "{if($NF==BS){$NF=NULL;line=line $0;}else{print line $0;line=NULL;}}" %s |%s -F# -v SP=" " "$1{gsub(/\t/,SP,$1);gsub(/rd_size=__FIX_ME_ON_PACK__/,\"rd_size=0x%08x\",$1);print $1}" > %s
 ```
 
@@ -712,7 +712,7 @@ The mechanism that the application uses to update the firmware is by a custom
 the core of it is the **Command Block Wrapper** (``CBW``) a packet of 31 bytes (yeah, 31) having the
 following organization:
 
-```
+```text
   .----.----.----.----.
   | U    S    B    C  |
   |----|----|----|----|
@@ -757,7 +757,7 @@ struct CBW_t {
 
 The typical code is the following
 
-```
+```c
   CBW_t localCBW;
 
   /* first it copies the 31 bytes of the pre-filled packet */

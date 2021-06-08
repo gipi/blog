@@ -221,10 +221,10 @@ It's sufficient to explicitly write \\(\PrivK{eav}{A, \Pi}(n)\\) as \\(\hbox{out
 
 $$
 \eqalign{
-    \Pr{\PrivK{eav}{A, \Pi}(n) = 1} &= {1\over2}\left\{\Pr{\outA{0}{0}} + \Pr{\outA{1}{1}}\right\} \cr
-    &= {1\over2}\left\{1 - \Pr{\outA{0}{1}} + \Pr{\outA{1}{1}}\right\} \cr
-    &= {1\over2} - {1\over2}\left\{\Pr{\outA{0}{1}} - \Pr{\outA{1}{1}}\right\} \cr
-\Pr{\PrivK{eav}{A, \Pi}(n) = 1} - {1\over2} &=  {1\over2}\left\{\Pr{\outA{0}{1}} - \Pr{\outA{1}{1}}\right\} \cr
+    \Pr{\PrivK{eav}{A, \Pi}(n) = 1} &= {1\over2}\left\\{\Pr{\outA{0}{0}} + \Pr{\outA{1}{1}}\right\\} \cr
+    &= {1\over2}\left\\{1 - \Pr{\outA{0}{1}} + \Pr{\outA{1}{1}}\right\\} \cr
+    &= {1\over2} - {1\over2}\left\\{\Pr{\outA{0}{1}} - \Pr{\outA{1}{1}}\right\\} \cr
+\Pr{\PrivK{eav}{A, \Pi}(n) = 1} - {1\over2} &=  {1\over2}\left\\{\Pr{\outA{0}{1}} - \Pr{\outA{1}{1}}\right\\} \cr
 \left\|\Pr{\PrivK{eav}{A, \Pi}(n) = 1} - {1\over2}\right\| &=  {1\over2}\left\|\Pr{\outA{0}{1}} - \Pr{\outA{1}{1}}\right\| \cr
 }
 $$
@@ -269,8 +269,8 @@ is necessarily a pseudorandom generator. If yes, give a proof; if not, show a co
 Let's first of all calculate the expansion factor:
 
  - (a) there are two cases
-   - \\(n\\) even: \\(l^\prime(n) = l^\prime(\|s\|) = l(\lceil\|s\|/2\rceil) > 2\lceil\|s\|/2\rceil = 2\lceil 2k/2\rceil = 2\lceil k\rceil = 2k = n\\)
-   - \\(n\\) odd: \\(l^\prime(n) = l^\prime(\|s\|) = l(\lceil\|s\|/2\rceil) > 2\lceil\|s\|/2\rceil = 2\lceil {2k + 1\over2}\rceil = 2\lceil k + {1\over 2}\rceil = 2(k + 1) = (2k + 1) + 1 = n + 1\\)
+    - \\(n\\) even: \\(l^\prime(n) = l^\prime(\|s\|) = l(\lceil\|s\|/2\rceil) > 2\lceil\|s\|/2\rceil = 2\lceil 2k/2\rceil = 2\lceil k\rceil = 2k = n\\)
+    - \\(n\\) odd: \\(l^\prime(n) = l^\prime(\|s\|) = l(\lceil\|s\|/2\rceil) > 2\lceil\|s\|/2\rceil = 2\lceil {2k + 1\over2}\rceil = 2\lceil k + {1\over 2}\rceil = 2(k + 1) = (2k + 1) + 1 = n + 1\\)
  - (b) \\(l^\prime(n) = l^\prime(\|s\|) = l(2\|s\|) > 4\|s\| = 4n\\)
  - (c) \\(l^\prime(n) = l^\prime(\|s\|) = l(\|s\|) + l(\|s\|) = 2 l(\|s\|) > 4\|s\| = 4n\\)
 

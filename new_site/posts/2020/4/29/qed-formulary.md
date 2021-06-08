@@ -7,6 +7,7 @@
 .. link: 
 .. description: 
 .. type: text
+.. has_math: true
 -->
 
 
@@ -101,7 +102,7 @@ $$
 
 $$
 \eqalign{
-\Pi_{\mu\nu} &= e^2\int d^nq{1\over \left(q^2 + m^2\right)\left(\left(q+p\right)^2 + m^2\right)}\Tr\left\{\gamma^\mu\left(-i\slashme{q} + m\right)\gamma^\nu\left(-i\left(\slashme{p} + \slashme{q}\right) + m\right)\right\} \cr
+\Pi_{\mu\nu} &= e^2\int d^nq{1\over \left(q^2 + m^2\right)\left(\left(q+p\right)^2 + m^2\right)}\Tr\left\\{\gamma^\mu\left(-i\slashme{q} + m\right)\gamma^\nu\left(-i\left(\slashme{p} + \slashme{q}\right) + m\right)\right\\} \cr
 &= -i8\pi^2e^2 \int^1_0dx\,J_0\left(p^2\delta_{\mu\nu} - p_\mu p_\nu\right) x(1 - x)\cr
 &\sim -i8\pi^2e^2 \int_0^1 dx\,\left(\Delta - \ln \mu^2\right) x\left(1 - x\right)\left(p^2 \delta_\mu\nu - p_\mu p_\nu\right) \cr
 }
@@ -113,7 +114,7 @@ From an analysis using the propagators of photons and fermions and the vertex we
 global degree of divergence of a diagram is given by
 
 $$
-D(G) = 4 - {3\over2}E_e - E_\gamma\quad\left\{\eqalign{
+D(G) = 4 - {3\over2}E_e - E_\gamma\quad\left\\{\eqalign{
     &D(G) < 0\quad\hbox{converges} \cr
     &D(G) \ge0\quad\hbox{diverges} \cr
 }\right.

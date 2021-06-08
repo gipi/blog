@@ -74,7 +74,7 @@ algorithm \\(Gen\\) choose a key uniformly at random from the key space, without
 
 The encryption scheme can be described using the following diagram:
 
-![]({{ site.baseurl }}/public/images/redefining-key-space-as-random.png)
+![](/images/redefining-key-space-as-random.png)
 
 where the \\(\hbox{Gen}\\) algorithm creates a key using a random tape \\(r\\) from the
 space \\(R\\). Redefining
@@ -98,8 +98,8 @@ $$
 \hbox{Pr}\left[ C = c \,|\, M = m\right] &= \hbox{Pr}\left[\hbox{Enc}_K(m) = c\right] \cr
   &= \sum_k\hbox{Pr}\left[\hbox{Enc}_K(m) \,|\, K = k \right]\cdot\hbox{Pr}\left[K = k\right] \cr
   &= \sum_k\hbox{Pr}\left[\hbox{Enc}_K(m) \,|\, K = k \right]\cdot\sum_r\hbox{Pr}\left[\hbox{Gen}(R) = k\,|\,R = r\right]\cdot\hbox{Pr}\left[R = r\right] \cr
-  &= \sum_{k, r}\hbox{Pr}\left[\hbox{Enc}_K(m) \,|\, K = k \right]\cdot\hbox{Pr}\left[\hbox{Gen}(R) = k\,|\,R = r\right]\cdot\hbox{Pr}\left[R = r\right] \cr
-  &= \sum_{k, r}\hbox{Pr}\left[\hbox{Enc}_K(m) \,|\, K = k \right]\cdot\hbox{Pr}\left[K = k\,|\,R = r\right]\cdot\hbox{Pr}\left[R = r\right] \cr
+  &= \sum\_{k, r}\hbox{Pr}\left[\hbox{Enc}_K(m) \,|\, K = k \right]\cdot\hbox{Pr}\left[\hbox{Gen}(R) = k\,|\,R = r\right]\cdot\hbox{Pr}\left[R = r\right] \cr
+  &= \sum\_{k, r}\hbox{Pr}\left[\hbox{Enc}_K(m) \,|\, K = k \right]\cdot\hbox{Pr}\left[K = k\,|\,R = r\right]\cdot\hbox{Pr}\left[R = r\right] \cr
   &= \sum_r\hbox{Pr}\left[\hbox{Enc}^\prime_R(m) \,|\, R = r \right]\cdot\hbox{Pr}\left[R = r\right] \cr
   &= \hbox{Pr}\left[\hbox{Enc}^\prime_R(m) = m \right] \cr
   &= \hbox{Pr}^\prime\left[ C = c \,|\, M = m\right] \cr
@@ -117,7 +117,7 @@ deterministic without changing
 
 \\(\hbox{Enc}\\) can become deterministic using the random tape as a component of the key;
 
-![]({{ site.baseurl }}/public/images/redefining-key-space-with-enc-deterministic.png)
+![](/images/redefining-key-space-with-enc-deterministic.png)
 
 $$
 \eqalign{
@@ -204,10 +204,10 @@ $$
 $$
 \eqalign{
 \hbox{Pr}\left[\hbox{Priv} = 1\right] &= \hbox{Pr}\left[\hbox{Priv} = 1\,|\,b = 0\right]\cdot\hbox{Pr}\left[b = 0\right] + \hbox{Pr}\left[\hbox{Priv} = 1 \,|\, b = 1\right]\cdot\hbox{Pr}\left[b = 1\right] \cr
-  &= {1\over2}\left\{\hbox{Pr}\left[\hbox{A outputs 0}\,|\,b = 0\right] + \hbox{Pr}\left[\hbox{A output 1}\,|\,b = 1\right]\right\} \cr
-  &= {1\over2}\left\{\hbox{Pr}\left[M = m_0\,|\,C = c, b = 0\right] + \hbox{Pr}\left[M = m_1\,|\,C = c, b = 1\right]\right\} \cr
-  &= {1\over2}\left\{\hbox{Pr}\left[M = m_0\,|\,C = c, b = 0\right] + \hbox{Pr}\left[M = m_1\,|\,C = c, b = 1\right]\right\} \cr
-  &= {1\over2}\left\{\hbox{Pr}\left[M = m_0\right] + \hbox{Pr}\left[M = m_1\right]\right\} \cr
+  &= {1\over2}\left\\{\hbox{Pr}\left[\hbox{A outputs 0}\,|\,b = 0\right] + \hbox{Pr}\left[\hbox{A output 1}\,|\,b = 1\right]\right\\} \cr
+  &= {1\over2}\left\\{\hbox{Pr}\left[M = m_0\,|\,C = c, b = 0\right] + \hbox{Pr}\left[M = m_1\,|\,C = c, b = 1\right]\right\\} \cr
+  &= {1\over2}\left\\{\hbox{Pr}\left[M = m_0\,|\,C = c, b = 0\right] + \hbox{Pr}\left[M = m_1\,|\,C = c, b = 1\right]\right\\} \cr
+  &= {1\over2}\left\\{\hbox{Pr}\left[M = m_0\right] + \hbox{Pr}\left[M = m_1\right]\right\\} \cr
   &= {1\over2}
 }
 $$
@@ -286,12 +286,16 @@ $$
 \eqalign{
 \hbox{Pr}\left[\hbox{PrivK}^\hbox{eav}_{A, \Pi} = 1\right] &= \hbox{Pr}\left[A\, \hbox{outputs} \, 0 \,|\, b=0 \right]\hbox{Pr}\left[b=0\right] + \hbox{Pr}\left[A \,\hbox{outputs} \, 1 \,|\, b=1 \right]\hbox{Pr}\left[b=1\right] \cr
 &= {1\over2}\hbox{Pr}\left[\hbox{Enc}(aab) = xxy\right] + {1\over2}\hbox{Pr}\left[\hbox{Enc}(abb) = xyz\right] \cr
-&= {1\over6}\sum_{\hbox{key lengths}}\bigl(\hbox{Pr}\left[\hbox{Enc}_k(aab) = xxy\right] + \hbox{Pr}\left[\hbox{Enc}_k(abb) = xyz\right]\bigr) \cr
+&= {1\over6}\sum\_{ \hbox{key lengths} }\bigl(\hbox{Pr}\left[\hbox{Enc}_k(aab) = xxy\right] + \hbox{Pr}\left[\hbox{Enc}_k(abb) = xyz\right]\bigr) \cr
 &= {1\over6}\bigl(\hbox{Pr}\left[k=\alpha\right] + \hbox{Pr}\left[k=\alpha\alpha\right] + \hbox{Pr}\left[k=\alpha\alpha\beta\right] \cr
 &\phantom{=} + \hbox{Pr}\left[k=\alpha\right] + \hbox{Pr}\left[k=\alpha\alpha\right] + \hbox{Pr}\left[k=\alpha\alpha\beta\right]\bigr) \cr
 &= {1\over6}\bigl(1 + {1\over N} + {1\over N} + 1 + {N - 1\over N} + {N - 1\over N}\bigr) \cr
 &= {2\over 3} \cr
 }
+$$
+
+$$
+{1\over6}\sum_{\hbox{key lengths}}\bigl(\hbox{Pr}\left[\hbox{Enc}_k(aab) = xxy\right] + \hbox{Pr}\left[\hbox{Enc}_k(abb) = xyz\right]\bigr)
 $$
 
 Note that the case \\(\hbox{Pr}\left[\hbox{Enc}(abb) = xyz\right]\\) for situation with key length greater than one is **very likely**: indeed

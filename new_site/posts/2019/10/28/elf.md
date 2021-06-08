@@ -19,6 +19,8 @@ the Windows OS uses the PE format. It's reasonable to say that each platform has
 and it's the main reason of compatibility issue in running binaries between different
 operating systems.
 
+<!-- TEASER_END -->
+
 The actual specification for ``ELF`` is [here](https://refspecs.linuxbase.org/elf/elf.pdf)
 but [each specific architecture has its own addendum to it](https://refspecs.linuxbase.org/elf/)
 (I hope will be more clear later). Probably they are not the most updated one

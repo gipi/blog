@@ -7,6 +7,7 @@
 .. link: 
 .. description: 
 .. type: text
+.. has_math: true
 -->
 
 
@@ -16,6 +17,8 @@ tried anything fancy or dangerous, he had simply used the internal
 functionality of the device. At that point in time the device
 was stuck in a bootloop with the Samsung logo as the only output
 from the projector.
+
+<!-- TEASER_END -->
 
 I obviously accepted to take a look and in this way started a journey that
 lasted like five years where I learned a lot about hardware and software.
@@ -34,8 +37,8 @@ to discover.
 Opening the device is possible to unveil the internals: on top there is a PCB
 with ``SMD`` components on both the sides
 
-![]({{ site.baseurl }}/public/images/from-zero-to-hero/pcb-back.png)
-![]({{ site.baseurl }}/public/images/from-zero-to-hero/pcb-front.jpg)
+![](/images/from-zero-to-hero/pcb-back.png)
+![](/images/from-zero-to-hero/pcb-front.jpg)
 
 but no signs of a connector for the ``UART``: indeed my idea throughout
 the investigation will be to discover the serial port and find out
@@ -54,14 +57,15 @@ Another thing available to look at is the firmware update that you can download
 from the official site: ``P-OBRNPWWC-1008.1.rom``.
 
 With my incredible skills I discovered that is a simple ``tar`` archive
-```
+
+```text
 $ file Pico\ SP-H03/P-OBRNPWWC-1008.1.rom 
 Pico SP-H03/P-OBRNPWWC-1008.1.rom: POSIX tar archive (GNU)
 ```
 
 containing some files
 
-```
+```text
 $ tar -tf Pico\ SP-H03/P-OBRNPWWC-1008.1.rom
 ./
 ./wplayer
@@ -89,7 +93,7 @@ $ tar -tf Pico\ SP-H03/P-OBRNPWWC-1008.1.rom
 
 The most promising for further investigation are ``TCCKernel7.3.rom`` and ``TCCBoot4.2.rom``
 
-```
+```text
 $binwalk Pico\ SP-H03/P-OBRNPWWC-1008.1/TCCBoot4.2.rom 
 
 DECIMAL       HEXADECIMAL     DESCRIPTION
@@ -115,7 +119,7 @@ DECIMAL       HEXADECIMAL     DESCRIPTION
 
 looking at the strings inside you can have some clues
 
-```
+```text
 $ strings Pico\ SP-H03/P-OBRNPWWC-1008.1/TCCBoot4.2.rom | grep -i tele
 TELECHIPS01
 TELECHIPS02
@@ -165,7 +169,7 @@ containing the source code of such bootloader
 (it would not have been such hard to deduce the fields looking at them
 or via the code in the bootloader).
 
-![]({{ site.baseurl }}/public/images/from-zero-to-hero/tcboot-header.jpg)
+![](/images/from-zero-to-hero/tcboot-header.jpg)
 
 Looking at a few addresses called from the firmware was apparent that
 it loads at ``0x40000000``.
@@ -173,7 +177,7 @@ it loads at ``0x40000000``.
 Knowing that, and the address mapping from the datasheet, I set the following
 in ghidra
 
-![]({{ site.baseurl }}/public/images/from-zero-to-hero/ghidra-memory-mapping.jpg)
+![](/images/from-zero-to-hero/ghidra-memory-mapping.jpg)
 
 that are not perfect but good enough to allow a decent reversing; part of the mapping
 reported in the datasheet is the following
@@ -201,11 +205,11 @@ moreover the peripherals memory space is partitioned like the following
 It's amazing how with ghidra is possible to describe the registers that control for example
 the ``UART`` subsystem with a ``struct``
 
-![]({{ site.baseurl }}/public/images/from-zero-to-hero/uart-struct.jpg)
+![](/images/from-zero-to-hero/uart-struct.jpg)
 
 and obtain a perfectly readable decompiled code 
 
-![]({{ site.baseurl }}/public/images/from-zero-to-hero/uart-cfg.jpg)
+![](/images/from-zero-to-hero/uart-cfg.jpg)
 
 ## FWDN
 
@@ -238,11 +242,11 @@ that to enter in this mode you have to press a button (that is not soldered in m
 when you start the device (since the device has a touch surface with the power
 button on a side is a little tricky to press both at the same time)
 
-![]({{ site.baseurl }}/public/images/from-zero-to-hero/usb-mode.jpg)
+![](/images/from-zero-to-hero/usb-mode.jpg)
 
 Another approach is to short the ``CE`` pin of the NAND. What you see is a new ``USB`` device
 
-```
+```text
 turing kernel: usb 2-2: new high-speed USB device number 3 using xhci_hcd
 turing kernel: usb 2-2: config 1 interface 0 altsetting 0 bulk endpoint 0x82 has invalid maxpacket 64
 turing kernel: usb 2-2: config 1 interface 0 altsetting 0 bulk endpoint 0x1 has invalid maxpacket 64
@@ -256,12 +260,203 @@ modifications, I was able to execute code in the board and I started to write a 
 of assembler code to toggle all the ``GPIO`` pins in order to find out where the serial
 was located on the board. There are 6 banks of ``GPIO`` with up to 32 pins each
 and to discover which ``GPIO`` corresponds to a given pin I driven it with a ``PWM`` signal
-having \\(\hbox{bank} \<\< 5\, |\, \hbox{id} \\) cycles
+having \\(\hbox{bank} << 5\, |\, \hbox{id} \\) cycles.
 
-{% github_sample_ref gipi/teardown/blob/master/Pico%20SP-H03/tccvirus.s %}
-.. code:: asm
+This below is the [code](https://github.com/gipi/teardown/blob/master/Pico%20SP-H03/tccvirus.s)
 
-    {% github_sample gipi/teardown/blob/master/Pico%20SP-H03/tccvirus.s %}
+```asm
+; https://stackoverflow.com/questions/6139952/what-is-the-booting-process-for-arm
+	.text
+	.align	2
+	.syntax unified
+	.arm
+	.fpu softvfp
+	.type	__entry, %function
+	.type	enable_watchdog, %function
+	.type	gpio_identification, %function
+	.type	gpio_signal, %function
+	.type	watchdog_clear, %function
+	.type	_delay, %function
+/*
+ * Since we have not stack available for now (no hard constraint, we are only lazy)
+ * we call routines and use r10, r11 and r12 as temporary registers to save lr.
+ *
+ * KEEP IN MIND THE LEVEL OF NESTING A FUNCTION IS CALLED!
+ */
+__entry:
+	bl enable_watchdog
+gpio:
+	bl gpio_identification @ uses r10
+	bl watchdog_clear
+	b gpio
+
+.set  EN, (1<<0)
+.set IEN, (1<<3)
+.set TCKSEL, (1<<4)
+.set WATCHDOG_EN, (1<<31)
+.set WATCHDOG_CLR, (1<<30)
+
+enable_watchdog:
+	mov	r10, lr
+	ldr	r3, .TWDCFG
+	ldrb	r4, [r3]
+	orr	r4, r4, #(EN | IEN)
+	strb	r4, [r3]
+	ldrb	r4, [r3]
+	bic	r4, r4, 0x30 @ clear the TCKSEL
+	orr	r4, r4, 0x40 @ set the TCKSEL to 0x04
+	strb	r4, [r3]
+	ldr	r3, .TWDCLR_ADDR
+	mov r4, #0x00000000
+	str	r4, [r3]
+	ldr	r3, .WATCHDOG_ADDR
+	ldr	r4, [r3]
+	orr	r4, r4, #WATCHDOG_EN
+	str	r4, [r3]
+	mov	lr, r10
+	mov pc, lr
+
+watchdog_clear:
+	mov	r12, lr
+	ldr	r0, .WATCHDOG_ADDR
+	ldr	r1, [r0]
+	orr	r1, r1, #WATCHDOG_CLR
+	str	r1, [r0]
+	mov lr, r12
+	mov pc, lr
+
+.CONTROL_ADDR:
+	.word	0xf0404000
+.TWDCFG:
+	.word	0xf0403070
+.TWDCLR_ADDR:
+	.word	0xf0403074
+.WATCHDOG_ADDR:
+	.word	0xf040400c
+
+.set CONTROL_POFF, (1<<1)
+
+power_off:
+	ldr	r3, .CONTROL_ADDR
+	ldr	r4, [r3]
+	orr	r4, r4, #CONTROL_POFF
+	str	r4, [r3]
+/*
+ * This function outputs via the GPIO, passed as the couple (group, idx)
+ * its encoded identifier as a 32 bit number.
+ *
+ *  r8: group in [0, 5]
+ *  r9: idx in [0, 31]
+ *
+ * so we need a number of bits to encode 6*32 = 192 values, i.e. 8bit are enough,
+ * but we can use all 32-bit so that we have a start/stop pattern clearly
+ * identifiable.
+ *
+ */
+.set GPIO_GROUP_OFFSET,  0x40
+.set GPIO_GPxDAT_OFFSET, 0x00
+.set GPIO_GPxEN_OFFSET,  0x04
+.set GPIO_GPxCLR_OFFSET, 0x0c
+.set GPIO_GPxXOR_OFFSET, 0x10
+.set GPIO_GPxPD0_OFFSET, 0x1c
+.set GPIO_GPxPD1_OFFSET, 0x20
+.set GPIO_GPxFN0_OFFSET, 0x24
+.set GPIO_GPxFN1_OFFSET, 0x28
+.set GPIO_GPxFN2_OFFSET, 0x2c
+.set GPIO_GPxFN3_OFFSET, 0x30
+gpio_signal:
+	mov	r11, lr                     @ save the return pointer
+	/* initialize the GPIO requested in OUTPUT mode */
+	ldr	r3, .GPIO_REGISTER_MAP_ADDR
+	mov r7, #GPIO_GROUP_OFFSET
+	mul	r4, r8, r7
+	add	r5, r3, r4                 @ r5 points at the start of the right GPIO group address
+	add	r6, r5, #GPIO_GPxEN_OFFSET @ r6 points to the direction control
+	mov	r7, #1
+	lsl	r7, r9                     @ r7 contains the pattern for the right GPIO to be activated
+	str	r7, [r6]                   @ set OUTPUT MODE
+	/* set pull-down */
+	add	r6, r5, #GPIO_GPxPD0_OFFSET
+	ldr	r3, .GPIO_PULL_DOWN
+	str	r3, [r6]
+	add	r6, r5, #GPIO_GPxPD1_OFFSET
+	ldr	r3, .GPIO_PULL_DOWN
+	str	r3, [r6]
+	/* and set function mode to 0 */
+	add	r6, r5, #GPIO_GPxFN0_OFFSET
+	mov	r3, #0
+	str	r3, [r6]
+	add	r6, r5, #GPIO_GPxFN1_OFFSET
+	mov	r3, #0
+	str	r3, [r6]
+	add	r6, r5, #GPIO_GPxFN2_OFFSET
+	mov	r3, #0
+	str	r3, [r6]
+	add	r6, r5, #GPIO_GPxFN3_OFFSET
+	mov	r3, #0
+	str	r3, [r6]
+
+	/* from now on, we need to loop over the encoding */
+	orr	r4, r9, r8, LSL #5         @ r4 contains the number of cycles to toggle the GPIO
+	mov	r3, #0                     @ this will be our counter
+	add	r6, r5, #GPIO_GPxXOR_OFFSET @ r6 points at the GPxXOR register
+_loop_over_encoding:
+	str	r7, [r6]                   @ we toggle the corresponding register
+	ldr	r0, .DELAY_VALUE
+	bl _delay
+	str	r7, [r6]                   @ twice so to have a square wave
+	bl _delay
+	cmp	r3, r4
+	add	r3, r3, #1
+	bne	_loop_over_encoding
+
+	/* now set to zero the GPIO */
+	add	r6, r5, #GPIO_GPxCLR_OFFSET
+	str	r7, [r6]
+
+	/* return at home */
+	mov	lr, r11
+	mov pc, lr
+.DELAY_VALUE:
+	.word	0xf
+.GPIO_REGISTER_MAP_ADDR:
+	.word	0xf0102000
+.GPIO_PULL_DOWN:
+	.word	0xaaaaaaaa
+.set GPIO_GROUPS_N, 0x06
+.set GPIO_IDX_N,    0x20
+
+gpio_identification:
+	mov	r10, lr
+
+	mov	r8, #0
+_loop_group:
+	mov	r9, #0
+_loop_idx:
+	bl	gpio_signal
+	add	r9, r9, #1
+	cmp	r9, #GPIO_IDX_N
+	bne	_loop_idx
+	add	r8, r8, #1
+	cmp	r8, #GPIO_GROUPS_N
+	bne _loop_group
+
+	mov lr, r10
+	mov pc, lr
+
+/* takes r0 as number of loop to wait
+ * internally uses r1 and r2
+ */
+_delay:
+	mov	r2, lr
+	mov	r1, #0x00
+_loop_delay:
+	cmp	r1, r0
+	add	r1, r1, #1
+	bne	_loop_delay
+	mov	lr, r2
+	mov	pc, lr
+```
 
 I also wrote a program to help me debug the code I was using (I would call it
 emulator but it simply allocates the memory where to execute the firmware at
@@ -270,21 +465,99 @@ Travis Goodspeed with the [MD380](https://github.com/travisgoodspeed/md380tools/
 Obviously you need ``qemu`` to emulate the correct ``ARM`` architecture in
 a desktop.
 
-{% github_sample_ref gipi/teardown/blob/master/Pico%20SP-H03/tcc-emu.c %}
-.. code:: python
+This is the [code](https://github.com/gipi/teardown/blob/master/Pico%20SP-H03/tcc-emu.c):
 
-    {% github_sample gipi/teardown/blob/master/Pico%20SP-H03/tcc-emu.c %}
+```c
+/*
+ * Loads and executes code wannabe running on a TCC8900 chips allocating
+ * memory to emulate peripherals' memory.
+ *
+ * You can use this with Qemu.
+ *
+ *  $ export QEMU_LD_PREFIX=/usr/arm-linux-gnueabi
+ *  $ qemu-arm -cpu arm1176 -g 4444 tcc-emu tccvirus.bin
+ *
+ * and from another terminal
+ *
+ *  $ gdb-multiarch tccvirus
+ *
+ * Magically all the symbols will be visible from GDB!
+ */
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+
+#define GPIO_MEMORY_ADDR 0xf0100000
+#define GPIO_SIZE 0x400000
+
+#define FIRMWARE_MEMORY_ADDR 0x00001000
+
+
+void usage(const char progname[]) {
+    fprintf(stderr, "usage: %s <firmware.bin>\n", progname);
+    exit(1);
+}
+
+
+int main(int argc, char* argv[]) {
+
+    if (argc < 2) {
+        usage(argv[0]);
+    }
+
+    char* filepath = argv[1];
+
+    struct stat file_info;
+    int retVal = stat(filepath, &file_info);
+
+    if (retVal == -1) {
+        perror("I could not stat file");
+        goto fatal;
+    }
+
+    void * gpio = mmap((void*)GPIO_MEMORY_ADDR, GPIO_SIZE, PROT_READ | PROT_WRITE , MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+    if (gpio == MAP_FAILED) {
+        perror("allocate gpio failed");
+        goto fatal;
+    }
+
+    int fw_fd = open(filepath, O_RDONLY);
+    if (fw_fd == -1) {
+        perror("I could not open file");
+        goto fatal;
+    }
+
+    void* (*firmware)();
+
+    firmware = mmap((void*)FIRMWARE_MEMORY_ADDR, file_info.st_size, PROT_READ | PROT_EXEC , MAP_FIXED | MAP_PRIVATE, fw_fd, 0);
+
+    if (gpio == MAP_FAILED) {
+        perror("allocate firmware failed");
+        goto fatal;
+    }
+
+    fprintf(stderr, "-- Executing firmware at address 0x%08x--\n", FIRMWARE_MEMORY_ADDR);
+    firmware();
+fatal:
+
+    return 0;
+}
+```
 
 After a couple of bug fixed I was able to look for the GPIOs: I used
 my oscilloscope to touch each pin exposed on the PCB and finally
 I find out the pinout of the ``UART``
 interface: it's located in the connector ``CN1101`` with pin 6, 7, 8 as indicated in picture
 
-![]({{ site.baseurl }}/public/images/from-zero-to-hero/uart.jpg)
+![](/images/from-zero-to-hero/uart.jpg)
 
 Connecting to it with a baud of 115200 I was greeted with the following bootlog
 
-```
+```text
 LED Driver init.
 TSADC init.
 MAX8903A: DC Input.

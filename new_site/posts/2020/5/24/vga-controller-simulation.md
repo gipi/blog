@@ -267,7 +267,7 @@ in your ``C++`` code in order to be able to generate traces.
 The program when launched generates ``ring_counter_trace.vcd`` that can be
 opened into ``gtkwave`` in order to see the signals and their temporal evolution
 
-![]({{ site.baseurl }}/public/images/vga-simulation/ring_counter_trace.png)
+![](/images/vga-simulation/ring_counter_trace.png)
 
 ## eval
 
@@ -427,7 +427,7 @@ resolution ``640x480`` becames ``800x550``.
 
 It dumps a couple of frames and then exits; here an example:
 
-![]({{ site.baseurl }}/public/images/vga-simulation/frame-00000005.png)
+![](/images/vga-simulation/frame-00000005.png)
 
 So in theory you could develop your design without going back and forth
 with your FPGA, but take in mind that I'm a n00b in this field so maybe
