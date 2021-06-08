@@ -20,11 +20,11 @@ BLOG_AUTHOR = {"name": "Gianluca Pacchiella", "url": "https://ktln2.org"}  # (tr
 BLOG_TITLE = "Gianluca Pacchiella"  # (translatable)
 # This is the main URL for your site. It will be used
 # in a prominent link. Don't forget the protocol (http/https)!
-SITE_URL = "https://ktln2.org"
+SITE_URL = "https://ktln2.org/"
 # This is the URL where Nikola's output will be deployed.
 # If not set, defaults to SITE_URL
 # BASE_URL = "https://ktln2.org"
-BLOG_EMAIL = ""
+BLOG_EMAIL = "gp@ktln2.org"
 BLOG_DESCRIPTION = "Notes and experiments. Don't expect much quality :P"  # (translatable)
 
 # Nikola is multilingual!
@@ -144,9 +144,9 @@ NAVIGATION_LINKS = {
         ('/archive.html', 'Archives', 'fa fa-folder-open'),
         ('/categories/index.html', 'Tags', 'fa fa-tags'),
         ('/rss.xml', 'RSS', 'fa fa-rss'),
-        ('https://getnikola.com', 'About me', 'fa fa-user'),
-        ('https://twitter.com/getnikola', 'My Twitter', 'fab fa-twitter'),
-        ('https://github.com/getnikola', 'My Github', 'fab fa-github'),
+        ('/pages/about/', 'About me', 'fa fa-user'),
+        ('https://twitter.com/_gipi_', 'My Twitter', 'fab fa-twitter'),
+        ('https://github.com/gipi', 'My Github', 'fab fa-github'),
     )
 }
 
@@ -240,7 +240,7 @@ THEME_CONFIG = {
 #     )
 
 POSTS = (
-            ("posts/*.md", "blog", "post.tmpl"),
+            ("posts/*.md", "", "post.tmpl"),
             ("posts/*.rst", "blog", "post.tmpl"),
             ("posts/*.txt", "blog", "post.tmpl"),
             ("posts/*.html", "blog", "post.tmpl"),
@@ -272,7 +272,7 @@ TIMEZONE = "UTC"
 # Date format used to display post dates. (translatable)
 # Used by babel.dates, CLDR style: http://cldr.unicode.org/translation/date-time-1/date-time
 # You can also use 'full', 'long', 'medium', or 'short'
-# DATE_FORMAT = 'yyyy-MM-dd HH:mm'
+DATE_FORMAT = 'yyyy-MM-dd'
 
 # Date format used to display post dates, if local dates are used. (translatable)
 # Used by Luxon: https://moment.github.io/luxon/docs/manual/formatting
@@ -368,7 +368,7 @@ COMPILERS = {
 # Nikola supports logo display.  If you have one, you can put the URL here.
 # Final output is <img src="LOGO_URL" id="logo" alt="BLOG_TITLE">.
 # The URL may be relative to the site root.
-# LOGO_URL = ''
+LOGO_URL = '/images/avatar.png'
 
 # When linking posts to social media, Nikola provides Open Graph metadata
 # which is used to show a nice preview. This includes an image preview
@@ -1024,7 +1024,7 @@ COMMENT_SYSTEM = "disqus"
 # depends on what comment system you use. The default is
 # "nikolademo" which is a test account for Disqus. More information
 # is in the manual.
-COMMENT_SYSTEM_ID = "nikolademo"
+COMMENT_SYSTEM_ID = "ktln2"
 
 # Create index.html for page folders?
 # WARNING: if a page would conflict with the index file (usually
@@ -1062,14 +1062,14 @@ PRETTY_URLS = True
 
 # If True, publish future dated posts right away instead of scheduling them.
 # Defaults to False.
-# FUTURE_IS_NOW = False
+# FUTURE_IS_NOW = True
 
 # If True, future dated posts are allowed in deployed output
 # Only the individual posts are published/deployed; not in indexes/sitemap
 # Generally, you want FUTURE_IS_NOW and DEPLOY_FUTURE to be the same value.
 # DEPLOY_FUTURE = False
 # If False, draft posts will not be deployed
-# DEPLOY_DRAFTS = True
+# DEPLOY_DRAFTS = False
 
 # Allows scheduling of posts using the rule specified here (new_post -s)
 # Specify an iCal Recurrence Rule: https://www.kanzaki.com/docs/ical/rrule.html
