@@ -1,9 +1,14 @@
----
-layout: post
-comments: true
-title: "How Linux handle memory"
-tags: [WIP, low level, linux, mmu]
----
+<!--
+.. title: How Linux handle memory
+.. slug: linux-mmu
+.. date: 2021-06-01 00:00:00
+.. tags: WIP, low level, linux, mmu
+.. status: draft
+.. category: 
+.. link: 
+.. description: 
+.. type: text
+-->
 
  - https://blog.twitter.com/engineering/en_us/topics/open-source/2021/dropping-cache-didnt-drop-cache.html
  - https://drgn.readthedocs.io/
@@ -12,6 +17,8 @@ A very important aspect in an operating system is the way the memory is handled,
 both as a developer, security researcher; it's important to understand how the
 system manages to provide memory from the software point of view (kernel-space
 and user-space) but also from the hardware point of view.
+
+<!-- TEASER_END -->
 
 ## Hardware
 
