@@ -1010,6 +1010,19 @@ article.post-text .metadata h3 {
   padding: 0;
   line-height: initial;
 }
+
+article.post-text table {
+    margin: 20px auto 20px auto;
+    border-collapse: collapse;
+}
+article.post-text table th {
+    font-weight: bold;
+}
+
+article.post-text table tr {
+    border-bottom: thin solid black;
+}
+
 article.post-text .metadata .tags {
   clear: both;
   display: block;
