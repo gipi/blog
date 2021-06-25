@@ -29,12 +29,21 @@ and pitch of 1.0mm.
 ## Matrix recovery
 
 The underlying working of a keyboard is described by a matrix of nodes
-corresponding to each key; a set of signals act as inputs and the remaining as
-outputs: when a key is pressed the corresponding couple of input/output lines
-are connected allowing to detect it. In order to work the hardware needs to act
-upon the inputs one at the times.
+corresponding to each key; a set of signals act as inputs (for convention I identify them
+as the rows of the matix) and the remaining as outputs (columns):
+when a key is pressed the corresponding couple of input/output lines (row/column)
+are connected allowing to detect the event. 
 
-In order to do that I'm using the [following program](https://github.com/gipi/electronics-notes/blob/master/AVR/KeyboardMatrixRecovery/KeyboardMatrixRecovery.ino), in this case I'm using the
+The algorithm used to implement in hardware the mechanism just described
+is to start with all the input lines with the same logic level and then change
+only one input signal at the time, with the remaining unaltered. Each time the
+output lines are checked for changes and recorded. When all the input signals
+have been acted upon the algorithm use the row/column couple to understand the
+key pressed and translates that in keyboard scancodes to send via ``USB``.
+
+The first step to reuse the keyboard is to recostruct the internal matrix using
+the algorithm described above: in order to do that I'm using the
+[following program](https://github.com/gipi/electronics-notes/blob/master/AVR/KeyboardMatrixRecovery/KeyboardMatrixRecovery.ino), in this case I'm using the
 Arduino Mega because of the big number of available pins: I'm using a
 breakout board as adapter to connect the FPC cable to the pins 22-51 of the
 Arduino·
@@ -154,10 +163,9 @@ void loop() {
 From pressing any key in order, I obtain the following array contaning all the
 couple of pins that each key triggers (reworked to be used directly in python)
 
-[tuple(sorted(_)) for _ in keys]
-[line for line, count in combinations if count > 8]
 
 ```python
+>>> keys = [tuple(sorted(_)) for _ in keys]
 >>> keys = [
   (25,15), (14,13), (17,13), (18,13), (25,13), (17,16), (18,16), (25,16), (16,14), (17, 4), (18, 4), (25, 4), (14, 4), (25, 9), (14, 5), (25, 2), (14, 2),
   (17,15), (23,15), (23,16), (23,13), (23,12), (17,12), (17,10), (23,10), (23, 9), (23, 4), (23, 3), (17, 3), (14, 3), (25, 5), (18, 2),
@@ -168,57 +176,15 @@ couple of pins that each key triggers (reworked to be used directly in python)
 ]
 ```
 
-0, 1, 2, 4, 5, 7
-
-3, 6, 9, 10, 12, 13, 15, 16, 17, 20, 21, 22, 23
-
-At this point I can massage the data to look for the matrix
+I created simple macro to massage the data
 
 ```python
 >>> get = lambda x: set([_ for _ in keys if _[1] == x or _[0] == x])
 >>> get(2)
 {(14, 2), (17, 2), (18, 2), (20, 2), (21, 2), (23, 2), (24, 2), (25, 2)}
->>> [(_, len(get(_))) for _ in range(30)]
-[(0, 0),
- (1, 0),
- (2, 8),
- (3, 8),
- (4, 8),
- (5, 7),
- (6, 2),
- (7, 1),
- (8, 1),
- (9, 7),
- (10, 8),
- (11, 1),
- (12, 8),
- (13, 8),
- (14, 10),
- (15, 8),
- (16, 8),
- (17, 12),
- (18, 10),
- (19, 2),
- (20, 11),
- (21, 11),
- (22, 2),
- (23, 11),
- (24, 11),
- (25, 11),
- (26, 0),
- (27, 0),
- (28, 0),
- (29, 0)]
 ```
 
-Since I'm looking for "round numbers" it's interesting to see that a couple of signals are
-linked to 8 others, in particular if we look for example to the signals
-activated by the number line identified by the id 2
-
-```python
->>> get(2)
-{(14, 2), (17, 2), (18, 2), (20, 2), (21, 2), (23, 2), (24, 2), (25, 2)}
-```
+so to have the list of how many node each key determines:
 
 ```python
 >>> combinations = [(_, len(get(_))) for _ in range(30)]
@@ -255,8 +221,17 @@ activated by the number line identified by the id 2
  (29, 0)]
 >>> len([line for line, count in combinations if count != 0])
 24
+```
+
+Since I'm looking for "round numbers" it's interesting to see that a couple of signals are
+linked to 8 others, but the real **pro-gamer move** is looking for signals that have
+more than eight relations:
+
+```python
 >>> inputs = set([line for line, count in combinations if count > 8])
->>> unused = {24, 25, 26, 27, 28, 29}
+>>> inputs
+{0, 1, 2, 4, 5, 7, 8, 11}
+>>> unused = set([line for line, count in combinations if count == 0])
 >>> total = set(range(30))
 >>> outputs = total - inputs - unused
 >>> len(outputs)
@@ -265,72 +240,24 @@ activated by the number line identified by the id 2
 {3, 6, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23}
 ```
 
-they are all linked to more than 8 signals; after analyzing I can split the
-matrix with the following scheme of 8 inputs and 16 outputs
+after analyzing I can split the matrix with the following scheme of 8 inputs and 16 outputs
 
-	| **Rows** | 14 | 17 | 18 | 20 | 21 | 23 | 24 | 25 |
-	| **Columns** | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 15 | 16 | 19 | 22 |
+|             |   |   |   |    |    |    |    |    |    |    |    |    |    |    |    |    |
+|-------------|---|---|---|----|----|----|----|----|----|----|----|----|----|----|----|----|
+| **Rows**    | 0 | 1 | 2 | 4  | 5  | 7  | 8  | 11 |    |    |    |    |    |    |    |    |
+| **Columns** | 3 | 6 | 9 | 10 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 |
 
-**NOTE:** although there are \\(8*16 = 128\\) possible keys, only 88 are used,
+**NOTE:** although there are \\(8*16 = 128\\) possible keys, only 87 are used,
 so some signals are underused.
-
-```python
->>> matrix = [[[]]*len(outputs),]*len(inputs)
-
->>> matrix
-[[[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
- [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
- [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
- [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
- [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
- [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
- [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
- [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]]
-
-def generate_layout(k, l):
-    result = []
-    ikeys = iter(k)
-    for row in l:
-        result.append([(code, next(ikeys)) for code in row])
-
-    return result
-
-def generate_matrix(inputs, outputs, k, l):
-    tmp = generate_layout(k, l)
-
-    matrix = [['0' for _ in outputs] for _ in inputs]
-
-    inputs = list(inputs)
-    outputs = list(outputs)
-
-    for row in tmp:
-        for element in row:
-            key, (a, b) = element
-            (i, o) = (a, b) if a in inputs else (b, a)
-            matrix[inputs.index(i)][outputs.index(o)] = key
-
-    return matrix
-
-def generate_header(inputs, outputs, k, l):
-    matrix = generate_matrix(inputs, outputs, k, l)
-
-    print("layout = {")
-
-    inputs = list(inputs)
-    outputs = list(outputs)
-
-    for row, i in zip(matrix, inputs):
-        print("/* {} */ {{".format(i),end='')
-        print(', '.join(row), end='')
-        print("},")
-```
 
 ## Controller board design and firmware
 
 Since my intention is to use the ATMega32U4 (the main advantage is the builtin
-USB) I need to find a way to minimize pin  usage: 24 pins are not available in
-this chip so I decideded to use 8 pins for the inputs (possibly from the same
-bank, ``PDx`` for example) and the remaining 16, the output pins, to be handled
+USB) I need to find a way to minimize pins usage: 24 pins are not available in
+this chip so I decideded to use 8 pins for the inputs, in particular the bank
+identified with ``PORTD`` so to access them with a single register (in this chip
+only ``PORTB`` and ``PORTB`` are "complete" and ``PORTB`` will be used for the
+``SPI`` communication); the remaining 16, the output pins, will be handled
 via two daisy-chained shift registers (the [74HC165](https://www.sparkfun.com/datasheets/Components/General/sn74hc165.pdf))
 communicating via ``SPI`` protocol.
 
@@ -407,6 +334,8 @@ For the firmware I re-used the code from [kmani314/ATMega32u4-HID-Keyboard](http
 reworking the matrix-related code to use SPI as described above; the final code
 with the board files are in my fork at
 [gipi/ATMega32u4-HID-Keyboard](https://github.com/gipi/ATMega32u4-HID-Keyboard).
+There isn't very much to say about it, I think it's a pretty standard code to
+implement a ``USB`` device.
 
 ## Links
 
