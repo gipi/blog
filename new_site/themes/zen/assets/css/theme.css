@@ -249,6 +249,14 @@ section {
   right: 0;
   width: 180px;
 }
+
+.social .blog_description {
+  color: white;
+  font-weight: bold;
+  text-align: center;
+  margin: 10px;
+}
+
 @media (max-width: 773px) {
   .social {
     position: relative;
@@ -922,7 +930,7 @@ pre code {
   padding: 0;
   color: inherit;
   white-space: pre;
-  white-space: pre-wrap;
+  /*white-space: pre-wrap;*/
   background-color: transparent;
   border: 0;
 }
@@ -1017,10 +1025,15 @@ article.post-text table {
 }
 article.post-text table th {
     font-weight: bold;
+    padding: 1px 5px;
 }
 
 article.post-text table tr {
     border-bottom: thin solid black;
+}
+
+article.post-text table td {
+    padding: 1px 5px;
 }
 
 article.post-text .metadata .tags {
