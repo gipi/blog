@@ -125,17 +125,17 @@ download the certificate that allows you to authenticate to their services and
 then access the web panel and the *certificate wizard* tab as shown in the
 following screenshot
 
-![]({{ site.baseurl }}/public/images/certificates/certificates-wizard.png)
+![](/images/certificates/certificates-wizard.png)
 
 After selecting the ``Web Server SSL/TLS Certificate`` from the menu you should
 see a page where it asks you to generate a private key.
 
-![]({{ site.baseurl }}/public/images/certificates/generate-keys.png)
+![](/images/certificates/generate-keys.png)
 
 Since we have generate our with ``openssl`` we can skip this step and copy the
 certificate signing request in the next page.
 
-![]({{ site.baseurl }}/public/images/certificates/submit-certificate-request.png)
+![](/images/certificates/submit-certificate-request.png)
 
 If you have already generated your key you can use instead the following command
 
@@ -145,7 +145,7 @@ After insert the content of the textarea and submitted you will receive your
 signed certificate (I skipped two intermediate pages but are not critical for
 the process explained here).
 
-![]({{ site.baseurl }}/public/images/certificates/save-vertificate.png)
+![](/images/certificates/save-vertificate.png)
 
 The last step is to donwload the root and intermediate certificates and place it
 where your server can serve it (for an example of web server configuration with

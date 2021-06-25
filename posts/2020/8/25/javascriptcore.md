@@ -1292,9 +1292,9 @@ void ScriptExecutable::installCode(VM& vm, CodeBlock* genericCodeBlock, CodeType
 }
 ```
 
-![]({{ site.baseurl }}/public/images/javascriptcore/linking.png)
-![]({{ site.baseurl }}/public/images/javascriptcore/JIT.png)
-![]({{ site.baseurl }}/public/images/javascriptcore/prepareForExecutionImpl.png)
+![](/images/javascriptcore/linking.png)
+![](/images/javascriptcore/JIT.png)
+![](/images/javascriptcore/prepareForExecutionImpl.png)
 
 Take in mind that exist two "phases" for the bytecode: after parsing is in an **unlinked** stage
 where the bytecode uses a variable-length encoding but before is executed needs to be **linked**,

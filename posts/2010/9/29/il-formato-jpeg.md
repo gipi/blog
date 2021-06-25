@@ -107,7 +107,7 @@ dei blocchi è dato dal subsampling: all'interno della MCU i blocchi sono
 ordinati top-bottom, left-right ed il medesimo ordinamento è seguito dalle MCU
 all'interno dell'immagine. Per capirci, lo schema usato è il seguente
 
-![]({{ site.baseurl }}/public/images/subsampling.png)
+![](/images/subsampling.png)
 
 Nella figura i pallini rappresentano i valori della componente, i quadrati
 interni rappresentano la MCU e le freccie l'ordinamento seguito per
