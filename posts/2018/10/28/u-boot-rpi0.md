@@ -12,6 +12,7 @@
 
 This is a guide about building and configuring a Yocto build for a raspberry pi zero with u-boot.
 
+<!-- TEASER_END -->
 
 ## Yocto and Repo
 

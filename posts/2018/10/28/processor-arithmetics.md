@@ -19,6 +19,8 @@ bug to happen and also help in case you want to reverse unknown code.
 In this I will explore how operation on integers (floating point will be
 treated in a specific, future, post).
 
+<!-- TEASER_END -->
+
 ## Integer encoding
 
 We are interested of the case of a register containing a number: since
