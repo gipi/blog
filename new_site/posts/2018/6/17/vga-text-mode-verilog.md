@@ -7,11 +7,15 @@
 .. link: 
 .. description: 
 .. type: text
+.. has_math: true
 -->
 
 
 After having written about [implementing a VGA controller in Verilog](link://slug/implementing-vga-in-verilog) I wanted
 to improve it with a new functionality: the **Text mode**.
+
+<!-- TEASER_END -->
+
 
 The Text mode is described in an excellent way by [Wikipedia](https://en.wikipedia.org/wiki/Text_mode)
 

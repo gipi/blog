@@ -68,6 +68,8 @@ indicating when a overflow happened.
 
 It's not the only flag dedicated in this register, the list is
 
+| Flag | Description |
+|------------|---------|
 | C | there is an overflow |
 | Z | Zero flag |
 | N | Negative flag |
@@ -111,6 +113,8 @@ or the [complete reference](http://ww1.microchip.com/downloads/en/devicedoc/atme
 
 ### Arithmetic
 
+| Instruction | Description |
+|------------|---------|
 | add ra, rb | adds two register and stores the result in the first one |
 | adc ra, rb | adds two register using also the carry flag and stores the result in the first one |
 | adiw ra, K | adds immediate to word |
@@ -122,10 +126,13 @@ or the [complete reference](http://ww1.microchip.com/downloads/en/devicedoc/atme
 | com ra | takes the one's complement of a register |
 | neg ra | takes the two's complement |
 | eor ra, rb | calculates the exclusive or of two register and stores the result in the first one |
+| mul ra, rb | calculate the product between two registers and then place the result into r1:r0 |
 
 
 ### Load and store
 
+| Instruction | Description |
+|------------|---------|
 | ldi ra, K | loads immediate in register |
 | lds ra, K | loads register with value stored in address |
 | ld ra, x | loads register with value stored in address contained in x |
@@ -155,6 +162,8 @@ that for easy of use have a few aliases
 | Overflow  | V=1  | BRVS  | No overflow  | V=0  | BRVC  | Simple  |
 | Zero  | Z=1  | BREQ  | Not zero  | Z=0  | BRNE  | Simple  |
 
+| Instruction | Description |
+|------------|---------|
 | sbrs Rr | Skip if Bit in Register is Set |
 | sbrc Rr | Skip if Bit in Register is Cleared |
 

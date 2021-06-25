@@ -7,6 +7,7 @@
 .. link: 
 .. description: 
 .. type: text
+.. has_math: true
 -->
 
 Facendo ripetizioni ad un ragazzo del politecnico mi sono ritrovato a dover
