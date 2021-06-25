@@ -22,6 +22,9 @@ ${template_hooks['extra_head']()}
                 </a>
             </li>
         %endif
+        %if blog_description:
+            <p class="blog_description">${blog_description}</p>
+        %endif
         ${base.html_navigation_links()}
         %if search_form:
             <div class="searchform" role="search">
