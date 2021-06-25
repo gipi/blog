@@ -18,12 +18,15 @@ My intent is to create a system to generate glitching with an external clock, bu
 I like to proceed one step at times I start creating a 16MHz clock that can be switched
 to a manual pulse to create a **single step** atmega.
 
+<!-- TEASER_END -->
+
+
 The process included the use of a FPGA, a minimal circuit with a microcontroller
 and some ``C`` code.
 
 All can be summarised with the following (fantastic) hand drawn diagram
 
-![diagram]({{ site.baseurl }}/public/images/fpga-clock-device.png)
+![diagram](/images/fpga-clock-device.png)
 
 ## FPGA
 
@@ -49,7 +52,7 @@ on the internet that can explain better than me this stuff.
 
 The primitive ``DCM_SP`` has a lot of signals, as you can see from the schematic
 
-![DCM_SP]({{ site.baseurl }}/public/images/dcm_sp.png)
+![DCM_SP](/images/dcm_sp.png)
 
 but there are also a few parameters, in particular ``CLKFX_MULTIPLY`` and ``CLKFX_DIVIDE``
 that allow to indicate the output clock with a integer ratio: in our case we need an output clock of 16MHz from the

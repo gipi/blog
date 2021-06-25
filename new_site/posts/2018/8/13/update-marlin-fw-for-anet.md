@@ -16,6 +16,9 @@ that I use to, you know, 3d print stuffs. In the near future I would like to mod
 and make it a little milling machine or a laser engraver and in order to do that I need to
 find some extra pins to drive these devices.
 
+<!-- TEASER_END -->
+
+
 By the way, in order to have these functionalities I need to activate it recompiling
 the firmware, and since the original firmware obtained with the printer is pretty
 outdated I tought to use the original Marlin firmware so to have bug fixes and new
@@ -65,7 +68,7 @@ caused it to think that the head was always triggering the endstops.
 
 To check that use the ``M119`` code, if you see ``TRIGGERED`` as in the example below
 
-```
+```text
 anet> query M119
 Reporting endstop status
 x_min: TRIGGERED
@@ -160,11 +163,11 @@ In practice you can move the head using the command ``G0`` until you find the ri
 when you have set all the necessary you can check the final result using the command ``M211``
 that summarizes the configuration obtained
 
-```
+```text
 anet> query M211
 echo:Soft endstops: On   Min: X-10.00 Y-15.00 Z0.00  Max: X200.00 Y200.00 Z200.00
 ok
-````
+```
 
 Now you have to set your slicer to choice to follow these settings without extra
 steps.
@@ -186,7 +189,7 @@ you need to activate these functionalities using ``PINS_DEBUGGING`` when compili
 The other adventure will be find out which pins exposed free on the board
 are which
 
-![]({{ site.baseurl }}/public/images/anet-a8-ramp13.jpg)
+![](/images/anet-a8-ramp13.jpg)
 
 My board has like four usable extra pins near the stepper motor ones, named
 ``A11``, ``A12``, ``D11`` and ``D12``; each one is placed in a column with another two
