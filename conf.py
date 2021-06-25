@@ -297,8 +297,8 @@ DATE_FORMAT = 'yyyy-MM-dd'
 # One or more folders containing files to be copied as-is into the output.
 # The format is a dictionary of {source: relative destination}.
 # Default is:
-# FILES_FOLDERS = {'files': ''}
-# Which means copy 'files' into 'output'
+FILES_FOLDERS = {'code': 'code'}
+# Which means copy 'code' into 'output/code'
 
 # One or more folders containing code listings to be processed and published on
 # the site. The format is a dictionary of {source: relative destination}.
