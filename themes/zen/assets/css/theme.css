@@ -1113,3 +1113,13 @@ li .listdate {
     display: inline-block;
     width: 100px;
 }
+
+/* WIP */
+article .WIP {
+    margin: 20px auto;
+    width: 80%;
+    background-color: #e1dede;
+    padding: 10px;
+    border: 2px solid black;
+    border-radius: 5px;
+}
