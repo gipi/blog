@@ -36,5 +36,6 @@ class VideoShortcode(ShortcodePlugin):
 <iframe 
     width="560" height="315"
     src="{}"
+    autoplay=no
     allowfullscreen>
 </iframe>""".format(url)
