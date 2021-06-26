@@ -1106,3 +1106,10 @@ article.post-text .entry-content .figure .caption {
 article.post-text + article.post-text {
   margin-top: 48px;
 }
+
+/* archive */
+li .listdate {
+    margin-right: 10px;
+    display: inline-block;
+    width: 100px;
+}
