@@ -1,0 +1,11 @@
+[Core]
+Name = video
+Module = video
+
+[Nikola]
+PluginCategory = Shortcode
+
+[Documentation]
+Author = Gianluca Pacchiella
+Version = 0.1
+Description = custom shortcode to insert custom video from a URL
