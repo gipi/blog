@@ -14,7 +14,7 @@ This is a standard thing to do with an **ATMega328p**, the core of
 the Arduino development board: burn a bootloader into it and then
 use a ``UART`` over ``USB`` connection to flash code into it.
 
-![]({{ site.baseurl }}/public/images/atmega328p.png)
+![](/images/atmega328p.png)
 
 There a lot of posts about this procedure, but are scattered
 all over the internet, without precise schematics and
@@ -200,7 +200,7 @@ $ avrdude -c buspirate -p m328p -P /dev/ttyUSB0 -U flash:w:optiboot_atmega328.he
 
 The schematics used to place the components on the breadboard is the following
 
-![]({{ site.baseurl }}/public/images/bootloader.png)
+![](/images/bootloader.png)
 
 Two connectors are initialy needed: the ``ISP`` to flash
 the bootloader and the ``UART`` to communicate with the bootloader.

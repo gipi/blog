@@ -30,7 +30,7 @@ an original ``PS/2`` keyboard works just fine with 3V3.
 
 The board connector (of type ``Mini-DIN-6``) has the following pinout (courtesy of wikipedia)
 
-![]({{ site.baseurl }}/public/images/ps2-connector.png)
+![](/images/ps2-connector.png)
 
  - 1: ``DATA``
  - 2: not connected
@@ -57,7 +57,7 @@ is capable to emulate a ``PS/2`` one, [simply use](http://www.instructables.com/
 The screen capture just below shows the two signal lines (``CLK`` is the signal in the upper part and ``DATA``
 the other) as recorded by my oscilloscope: I pressed the ``a`` key of the keyboard
 
-![]({{ site.baseurl }}/public/images/ps2-protocol-1C-keycode.png)
+![](/images/ps2-protocol-1C-keycode.png)
 
 if you *sample* the ``DATA`` signal at the failing edge of the ``CLK`` line you obtain the following values
 

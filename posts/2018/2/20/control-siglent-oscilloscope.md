@@ -179,7 +179,7 @@ INFO:__main__:saved wave file
 
 then you can import the file into ``audacity``
 
-![trace imported into audacity as wave file]({{ site.baseurl }}/public/images/audacity-import.png)
+![trace imported into audacity as wave file](/images/audacity-import.png)
 
 ### dumpscreen
 
@@ -189,7 +189,7 @@ Sometime is useful to dump the LCD screen of the oscilloscope
 $ python test_visa.py dumpscreen --device USB0::62700::60986::SDS10PA1164640::0::INSTR --out screen.bmp
 ```
 
-![SIGLENT dumped screen]({{ site.baseurl }}/public/images/siglent-screen.bmp)
+![SIGLENT dumped screen](/images/siglent-screen.bmp)
 
 ## Conclusion
 

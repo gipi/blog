@@ -14,7 +14,7 @@ As any computing device based on transistors and flip-flop, a microcontroller
 needs a clock to  give the "rythm" for the cpu and peripherics. In particular
 for the ATMega328p the clock distribution is the following
 
-![]({{ site.baseurl }}/public/images/atmega-clock-distribution.png)
+![](/images/atmega-clock-distribution.png)
 
 (for more information look at the [datasheet](http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-8271-8-bit-AVR-Microcontroller-ATmega48A-48PA-88A-88PA-168A-168PA-328-328P_datasheet_Complete.pdf)).
 
@@ -54,7 +54,7 @@ Following the [Application Note 118 about CMOS Oscillators](https://www.fairchil
 we know that using an odd number of ``NOT`` gates we can create the following
 circuit
 
-![]({{ site.baseurl }}/public/images/inverting-oscillator.png)
+![](/images/inverting-oscillator.png)
 
 that generates a clock with frequency
 
@@ -68,7 +68,7 @@ In the same application note is indicated the schematics for a crystal oscillato
 is the same internal circuitery used into the ATMega for the on-chip oscillator that I imagine
 like this
 
-![]({{ site.baseurl }}/public/images/on-chip-oscillator.png)
+![](/images/on-chip-oscillator.png)
 
 ## Reading the clock signal
 
@@ -86,7 +86,7 @@ is connected with my oscilloscope's probe.
 
 The signal as seen from my oscilloscope screen is
 
-![]({{ site.baseurl }}/public/images/atmega-clock-signal.jpg)
+![](/images/atmega-clock-signal.jpg)
 
 (this is dumped using the script described in another [post](link://slug/control-siglent-oscilloscope))
 

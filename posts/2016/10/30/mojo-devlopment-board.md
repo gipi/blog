@@ -71,7 +71,7 @@ correct pinout naming and [here](http://www.xilinx.com/support/documentation/use
 
 For reference I made a grab of the layout of the board:
 
-![Mojo V3 pinout]({{ site.baseurl }}/public/images/mojo-pinout.png)
+![Mojo V3 pinout](/images/mojo-pinout.png)
 
 The pins used in a design must be indicated in a file with extension ``ucf`` (stands for **user constraints file**) that
 pratically indicate to the design which signals are exposed and where.

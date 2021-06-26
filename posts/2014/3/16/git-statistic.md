@@ -50,6 +50,6 @@ $ git log --no-merges --format=%ct, \
  | gnuplot -p -e 'set xdata time;set timefmt "%Y-%m-%d" ;set boxwidth 0.9;plot "-" using 1:2 with boxes'
 ```
 
-![]({{ site.baseurl}}/public/images/activity.png)
+![](/images/activity.png)
 
 Making a graph with the activity of each author is left as exercise for the reader.

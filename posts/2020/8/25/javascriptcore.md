@@ -1752,7 +1752,7 @@ TODO
 Now that we have a deeper understanding of the ``JSC`` internals should be easier understand
 what saelo was talking about.
 
-To automatize the analysis you can use the following ``gdb``'s [script]({{ site.baseurl }}/public/code/javascriptcore/bp.gdb)
+To automatize the analysis you can use the following ``gdb``'s [script](/code/javascriptcore/bp.gdb)
 that sets breakpoints in important points to see what the vulnerability is actually "doing".
 
 To summarize the PoC we have the following lines
