@@ -61,7 +61,7 @@ def create_release_archive(c, head='HEAD'):
             tempdir,
             head,
         ))
-        c.run('cd %s && nikola build' % tempdir)
+        c.run('cd %s && nikola build -a' % tempdir)
         c.run('mkdir -p %s' % RELEASES_RELATIVE_PATH_DIR)
         c.run('tar czf %s -C %s .' % (
             get_release_filepath(c),
@@ -149,7 +149,7 @@ def _release(c, path_archive, revision=None, web_root=None, **kwargs):
 ''' % (previous_revision or '?', revision))
 
 @task
-def nikola_release(c, head='HEAD', web_root=None):
+def nikola_deploy(c, head='HEAD', web_root=None):
     # locally we create the archive with the app code
     create_release_archive(c, head)  # cannot use pre=[...] because doesn't work
     release_filename = get_release_filename(c)
