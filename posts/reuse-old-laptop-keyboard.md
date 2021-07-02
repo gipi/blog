@@ -1,9 +1,8 @@
 <!--
 .. title: Reusing old shit: laptop keyboard
 .. slug: reusing-old-keyboard
-.. date: 2021-06-01 00:00:00
+.. date: 2021-07-02 00:00:00
 .. tags: WIP, keyboard, AVR, arduino
-.. status: draft
 .. category: 
 .. link: 
 .. description: 
@@ -12,7 +11,7 @@
 -->
 
 Here we are with another experiment in reusing otherwise trash-destined
-electronics material, this episode we are going to refurbish a keyboard,
+electronics material; in this episode we are going to refurbish a keyboard,
 from the recovering of the internal "matrix" to the design of the PCB destined
 as the controller board, to finally reworking of an existing firmware to create
 a new USB keyboard.
@@ -36,8 +35,9 @@ are connected allowing to detect the event.
 
 The algorithm used to implement in hardware the mechanism just described
 is to start with all the input lines with the same logic level and then change
-only one input signal at the time, with the remaining unaltered. Each time the
-output lines are checked for changes and recorded. When all the input signals
+only one input signal at the time, with the remaining unaltered. For each input the
+output lines are checked for changes and if this happens this means that a key is pressed.
+When all the input signals
 have been acted upon the algorithm use the row/column couple to understand the
 key pressed and translates that in keyboard scancodes to send via ``USB``.
 
@@ -64,14 +64,29 @@ Arduino·
  * 
  */
 
+bool just_started = true; // check that there is not key pressed when the app starts
+
 #define N_PINS(_p) (sizeof(_p)/sizeof(_p[0]))
 /*
  * The connector I'm using has 30 pins, modify as needed.
+ * 
+ * NOTE: some combinations result in a match always, so it's
+ * needed a mechanism to blacklist them
  */
 unsigned int pins[] {
   22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
   32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
   42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
+};
+
+// TODO: use this to create the complete matrix
+char* layout[88] = {
+  "KEY_ESC", "KEY_F1", "KEY_F2", "KEY_F3", "KEY_F4", "KEY_F5", "KEY_F6", "KEY_F7", "KEY_F8", "KEY_F9", "KEY_F10", "KEY_F11", "KEY_F12", "KEY_SCROLLLOCK", "KEY_PAUSE", "KEY_INSERT", "KEY_DELETE",
+  "KEY_BACKSLASH", "KEY_1", "KEY_2", "KEY_3", "KEY_4", "KEY_5", "KEY_6", "KEY_7", "KEY_8", "KEY_9", "KEY_0", "KEY_APOSTROPHE", "KEY_IT_IGRAVE", "KEY_BACKSPACE", "KEY_HOME",
+  "KEY_TAB", "KEY_Q", "KEY_W", "KEY_E", "KEY_R", "KEY_T", "KEY_Y", "KEY_U", "KEY_I", "KEY_O", "KEY_P", "KEY_IT_EGRAVE", "KEY_PLUS", "KEY_RETURN", "KEY_PAGEUP",
+  "KEY_CAPSLOCK", "KEY_A", "KEY_S", "KEY_D", "KEY_F", "KEY_G", "KEY_H", "KEY_J", "KEY_K", "KEY_L", "KEY_IT_OGRAVE", "KEY_IT_AGRAVE", "KEY_IT_UGRAVE", "KEY_PAGEDOWN",
+  "KEY_MOD_LSHIFT", "KEY_IT_TRIANGLE", "KEY_Z", "KEY_X", "KEY_C", "KEY_V", "KEY_B", "KEY_N", "KEY_M", "KEY_COMMA", "KEY_DOT", "KEY_MINUS", "KEY_MOD_RSHIFT", "KEY_UP", "KEY_END",
+  "KEY_MOD_LCTRL", "KEY_MOD_LMETA", "KEY_MOD_LALT", "KEY_SPACEBAR", "KEY_MOD_RALT", "KEY_BOH", "KEY_MOD_RCTRL", "KEY_LEFT", "KEY_DOWN", "KEY_RIGHT"
 };
 
 
@@ -109,14 +124,21 @@ void set_outputs(unsigned int pinInputIndex) {
 
 void look_for_signal(unsigned int inputPinIndex) {
   unsigned int cycle;
-  for (cycle = inputPinIndex + 1 ; cycle < N_PINS(pins) ; cycle++) {
+  for (cycle = 0; cycle < N_PINS(pins) ; cycle++) {
+    if (inputPinIndex == cycle)
+      continue;
 
     unsigned value = digitalRead(pins[cycle]);
     if (value == LOW) {// since we are using pull ups from the input side we need to look for LOW level
-      signals.lines[0]= inputPinIndex;
+      signals.lines[0] = inputPinIndex;
       signals.lines[1] = cycle;
       signals.activated = true;
-    }
+
+      if (just_started) {
+        Serial.print(" BLACKLIST PLEASE ");
+      }
+      communicate_signal();
+    } else { just_started = false;}
   }
 }
 
@@ -129,18 +151,17 @@ void try_combination(unsigned int inputPinIndex) {
 }
 
 /*
- * We simply communicate the key pressed using a raw packet
- * having the format
- * 
- *    [KEY][unsigned int][unsigned int]
+ * output the activated lines as a tuple.
  */
 void communicate_signal() {
   // output a key only if the signal is activated now but not the previous time
   if (!(signals.activated && !signals.was_activated))
     return;
-  Serial.print("KEY");
-  Serial.write(signals.lines[0]);
-  Serial.write(signals.lines[1]);
+  Serial.print("(");
+  Serial.print(signals.lines[0], DEC);
+  Serial.print(", ");
+  Serial.print(signals.lines[1], DEC);
+  Serial.println("),");
 }
 
 /*
@@ -148,16 +169,21 @@ void communicate_signal() {
  * find possibly connections.
  */
 void loop() {
-  signals.activated = false;
   unsigned int inputPinIndex;
+  
+  signals.activated = false;
+  
+  
   for (inputPinIndex = 0 ; inputPinIndex < N_PINS(pins) ; inputPinIndex++) {
     try_combination(inputPinIndex);
   }
 
-  communicate_signal();
+  //communicate_signal();
 
   signals.was_activated = signals.activated;
+  signals.activated = false;
 }
+
 ```
 
 From pressing any key in order, I obtain the following array contaning all the
@@ -180,11 +206,9 @@ I created simple macro to massage the data
 
 ```python
 >>> get = lambda x: set([_ for _ in keys if _[1] == x or _[0] == x])
->>> get(2)
-{(14, 2), (17, 2), (18, 2), (20, 2), (21, 2), (23, 2), (24, 2), (25, 2)}
 ```
 
-so to have the list of how many node each key determines:
+so to have the list of how many nodes each key determines:
 
 ```python
 >>> combinations = [(_, len(get(_))) for _ in range(30)]
@@ -238,6 +262,8 @@ more than eight relations:
 16
 >>> outputs
 {3, 6, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23}
+>>> inputs & outputs
+set()
 ```
 
 after analyzing I can split the matrix with the following scheme of 8 inputs and 16 outputs
@@ -253,7 +279,7 @@ so some signals are underused.
 ## Controller board design and firmware
 
 Since my intention is to use the ATMega32U4 (the main advantage is the builtin
-USB) I need to find a way to minimize pins usage: 24 pins are not available in
+USB and my experience with it) I need to find a way to minimize pins usage: 24 pins are not available in
 this chip so I decideded to use 8 pins for the inputs, in particular the bank
 identified with ``PORTD`` so to access them with a single register (in this chip
 only ``PORTB`` and ``PORTB`` are "complete" and ``PORTB`` will be used for the
@@ -293,6 +319,8 @@ d += elm.IcDIP(pins=16)\
 d.draw()
 {{% /pyplots %}}
 
+where the signals are defined in the following way
+
 | Signal | Description |
 |--------|-------------|
 | ``Vcc`` | positive power supply (up to 6V)|
@@ -304,13 +332,50 @@ d.draw()
 | ``SER`` | serial input |
 | ``Dx`` | paraller inputs |
 
+Here below a copy of the timing diagram from the datasheet
 
-Reading the chip
+{{% wavedrom %}}
+{ "signal": [
+ { "name": "CLK",     "wave": "n.............", "period": 1  },
+ { "name": "CLK INH", "wave": "1...0.........", "node": "....F..." },
+ { "name": "SER",     "wave": "0............." },
+ { "name": "SH/~LD",  "wave": "101..........." , "node": ".D."},
+ [ "Inputs",
+   { "name": "D0",    "wave": "x1xxxxxxxxxxxx", "data": "H" },
+   { "name": "D1",    "wave": "x0x...........", "data": "L" },
+   { "name": "D2",    "wave": "x1x...........", "data": "L" },
+   { "name": "D3",    "wave": "x0x...........", "data": "L" },
+   { "name": "D4",    "wave": "x1x...........", "data": "L" },
+   { "name": "D5",    "wave": "x0x...........", "data": "L" },
+   { "name": "D6",    "wave": "x1x...........", "data": "L" },
+   { "name": "D7",    "wave": "x1x...........", "data": "L" }
+ ],
+  { "name": "Q",      "wave": "x1....0101010." , "node": ".E..G"},
+  { "node": ".A..B.........C"}
+],
+ "edge": [
+    "D|E",
+    "F|G",
+    "A<->B inhibit",
+    "B<->C serial shift"
+  ]
+}
+{{% /wavedrom %}}
+
+**TL;DR:** the \\(SH/\overline{LD}\\) determines if the chip is in the **load** or **shift** state;
+in the first case the internal state of the shift register is set from the
+values present at the signals \\(Dx\\), instead for the other case (with also the
+condition of \\(CLK INH\\) being low) the internal state is shifted "outside" one bit at the time via
+the signal \\(Q_H\\). The \\(SER\\) signal can be used to concatenate shift
+registers together. As you can see from the timing diagram the most significant
+bits are shifted first.
+
+Reading the ATMega32U4's
 [datasheet](https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7766-8-bit-AVR-ATmega16U4-32U4_Datasheet.pdf)
 at section 17, and the application note
 [AVR151: Setup and Use of the SPI](https://ww1.microchip.com/downloads/en/AppNotes/Atmel-2585-Setup-and-Use-of-the-SPI_ApplicationNote_AVR151.pdf),
-I have all the information needed to interact with the ``SPI`` subsystem. The
-pin needed on the ATMega32U4 are the following
+I have all the information needed to interact with the ``SPI`` subsystem, in
+particular the pins needed are the following
 
 | Signal | pin | Description |
 |--------|-----|-------------|
@@ -323,7 +388,8 @@ For my use case the ``MOSI`` is not necessary since we are not going to communic
 data to the shift register but I don't think is possible to reuse anyway. For
 latching the data on the shift registers the ``SS`` signal is used.
 
-This below is the schematics of the board
+This below is the schematics of the board (it's an ``SVG`` file so you can zoom as
+much as you want)
 
 ![](/images/keyboard/controller.svg)
 
@@ -335,7 +401,11 @@ reworking the matrix-related code to use SPI as described above; the final code
 with the board files are in my fork at
 [gipi/ATMega32u4-HID-Keyboard](https://github.com/gipi/ATMega32u4-HID-Keyboard).
 There isn't very much to say about it, I think it's a pretty standard code to
-implement a ``USB`` device.
+implement a ``USB`` device. The only thing worth mentioning is the
+[script](https://github.com/gipi/electronics-notes/blob/master/AVR/KeyboardMatrixRecovery/header.py)
+to generate the layout header file from the output of the script at the start of
+the post. This saves you a lot of typing and maybe in the future I can think of
+automatize all the process a little more :)
 
 ## Links
 
