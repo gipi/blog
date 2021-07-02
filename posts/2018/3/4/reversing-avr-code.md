@@ -7,6 +7,7 @@
 .. link: 
 .. description: 
 .. type: text
+.. has_math: true
 -->
 
 
@@ -333,13 +334,19 @@ of these and in a microcontroller this is done via some registers.
 
 The most important registers are the following
 
-| ``UCSR0A`` |
+|            |            |            |           |           |            |           |           |
+|------------|------------|------------|-----------|-----------|------------|-----------|-----------|
+| ``UCSR0A`` |            |            |           |           |            |           |           |
 | ``RXC0``   | ``TXC0``   | ``UDRE0``  | ``FE0``   | ``DOR0``  | ``UPE0``   | ``U2X0``  | ``MPCM0`` |
 
-| ``UCSR0B`` |
+|            |            |            |           |           |            |           |           |
+|------------|------------|------------|-----------|-----------|------------|-----------|-----------|
+| ``UCSR0B`` |            |            |           |           |            |           |           |
 | ``RXCIE0`` | ``TXCIE0`` | ``UDRIE0`` | ``RXEN0`` | ``TXEN0`` | ``UCSZ20`` | ``RXB80`` | ``TXB80`` |
 
-| ``UCSR0C`` |
+|            |            |            |           |           |            |           |           |
+|------------|------------|------------|-----------|-----------|------------|-----------|-----------|
+| ``UCSR0C`` |            |            |           |           |            |           |           |
 | ``UMSEL01`` | ``UMSEL00`` | ``UPM01`` | ``UPM00`` | ``USBS0`` | ``UCSZ01`` | ``UCSZ00`` | ``UCPOL0`` |
 
 obviously each register has an address (probably) different in different microcontrollers.

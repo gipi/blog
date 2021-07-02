@@ -45,13 +45,13 @@ Bad enough, not all of these points will be addressed in the first revision of t
 
 ## Security
 
-{% comment %}
+<!--
 In order to understand what's security, I need to define the so called **threat model**: i.e.
 what my adversary is able to do; under my point of view also a developer can be
 
 (I would like to discuss also the *most secure* file system permissions to set the application
 with, but the inception is too deep).
-{% endcomment %}
+-->
 
 First of all, the channel of communication between ``nginx`` and ``uwsgi`` is an unix socket
 (i.e. a particular type of file), this allows a more granular access control and is more

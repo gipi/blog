@@ -7,6 +7,7 @@
 .. link: 
 .. description: 
 .. type: text
+.. has_math: true
 -->
 
 La teoria dell'informazione è in buona parte una formalizzazione della capacità
@@ -34,7 +35,7 @@ stanchi delle solite immagini decisero di scannerizzare una porzione della pin
 up nel paginone centrale di playboy, l'immagine che diventerà poi famosa con il
 nome di [Lenna](http://www.ee.cityu.edu.hk/~lmpo/lenna/Lenna97.html)
 
-![](http://upload.wikimedia.org/wikipedia/en/2/24/Lenna.png)
+![](/images/Lenna.png)
 *The first lady of internet*
 
 Tornando alla implementazione, la specifica del comitato ISO è definita [qui](http://www.w3.org/Graphics/JPEG/itu-t81.pdf) ed è riassumibile nei seguenti steps

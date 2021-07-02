@@ -340,10 +340,7 @@ Note how in all the systems the ``char`` is supposed to be 8-bit wide.
 
 ### C Language's constructs
 
-It's important to be aware of the terminology
-
-[source](https://www.cs.auckland.ac.nz/references/unix/digital/AQTLTBTE/DOCU_026.HTM)
-
+It's important to be aware of the terminology: [source](https://www.cs.auckland.ac.nz/references/unix/digital/AQTLTBTE/DOCU_026.HTM)
 An rvalue is the value of an expression, such as \\(2\\), or \\((x + 3)\\) , or \\((x + y) * (a - b)\\) . rvalues are not storage space
 
 An lvalue is an expression that describes the location of an object used in the
@@ -360,6 +357,8 @@ otherwise is called **value changing**.
 The so called **integer conversion rank** ([source](http://www.enseignement.polytechnique.fr/informatique/INF478/docs/Cpp/en/c/language/integer_conversion_rank.html))
 (note that different rank doesn't imply different width of its representation)
 
+| |
+|-|
 |``long long int``, ``unsigned long long int`` |
 |``long int``, ``unsigned long int`` |
 |``int``, ``unsigned int`` |

@@ -2,7 +2,7 @@
 .. title: Reusing old shit: creating a BSP using Yocto for the Samsung Galaxy S (S5PV210)
 .. slug: yocto-samsung-galaxy-s
 .. date: 2021-01-31 00:00:00
-.. tags: embedded,yocto
+.. tags: embedded,yocto, WIP
 .. category: 
 .. link: 
 .. description: 

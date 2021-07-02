@@ -2,7 +2,7 @@
 .. title: migrating to a static blogging platform
 .. slug: migrating-to-static-platform
 .. date: 2015-12-04 00:00:00
-.. tags: 
+.. tags: meta
 .. category: 
 .. link: 
 .. description: 
@@ -51,7 +51,7 @@ you can encounter some problems with the ``DNS`` settings for other services
 like email, in that case you must set a ``A`` entry in the ``DNS`` configuration,
 not a ``CNAME`` one; in this [page](https://help.github.com/articles/tips-for-configuring-an-a-record-with-your-dns-provider/)
 are indicated the IP addresses to use.
-{% comment %}
+<!--
 After that I moved my ``DNS`` so to make it pointing by ``CNAME``
 to ``gipi.github.io`` (the different domains and how Github choses them
 is explained [here](https://help.github.com/articles/about-custom-domains-for-github-pages-sites/))
@@ -60,4 +60,4 @@ The final step was enabling the ``HTTPS``
 
  - https://blog.keanulee.com/2014/10/11/setting-up-ssl-on-github-pages.html
  - https://sheharyar.me/blog/free-ssl-for-github-pages-with-custom-domains/
-{% endcomment %}
+-->

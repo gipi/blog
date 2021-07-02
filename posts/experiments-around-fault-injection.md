@@ -72,7 +72,7 @@ FET can have the following
  - gate insulation: JFET or MOSFET
  - channel doping: depletion or enhancement
 
-{{% media url=https://www.youtube.com/watch?v=Bfvyj88Hs_o %}}
+{{% youtube id=Bfvyj88Hs_o %}}
 
 N-channel MOS transistors have the sub-strate material of p-type and the drain and gate voltages
 are positive with respect to the source during normal operation. The substrate is

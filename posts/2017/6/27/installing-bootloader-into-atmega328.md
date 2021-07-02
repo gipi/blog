@@ -85,6 +85,8 @@ Each fuse comprehends a set of single bit values as showed
 in the following table (more informations can be found in
 the section ``Memory Programming`` of the datasheet)
 
+|              |   |   |   |   |   |           |           |           |
+|--------------|---|---|---|---|---|-----------|-----------|-----------|
 | **Extended** | - | - | - | - | - | BODLEVEL2 | BODLEVEL1 | BODLEVEL0 |
 | **High** | RSTDISBL | DWEN | SPIEN | WDTON | EESAVE | BOOTSZ1 | BOOTSZ0 | BOOTRST |
 | **Low** | CKDIV8 | CKOUT | SUT1 | SUT0 | CKSEL3 | CKSEL2 | CKSEL1 | CKSEL0 |

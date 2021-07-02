@@ -7,11 +7,12 @@
 .. link: 
 .. description: 
 .. type: text
+.. has_math: true
 -->
 
 
 As any computing device based on transistors and flip-flop, a microcontroller
-needs a clock to  give the "rythm" for the cpu and peripherics. In particular
+needs a clock to  give the "rythm" for the cpu and peripherals. In particular
 for the ATMega328p the clock distribution is the following
 
 ![](/images/atmega-clock-distribution.png)
