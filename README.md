@@ -1,10 +1,12 @@
-Future static blogging: https://ktln2.org/
+Repository containing my personal blog; you can find a live version at https://ktln2.org/.
 
-## Testing
+It's a static site generated using [nikola](https://getnikola.com/).
 
+## Getting started
 
-    $ make install_dependencies
-    $ make
+```
+$ pip install -r requirements.txt
+```
 
 ## Authoring guide
 

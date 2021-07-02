@@ -4,6 +4,7 @@ import tempfile
 import shlex
 import tarfile
 import subprocess
+import invoke
 from pathlib import Path
 from fabric import task
 from patchwork import files
@@ -37,7 +38,7 @@ def esudo(*args, **kwargs):
 
 def describe_revision(c, head='HEAD'):
     with c.prefix('cd %s' % PROJECT_ROOT_DIR):
-        actual_tag = c.local('git describe --always %s' % head)
+        actual_tag = c.run('git describe --always %s' % head)
         return actual_tag.stdout.strip('\n')
 
 def get_release_filename(c):
@@ -47,25 +48,26 @@ def get_release_filepath(c):
     return os.path.join(PROJECT_ROOT_DIR, RELEASES_RELATIVE_PATH_DIR, get_release_filename(c))
 
 def get_generated_webroot(base_dir):
-    return os.path.join(base_dir, '_site')
+    return os.path.join(base_dir, 'output')
 
-@task
+
+@invoke.task
 def create_release_archive(c, head='HEAD'):
     # TODO: add VERSION file
     c.config['run']['replace_env'] = False  # workaround
     with c.prefix('cd %s' % PROJECT_ROOT_DIR):
         tempdir = tempfile.mkdtemp()
-        c.local('git --work-tree=%s checkout -f %s' % (
+        c.run('git --work-tree=%s checkout -f %s' % (
             tempdir,
             head,
         ))
-        c.local('cd %s && jekyll build' % tempdir)
-        c.local('mkdir -p %s' % RELEASES_RELATIVE_PATH_DIR)
-        c.local('tar czf %s -C %s .' % (
+        c.run('cd %s && nikola build' % tempdir)
+        c.run('mkdir -p %s' % RELEASES_RELATIVE_PATH_DIR)
+        c.run('tar czf %s -C %s .' % (
             get_release_filepath(c),
             get_generated_webroot(tempdir),
         ))
-        c.local('rm -fr %s && echo removed temporary directory' % tempdir)
+        c.run('rm -fr %s && echo removed temporary directory' % tempdir)
 
 # https://stackoverflow.com/questions/3431825/generating-a-md5-checksum-of-a-file
 def hashfile(afile, hasher, blocksize=65536):
@@ -147,7 +149,7 @@ def _release(c, path_archive, revision=None, web_root=None, **kwargs):
 ''' % (previous_revision or '?', revision))
 
 @task
-def jekyll_release(c, head='HEAD', web_root=None):
+def nikola_release(c, head='HEAD', web_root=None):
     # locally we create the archive with the app code
     create_release_archive(c, head)  # cannot use pre=[...] because doesn't work
     release_filename = get_release_filename(c)
