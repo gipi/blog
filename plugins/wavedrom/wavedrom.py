@@ -47,10 +47,10 @@ class WavedromShortcode(ShortcodePlugin):
             return [nodes.raw('', '<div class="text-error">{0}</div>'.format(msg), format='html')]
 
         diagram = _options.pop('data')
-        plot_path = md5(diagram.encode()).hexdigest()
+        plot_filename = md5(diagram.encode()).hexdigest() + '.svg'
 
-        out_path = os.path.join(self.out_dir, plot_path + '.svg')
-        diagram_url = '/' + os.path.join('wavedrom', plot_path + '.svg').replace(os.sep, '/')
+        out_path = self.out_dir + os.sep +  plot_filename
+        diagram_url = '/' + os.path.join('wavedrom', plot_filename)
 
         svg = wavedrom.render(diagram)
         makedirs(os.path.dirname(out_path))
@@ -58,4 +58,4 @@ class WavedromShortcode(ShortcodePlugin):
 
         self.logger.debug("generated wavedrom at %s" % diagram_url)
 
-        return "<img src={}/>".format(diagram_url)
+        return "<img src='{}'/>".format(diagram_url)
