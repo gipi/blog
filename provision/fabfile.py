@@ -8,6 +8,7 @@ import invoke
 from pathlib import Path
 from fabric import task
 from patchwork import files
+from invoke.context import Context
 
 
 PROJECT_ROOT_DIR = os.path.join(os.path.dirname(__file__), '..')
@@ -54,7 +55,7 @@ def get_generated_webroot(base_dir):
 @invoke.task
 def create_release_archive(c, head='HEAD'):
     # TODO: add VERSION file
-    c.config['run']['replace_env'] = False  # workaround
+    # c.config['run']['replace_env'] = False  # workaround
     with c.prefix('cd %s' % PROJECT_ROOT_DIR):
         tempdir = tempfile.mkdtemp()
         c.run('git --work-tree=%s checkout -f %s' % (
@@ -148,13 +149,17 @@ def _release(c, path_archive, revision=None, web_root=None, **kwargs):
 
 ''' % (previous_revision or '?', revision))
 
+
 @task
 def nikola_deploy(c, head='HEAD', web_root=None):
     # locally we create the archive with the app code
-    create_release_archive(c, head)  # cannot use pre=[...] because doesn't work
-    release_filename = get_release_filename(c)
+    # "local" is the fucking workaround to call a local command
+    # in fabric2, holy jesus fucking crist
+    local = Context()
+    create_release_archive(local, head)
+    release_filename = get_release_filename(local)
 
-    local_release_filepath = get_release_filepath(c)
+    local_release_filepath = get_release_filepath(local)
 
     _release(c, local_release_filepath, revision=head)
 
