@@ -1,8 +1,8 @@
 <!--
-.. title: Experiments with side channel attacks using the Chipwhisperer
+.. title: side channels: power analysis
 .. slug: experiments-around-side-channels
-.. date: 2021-06-01 00:00:00
-.. tags: fault injection,hardware
+.. date: 2021-10-01 00:00:00
+.. tags: fault injection,hardware, WIP
 .. status: draft
 .. category: 
 .. link: 
@@ -11,482 +11,19 @@
 .. has_math: true
 -->
 
-
-I own a Chipwhisperer board, the [CWLITE](https://rtfm.newae.com/Capture/ChipWhisperer-Lite/) one, it's an open source, open
-hardware device that allows to quickly setup and execute side channels related
-attacks. 
-
-For the following post I'm using as target the board attached with
-the firmwares already present in the repository, identified in the wiki as the
-[CW303](https://rtfm.newae.com/Targets/CW303%20XMEGA/).  It has as
-microcontroller an Atmel's XMEGA128
-([datasheet](https://static.chipdip.ru/lib/279/DOC000279729.pdf)).
-
-In this post I'll explore some basic concepts: how to install the library,
-update the firmware of the board and practicing with it.
-
 <!-- TEASER_END -->
 
-But before all of those, an introduction about the inner workings of processing
-units and side channels.
+This is a post in a series regarding side channels, from the theoretical and
+pratical point of view; the posts are
 
-## Model of a processing unit
+ - introduction on the model of computing devices (to be finished)
+ - using the Chipwhisperer ([here](``link://slug/side-channels-using-the-chipwhisperer``))
+ - power analysis (this post)
+ - glitching (to be finished)
 
-To understand what follows you need a model of how a processing unit is composed
-and how the single entities with their behaviour can tell us something about
-what is happening during computation that wasn't supposed to leak to you.
+## Side channels experimentations
 
-Obviously this won't be an exhaustive explanation, this is matter of high
-profile studies, but as a physicist I can tell you that sometimes from very basic
-assumptions is possible to deduce very important aspects of a system.
-
-You should think of a processing device in the same way you think about an old clock:
-a source of motion, the pendulum, is transmitted via gears to show the correct
-time on the display; in the same way an electronic device has a clock that
-"gives the time" to its internal components!
-
-Let me explain a little better: let's start with the founding entities of modern
-digital electronics, i.e. **transistors**; they have a lot of property and a
-huge usage that would be an enourmous task to explain in detail and it's of not
-importance in our understanding in this case.
-
-In modern ICs are used a type of transistor named **MOSFET**, the first half of
-the name it's an acronym for **M**etal **O**xide **S**emiconductor, the second
-half it's an acronym for **F**ield **E**ffect **T**ransitor; I would like to
-start from the semiconductor part: not all materials are good in conducting
-current, at one side of the spectrum there are metals (like copper, silver,
-gold, etc...) and to the other side there are isolants (like glass, wood,
-etc...). Each element has its own chemical properties characterized by the
-external shell of electrons, in particular the property of forming bonds and
-conductivity.
-
-It's well known fact that digital devices are built from silicon: it's an
-element with four electrons in its outer shell, this means that can bond with
-another four atoms of the same type. Silicon it's a semiconductor and its
-conductivity can be improved by **doping** it using element with one more or one
-less electron in the outer shell, like boron or phosporous.
-
-FET can have the following
-
- - polarity: p or n
- - gate insulation: JFET or MOSFET
- - channel doping: depletion or enhancement
-
-{{% youtube id=Bfvyj88Hs_o %}}
-
-N-channel MOS transistors have the sub-strate material of p-type and the drain and gate voltages
-are positive with respect to the source during normal operation. The substrate is
-the most negative electrode of an nMOS transistor.
-
-P-channel MOS transistors are produced on an n-type substrate. The voltages
-at the gate and drain of these pMOS transistors are negative with respect to the
-source during normal operation. The substrate is the most positive electrode.
-
-Generally NMOS are faster than PMOS [^1]
-
-[^1]: p26-27 nanometer CMOS ICs
-
-For now it's important to model a
-transistor as a "switch", as something that allows the flow of current by a
-signal.
-
-{{% pyplots %}}
-# https://schemdraw.readthedocs.io/
-import matplotlib
-matplotlib.use('Agg')
-
-import schemdraw
-import schemdraw.elements as elm
-
-d = schemdraw.Drawing()
-d.add(elm.NFet()
-    .reverse()
-    .label("gate", loc="gate")
-    .label("drain", loc="drain")
-    .label("source", loc="source")
-)
-d.draw()
-{{% /pyplots %}}
-
-Another thing to take into account is the fact that ICs are built using ``CMOS``
-technology, i.e., for each NMOS there is a PMOS (the **C** means **complementary**).
-This has some advantages like power consumption. For example the typical
-inverter is implemented in this way in a ``CMOS`` chip
-
-{{% pyplots %}}
-# CMOS inverter
-import matplotlib
-matplotlib.use('Agg')
-
-import schemdraw
-import schemdraw.elements as elm
-d = schemdraw.Drawing()
-
-# use the mosfet as starting elements
-d += (pmos := elm.PFet().right().reverse().at((0, d.unit/2)).label('$Q_1$', 'right'))
-d += (nmos := elm.NFet().right().reverse().at((0, -d.unit/2)).label('$Q_2$', 'right'))
-
-# connect gates and drains
-d += (gate_line := elm.Line().at((pmos, 'gate')).to(nmos.gate))
-d += (drain_line := elm.Line().at((pmos, 'drain')).to(nmos.drain))
-
-# use the midpoints of these two to place Vin and Vout
-d += elm.LineDot().label('$V_{in}$', 'left').at(gate_line.center).left().length(1)
-d += (Vout := elm.LineDot().at(drain_line.center).length(1).right().label('$V_{out}$', 'right'))
-
-# last but not least, Vcc and Gnd
-d += elm.LineDot().length(1).at(pmos.source).up().label('$V_{cc}$', 'right')
-d += elm.Ground().at((nmos, 'source'))
-
-d.draw()
-{{% /pyplots %}}
-
-This part is actually not needed to understand what follows but I put it here
-anyway as my personal notes: the final die of an IC is costituted by at least
-three different layers (from the top to the bottom)
-
- - **metal**: conducting material, pratically the inteconnecting wires
- - **polysilicon**: used for gates
- - **active**: doped silicon for drains and sources
-
-This could be out of scope but it's interesting to see an actual implementation
-in a IC of some digital components: take a look at the
-[challenge by FlyLogic](http://www.siliconzoo.org/tutorial.html#flylogic) with the
-[solution by Jeri Ellsworth](https://www.flickr.com/photos/jeriellsworth/2856054068/)
-as shown in this image
-
-![](/images/side-channels/dff.png)
-
-If you are interested in stuff like this you can take a look at the
-[reversing an FM synthesizer](https://www.wdj-consulting.com/blog/nmos-sample/)
-that is a little more analogic.
-
-From left to right we have an inverter having as input the ``RESET`` signal, followed
-by two transmission gates
-
-{{% pyplots %}}
-import matplotlib
-matplotlib.use('Agg')
-
-import schemdraw
-import schemdraw.elements as elm
-d = schemdraw.Drawing()
-
-d += (pfet_left := elm.PFet().up())
-d += (nfet_left := elm.NFet().down())
-
-d += (nfet_right := elm.NFet().up().at(nfet_left.drain))
-d += (pfet_right := elm.PFet().down())
-
-d += (clk_not := elm.Line().at(pfet_left.gate).to(nfet_right.gate))
-d += (clk := elm.Line().at(nfet_left.gate).to(pfet_right.gate))
-
-# CLK and NOT CLK lines
-d += elm.LineDot().length(2).left().at(clk_not.start).label('$\overline{CLK}$', 'left')
-d += elm.LineDot().length(2).left().at(clk.start).label('$CLK$', 'left')
-
-# input and output
-d += elm.LineDot().length(2).left().at(pfet_left.source).label('$input$', 'left')
-# d += elm.LineDot().length(2).right().at(pfet_right.source).label('$output$', 'right')
-
-# extra reference points
-d += elm.Dot().at(nfet_left.drain).label('$A$', 'top')
-d += elm.Dot().at(pfet_right.source).label('$B$', 'top')
-
-d.draw()
-{{% /pyplots %}}
-
-That (?) elements form a ``NAND`` gate (note that the input named \\(C\\) is the signal \\(A\\)
-negated):
-
-{{% pyplots %}}
-import matplotlib
-matplotlib.use('Agg')
-
-import schemdraw
-import schemdraw.elements as elm
-from schemdraw import logic
-d = schemdraw.Drawing()
-
-# place the PMOS in parallel
-d += (pmos_a := elm.PFet().reverse().at((0, 0)).label('$C$', 'gate'))
-d += (pmos_b := elm.PFet().reverse().at((d.unit, 0)).label('$D$', 'gate'))
-d += (vdd_line := elm.Line().at(pmos_a.source).to(pmos_b.source))
-d += (out_line := elm.Line().at(pmos_a.drain).to(pmos_b.drain))
-
-# place the two NMOS in series
-# (tricky placement of the NMOS_a in the middle of the output line)
-d += (nmos_a := elm.NFet().reverse().anchor('drain').at(out_line.center).label('$C$', 'gate'))
-d += (nmos_b := elm.NFet().reverse().label('$D$', 'gate'))
-
-# VDD and GND
-d += elm.LineDot().length(1).at(vdd_line.center).up().label('$V_{cc}$', 'right')
-d += elm.Ground().at((nmos_b, 'source'))
-
-# output
-d += elm.LineDot().length(2).at(out_line.end).right().label('$B$', 'right')
-
-d.draw()
-{{% /pyplots %}}
-
-The central element generates the inverted clock needed by the trasmission gates
-
-The circuit now assumes the following shape
-
-{{% pyplots %}}
-import matplotlib
-matplotlib.use('Agg')
-
-import schemdraw
-import schemdraw.elements as elm
-from schemdraw import logic
-d = schemdraw.Drawing()
-
-d += elm.LineDot().label('$RESET$', 'left').right().reverse().length(0.5)
-d += logic.Not()
-d += (tgate_primary := logic.Tgate())
-# d += elm.Line().right()
-
-d.push()
-d += elm.Line().right().length(1)
-d += logic.Not().right()
-d += elm.Line().right().length(1)
-d += elm.Line().down()
-d += (nand := logic.Nand().anchor('in2').left())
-d += (tgate_secondary := logic.Tgate())
-d.pop()
-
-# a little hack to join the two transmission gates
-# with straight perpendicular lines
-# since the length of the lines doesn't match
-d += elm.Line().to((tgate_primary.end.x, tgate_secondary.end.y))
-d += elm.Line().to(tgate_secondary.end)
-
-# the D line now
-d += elm.Line().at(nand.in1).right().length(.5)
-d += elm.LineDot().down().length(2).label('$D$', 'end')
-
-d.draw()
-{{% /pyplots %}}
-
-that is a textbook latch (see Nanometer CMOS ICs, pg194) that usually is
-represented via the following simbol
-
-{{% pyplots %}}
-import matplotlib
-matplotlib.use('Agg')
-
-import schemdraw
-import schemdraw.elements as elm
-from schemdraw import logic
-d = schemdraw.Drawing()
-
-d += elm.intcircuits.DFlipFlop(preclr=True)
-
-d.draw()
-{{% /pyplots %}}
-
-https://www.eeweb.com/low-power-low-voltage-d-type-flip-flop/
-
-All the above are what is called **combinatorial logic**, from the input I
-obtain an output based entirely on it, it's **stateless**; but to build
-something more complex we need **memory**.
-
-A "primitive" circuit that accomplishes that is the following:
-
-![](/images/side-channels/latch.png)
-
-you notice that has two **stable** state and you can trigger them with the right
-inputs; it's not immediate but from here is possible to construct something, so called
-**flip-flop** that set the output from the input only at the **rising edge** of the clock:
-
-From it the simplest "object" that is possible to build is the **register**: in the
-example below four flip-flops are used to create a 4bits register
-
-![](/images/side-channels/4-bits-register.png)
-
-There is a lot of things possible with these objects but in general a
-**sequential logic** has the following structure
-
-![](/images/side-channels/combinatorial-logic.png)
-
-in practice how many flip-flops as the number of bits needed to represent 
-the internal state and a combinatorial logic part that does the calculation
-needed in order to obtain the new state from the old one and the inputs.
-
-For now this should be enough to understand the primitive building block of a
-processing device, later I will elaborate a little more where the model just
-described interacts with the physical world what can tell us and what we can do
-to poke it :P
-
-## Installation steps
-
-This part is primarly for me in order to remember what I did to getting started,
-you can see a more precise procedure in the [documentation](https://chipwhisperer.readthedocs.io/en/latest/installing.html).
-
-```
-$ git clone https://github.com/newaetech/chipwhisperer.git && cd chipwhisperer
-$ git submodule update --init jupyter                        # To get the jupyter notebook tutorials
-$ python3 -m pip install -r jupyter/requirements.txt --user
-$ jupyter nbextension enable --py widgetsnbextension         # enable jpyter interactive widgets
-$ python3 -m pip install -e . --user                         # use pip to install in develop mode
-```
-
-the jupyter part is related to the tutorials, if you don't need them, only clone and install.
-
-```
-$ avr-gcc \
-    -Wall \
-    -mmcu=atxmega128d3 \
-    -o public/code/fi/firmware \
-    public/code/fi/firmware.c
-$ avr-objdump -d public/code/fi/firmware | less
-```
-
-```
-$ make -C hardware/victims/firmware/simpleserial-base PLATFORM=CW303
-```
-
-```
-python3
-Python 3.7.5 (default, Oct 27 2019, 15:43:29)
-[GCC 9.2.1 20191022] on linux
-Type "help", "copyright", "credits" or "license" for more information.
->>> import chipwhisperer as cw
->>> scope = cw.scope()
->>> scope
-cwlite Device
-gain =
-    mode = low
-    gain = 0
-    db   = 5.5
-adc =
-    state      = False
-    basic_mode = low
-    timeout    = 2
-    offset     = 0
-    presamples = 0
-    samples    = 24400
-    decimate   = 1
-    trig_count = 226703590
-clock =
-    adc_src       = clkgen_x1
-    adc_phase     = 0
-    adc_freq      = 96000000
-    adc_rate      = 96000000.0
-    adc_locked    = True
-    freq_ctr      = 0
-    freq_ctr_src  = extclk
-    clkgen_src    = system
-    extclk_freq   = 10000000
-    clkgen_mul    = 2
-    clkgen_div    = 1
-    clkgen_freq   = 192000000.0
-    clkgen_locked = True
-trigger =
-    triggers = tio4
-    module   = basic
-io =
-    tio1       = serial_tx
-    tio2       = serial_rx
-    tio3       = high_z
-    tio4       = high_z
-    pdid       = high_z
-    pdic       = high_z
-    nrst       = high_z
-    glitch_hp  = False
-    glitch_lp  = False
-    extclk_src = hs1
-    hs2        = None
-    target_pwr = True
-glitch =
-    clk_src     = target
-    width       = 10.15625
-    width_fine  = 0
-    offset      = 10.15625
-    offset_fine = 0
-    trigger_src = manual
-    arm_timing  = after_scope
-    ext_offset  = 0
-    repeat      = 1
-    output      = clock_xor
->>> target = cw.target(scope)
-Serial baud rate = 38400
-```
-
-However you need to call the ``default_setup()`` in order to have all configured
-correctly
-
-```python
-class OpenADC(ScopeTemplate, util.DisableNewAttr):
-    """OpenADC scope object.  ..."""
-
-    def default_setup(self):
-        """Sets up sane capture defaults for this scope
-
-         *  45dB gain
-         *  5000 capture samples
-         *  0 sample offset
-         *  rising edge trigger
-         *  7.37MHz clock output on hs2
-         *  4*7.37MHz ADC clock
-         *  tio1 = serial rx
-         *  tio2 = serial tx
-
-        .. versionadded:: 5.1
-            Added default setup for OpenADC
-        """
-        self.gain.db = 25
-        self.adc.samples = 5000
-        self.adc.offset = 0
-        self.adc.basic_mode = "rising_edge"
-        self.clock.clkgen_freq = 7.37e6
-        self.trigger.triggers = "tio4"
-        self.io.tio1 = "serial_rx"
-        self.io.tio2 = "serial_tx"
-        self.io.hs2 = "clkgen"
-
-        self.clock.adc_src = "clkgen_x4"
-
-        ...
-```
-
-## Pinout
-
-| Left | number | number | Right |
-|------|--------|--------|-------|
-| 5V   | 1 | 2 | GND |
-| 3V3  | 3 | 4 | HS1/I |
-| nRST | 5 | 6 | HS2/O (output clock and glitch) |
-| MISO | 7 | 8 | VREF |
-| MOSI | 9 | 10 | IO1 (serial RX) |
-| SCK  | 11 | 12 | IO2 (serial TX) |
-| PC   | 13 | 14 | IO3 |
-| PD   | 15 | 16 | IO4 (used as a trigger) |
-| GND  | 17 | 18 | 3V3 |
-| GND  | 19 | 20 | 5V |
-
-## Updating
-
-```python
-import chipwhisperer as cw
-scope = cw.scope()
-programmer = cw.SAMFWLoader(scope=scope)
-programmer.enter_bootloader(really_enter=True)
-programmer.program('/dev/ttyACM0', hardware_type='cwlite')
-```
-
-```
-[1111253.064641] usb 2-10: USB disconnect, device number 27
-[1111253.449854] usb 2-10: new high-speed USB device number 28 using xhci_hcd
-[1111253.602083] usb 2-10: New USB device found, idVendor=03eb, idProduct=6124, bcdDevice= 1.10
-[1111253.602086] usb 2-10: New USB device strings: Mfr=0, Product=0, SerialNumber=0
-[1111253.630152] cdc_acm 2-10:1.0: ttyACM0: USB ACM device
-[1111253.630322] usbcore: registered new interface driver cdc_acm
-[1111253.630324] cdc_acm: USB Abstract Control Model driver for USB modems and ISDN adapters
-```
-
-## Power analysis
+### Power analysis
 
 Let's start with something interesting: leak information about the computation
 observing the power consumption of a device.
@@ -496,14 +33,92 @@ device are done, roughly speaking, switching on and off groups of transistors to
 perform the needed operations; since the transistors are physical entities, they
 interact with the physical world and need **energy** to move electrons around,
 so we can imagine that the power consumption would be in some way connected with
-the internal state of the processor.
+the internal state of the processor[^Nano].
 
-For an extensive explanation you can use the book "Nanometer CMOS ICs, From Basics to ASICs" pg 161
+[^Nano]: For an extensive explanation you can use the book "Nanometer CMOS ICs, From Basics to ASICs" pg 161
 
-The cwlite uses the [AD8331](https://www.analog.com/media/en/technical-documentation/data-sheets/AD8331_8332_8334.pdf) chip
-and the [AD9215](https://www.analog.com/media/en/technical-documentation/data-sheets/AD9215.pdf)
+The standard configuration for measurements like these is the following: a shunt resistor between the
+power line and the ``VCC`` pin of the target with an ``ADC`` measuring the voltage as indicated in the
+drawing below
 
-### Different instructions
+{{% pyplots %}}
+import matplotlib
+matplotlib.use('Agg')
+
+import schemdraw
+import schemdraw.elements as elm
+from schemdraw.dsp.dsp import Adc
+
+d = schemdraw.Drawing()
+
+# define as the first thing the IC so we can reference it later
+d += (target := elm.Ic(pins=[elm.IcPin('VCC', side='left')]).label('Target', loc='top'))
+
+# move the "drawing point" at the left of it
+d.move_from(target.VCC, dx=-5, dy=0)
+
+# add elements
+d += (power := elm.Vdd().label('Power', loc='top'))
+d += elm.Line().right().at(power.end)
+d += (shunt := elm.Resistor().right().label('shunt').to(target.VCC))
+
+# now stuff connected to the ADC
+d += elm.Line().at(shunt.end).down()
+d += Adc().label('ADC').down()
+
+d.draw()
+
+{{% /pyplots %}}
+
+In my experiments I'm going to use the cwlite, it has the
+[AD8331](https://www.analog.com/media/en/technical-documentation/data-sheets/AD8331_8332_8334.pdf)
+chip (a **variable gain amplifier**, ``VGA``) and the
+[AD9215](https://www.analog.com/media/en/technical-documentation/data-sheets/AD9215.pdf)
+(an **ADC**).
+
+The configuration of the ``VGA`` is such that the input impedance is 50 ohm
+(see table 7 at page 30 of the datasheet) and
+``AC``-coupled (so you don't have ``DC`` component); this explains why, since
+the input is connected to the low side of the shunt resistor on the board, you
+have negative readings: the high side is **ideally** constant (at the power
+supply voltage) so, without ``AC``-coupling you would obtain something like
+
+$$
+V_{L} = V_H - I\times R_\hbox{shunt}
+$$
+
+but removing the constant voltage, what you see from the traces is
+
+$$
+AC(V_{L}) = AC(V_H) + AC(-I\times R_\hbox{shunt}) = AC(-I\times R_\hbox{shunt})
+$$
+
+The actual value that you'll find in the traces are also affected by the
+**gain** set for the ``VGA``.
+
+**Note:** the power consumption is not technically the values that you are
+capturing but has a direct relation with them: the textbook definition is
+
+$$
+P = V\cdot I
+$$
+
+If the assumption is that the voltage is constant with **a low-amplitube varying
+component** (let's call it \\(V_{AC}\\)) we can obtain the following approximation
+
+$$
+\eqalign{
+P &= V\cdot I \cr
+&= (V_{DC} + V_{AC})\cdot I \cr
+&= V_{DC}\left(1 + {V_{AC}\over V_{DC}}\right)\cdot I\cr
+&\sim V_{DC}\cdot I\cr
+}
+$$
+
+that works fine as long as \\({V_{AC}\over V_{DC}}\\) is negligible. So at the
+end the amplitude measured is really, up to a constant, the power 
+
+#### Different instructions
 
 First of all I need to see if different instructions have different
 "energy-footprint", I try to show the power consumption of the target executing
@@ -519,37 +134,37 @@ the assembly code is the following for the last case (the other ones are simply 
 of this)
 
 ```text
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-mul	r0, r1
-rjmp	.-2
+nop             mul	r0, r1     mul	r0, r1     mul	r0, r1
+nop             mul	r0, r1     mul	r0, r1     mul	r0, r1
+nop             mul	r0, r1     mul	r0, r1     mul	r0, r1
+nop             mul	r0, r1     mul	r0, r1     mul	r0, r1
+nop             mul	r0, r1     mul	r0, r1     mul	r0, r1
+nop             mul	r0, r1     mul	r0, r1     mul	r0, r1
+nop             mul	r0, r1     mul	r0, r1     mul	r0, r1
+nop             mul	r0, r1     mul	r0, r1     mul	r0, r1
+nop             mul	r0, r1     mul	r0, r1     mul	r0, r1
+nop             mul	r0, r1     mul	r0, r1     mul	r0, r1
+rjmp	.-2     rjmp	.-2    mul	r0, r1     nop
+                               mul	r0, r1     nop
+                               mul	r0, r1     nop
+                               mul	r0, r1     nop
+                               mul	r0, r1     nop
+                               mul	r0, r1     nop
+                               mul	r0, r1     nop
+                               mul	r0, r1     nop
+                               mul	r0, r1     nop
+                               mul	r0, r1     nop
+                               rjmp	.-2        mul	r0, r1
+                                               mul	r0, r1
+                                               mul	r0, r1
+                                               mul	r0, r1
+                                               mul	r0, r1
+                                               mul	r0, r1
+                                               mul	r0, r1
+                                               mul	r0, r1
+                                               mul	r0, r1
+                                               mul	r0, r1
+                                               rjmp	.-2
 ```
 
 the tail of the capture is the ``rjmp`` instruction that loops indefinitely.
@@ -565,326 +180,754 @@ with something more useful.
 ### Correlation
 
 In the last section I showed that different instructions have different
-"footprints", probably the only possible way to use that is by timing analysis
-or differential power analysis: for example if we had a piece of code that ask
-for a password we could capture the power traces for each input character and
-we should see only one trace having a different trace (this of course if the
-algorithm is not costant-time).
+"footprints", probably the easiest possible way to use that is by timing
+analysis: for example if we had a piece of code that checks
+for a password and exits at the first wrong character, we could capture the power traces for
+every possible (first char) input and
+we should see only one having a different pattern.
 
+For now I'm not interested in performing specific attacks but to study the
+relationship between instructions and power consumption and to do this I will
+perform an "experiment" where I use as input the firmware code with the simplest
+possible assembly instructions.
+
+The first experiment is to check what we can infer from the relation between the
+argument of the instruction ``ldi r16, <value>`` and the power consumption: these
+are the (interesting portion of) instructions (``sts`` is the instruction
+triggering the capture of the trace)
+
+```
+ 6de:	c0 93 05 06 	sts	0x0605, r28
+ 6e2:	00 00       	nop
+ 6e4:	00 00       	nop
+ 6e6:	00 00       	nop
+ 6e8:	00 00       	nop
+ 6ea:	00 00       	nop
+ 6ec:	00 00       	nop
+ 6ee:	00 00       	nop
+ 6f0:	00 00       	nop
+ 6f2:	00 00       	nop
+ 6f4:	00 00       	nop
+ 6f6:	00 e0       	ldi	r16, <value>
+ 6f8:	00 00       	nop
+ 6fa:	00 00       	nop
+ 6fc:	00 00       	nop
+ 6fe:	00 00       	nop
+ 700:	00 00       	nop
+ 702:	00 00       	nop
+ 704:	00 00       	nop
+ 706:	00 00       	nop
+ 708:	00 00       	nop
+ 70a:	00 00       	nop
+ 70c:	ff cf       	rjmp	.-2
+```
+
+As you can see there is the instruction of interested sourrounded by
+input-independent code, this should make the relation standing out.
+
+After capturing 100 traces for each hamming weight it's possible to plot the
+average for each one together as in the following plot where I tried to align
+the instructions with the actual clock cycle where they **should** happen
+(I'm not sure of the alignment of the trace with the actual instructions, so the
+instruction in picture are the first guess)
+
+![](/images/side-channels/pa-hamming.png)
+
+It's possible to note "something going on" around the ``ldi`` instruction; if
+we zoom in we can see a little better
+
+![](/images/side-channels/pa-hamming-zoom.png)
+
+At first seems disaligned by half-instruction, take note of this for the
+following.
+
+Meanwhile it's possible to have a better view plotting a scatterplot of
+mean value of a given sample for a specific Hamming weight versus the
+corresponding hamming weight (the
+vertical bars are the standard deviations of each respective set of traces):
+
+![](/images/side-channels/pa-hamming-scatterplot.png)
+
+The first interesting samples have a **negative** correlation but after a couple
+of cycles this change to positive improving considerebly (note for example at
+sample 50 the standard deviations are way far from each other, this means that
+also taking noise into consideration the respective sets of traces are
+"separated").
+
+Just with one kind of instruction is not possible to deduce anything valuable
+(althought it's interesting seeing that _something is there_), now I want to try
+a different instruction: ``adc rx, <value>``.
+
+This is the code under scrutiny
+
+```
+ 6de:	c0 93 05 06 	sts	0x0605, r28
+ 6e2:	10 e0       	ldi	r17, <value>
+ 6e4:	00 e0       	ldi	r16, 0x00
+ 6e6:	00 00       	nop
+ 6e8:	00 00       	nop
+ 6ea:	00 00       	nop
+ 6ec:	00 00       	nop
+ 6ee:	00 00       	nop
+ 6f0:	00 00       	nop
+ 6f2:	00 00       	nop
+ 6f4:	00 00       	nop
+ 6f6:	00 00       	nop
+ 6f8:	00 00       	nop
+ 6fa:	01 1f       	adc	r16, r17
+ 6fc:	00 00       	nop
+ 6fe:	00 00       	nop
+ 700:	00 00       	nop
+ 702:	00 00       	nop
+ 704:	00 00       	nop
+ 706:	00 00       	nop
+ 708:	00 00       	nop
+ 70a:	00 00       	nop
+ 70c:	00 00       	nop
+ 70e:	00 00       	nop
+ 710:	ff cf       	rjmp	.-2
+```
+
+Plotting each averaged class we obtain something similar to before
+
+![](/images/side-channels/adc-hamming.png)
+
+but notice how the instructions seem aligned perfectly!
+
+![](/images/side-channels/adc-hamming-zoom.png)
+
+in particular is interesting to note that there is not in this case a negative
+correlation around the _start_ of the instruction
+
+![](/images/side-channels/adc-hamming-scatterplot.png)
+
+What explanation is available for this behavious? Well, a modern processing unit
+employs some trick to speed-up computation and a prevalent one is the
+**pipeling**, i.e., splitting the instruction life cycle in different stages and
+when the unit executed a given instruction is also doing other stuff with the
+following instructions; in particular for the XMega we have this quote from the
+manual:
 
     The AVR uses a Harvard architecture - with separate memories and buses for program and
     data. Instructions in the program memory are executed with a single level pipeline. While one
     instruction is being executed, the next instruction is pre-fetched from the
     program memory. This concept enables instructions to be executed in every clock cycle
 
-**TODO:** check if instruction after a ``jmp`` influences power consumption, for
-example I would expect that ``ldi`` would do bc of fetching but ``adc`` would
-not since should be executed if ``jmp`` was not present.
+To clarify a little better here a diagram
 
 ![](/images/side-channels/avr-pipeline-timing.png)
 
-But we can do better: as I described above, during the execution the transistors
-composing the device are "turn on/off" based on the values of the computation,
-in particular by the actual bits set and reset by the operations done.
+Now if you take a look at the [AVR instruction set manual](http://ww1.microchip.com/downloads/en/devicedoc/atmel-0856-avr-instruction-set-manual.pdf)
+you can see how the opcode for the ``ldi`` instruction is encoded:
 
-![](/images/side-channels/correlation-ldi.png)
+![](/images/side-channels/avr-ldi.png)
 
-```text
-┌ 198: int main (int argc, char **argv, char **envp);
-│           0x000006c6      cf93           push r28                    ; .././hal/xmega/xmega_hal.c:35
-│           0x000006c8      df93           push r29  
-│           0x000006ca      cdb7           in r28, 0x3d                ; IO SPL: Stack lower bits SP0-SP7
-│           0x000006cc      deb7           in r29, 0x3e                ; IO SPH: Stack higher bits SP8-SP10
-│           0x000006ce      a697           sbiw r28, 0x26
-│           0x000006d0      cdbf           out 0x3d, r28               ; IO SPL: Stack lower bits SP0-SP7
-│           0x000006d2      debf           out 0x3e, r29               ; IO SPH: Stack higher bits SP8-SP10
-│           0x000006d4      86e0           ldi r24, 0x06 
-│           0x000006d6      e0e1           ldi r30, 0x10
-│           0x000006d8      f0e2           ldi r31, 0x20
-│           0x000006da      de01           movw r26, r28 
-│           0x000006dc      9196           adiw r26, 0x21
-│           ; CODE XREF from main @ 0x6e4               
-│       ┌─> 0x000006de      0190           ld r0, z+
-│       ╎   0x000006e0      0d92           st x+, r0    
-│       ╎   0x000006e2      8a95           dec r24   
-│       └─< 0x000006e4      e1f7           brne 0x6de   
-│           0x000006e6      0e944d03       call sym.platform_init
-│           0x000006ea      0e947c02       call sym.init_uart0
-│           0x000006ee      81e0           ldi r24, 0x01
-│           0x000006f0      80930106       sts 0x601, r24
-│           0x000006f4      80e7           ldi r24, 0x70
-│           0x000006f6      0e94b902       call sym.output_ch_0
-│           0x000006fa      81e6           ldi r24, 0x61
-│           0x000006fc      0e94b902       call sym.output_ch_0
-│           0x00000700      83e7           ldi r24, 0x73
-│           0x00000702      0e94b902       call sym.output_ch_0
-│           0x00000706      83e7           ldi r24, 0x73                                                               
-│           0x00000708      0e94b902       call sym.output_ch_0
-│           0x0000070c      87e7           ldi r24, 0x77                                                               
-│           0x0000070e      0e94b902       call sym.output_ch_0
-│           0x00000712      8fe6           ldi r24, 0x6f                                                               
-│           0x00000714      0e94b902       call sym.output_ch_0
-│           0x00000718      82e7           ldi r24, 0x72
-│           0x0000071a      0e94b902       call sym.output_ch_0
-│           0x0000071e      84e6           ldi r24, 0x64
-│           0x00000720      0e94b902       call sym.output_ch_0
-│           0x00000724      8ae3           ldi r24, 0x3a
-│           0x00000726      0e94b902       call sym.output_ch_0
-│           0x0000072a      80e2           ldi r24, 0x20
-│           0x0000072c      0e94b902       call sym.output_ch_0
-│           0x00000730      ce01           movw r24, r28
-│           0x00000732      0196           adiw r24, 0x01
-│           0x00000734      7c01           movw r14, r24
-│           0x00000736      8e01           movw r16, r28
-│           0x00000738      0f5d           subi r16, 0xdf
-│           0x0000073a      1f4f           sbci r17, 0xff
-│           0x0000073c      6c01           movw r12, r24
-│           ; CODE XREF from main @ 0x750
-│       ┌─> 0x0000073e      0e94b202       call sym.input_ch_0
-│       ╎   0x00000742      d601           movw r26, r12
-│       ╎   0x00000744      8d93           st x+, r24
-│       ╎   0x00000746      6d01           movw r12, r26
-│       ╎   0x00000748      8a30           cpi r24, 0x0a
-│      ┌──< 0x0000074a      19f0           breq 0x752
-│      │╎   0x0000074c      a017           cp r26, r16
-│      │╎   0x0000074e      b107           cpc r27, r17
-│      │└─< 0x00000750      b1f7           brne 0x73e
-│      │    ; CODE XREF from main @ 0x74a
-│      └──> 0x00000752      81e0           ldi r24, 0x01
-│           0x00000754      80930506       sts 0x605, r24
-│           0x00000758      f801           movw r30, r16
-│           0x0000075a      9e01           movw r18, r28
-│           0x0000075c      2a5f           subi r18, 0xfa
-│           0x0000075e      3f4f           sbci r19, 0xff
-│           0x00000760      80e0           ldi r24, 0x00
-│           ; CODE XREF from main @ 0x772
-│       ┌─> 0x00000762      d701           movw r26, r14
-│       ╎   0x00000764      4d91           ld r20, x+
-│       ╎   0x00000766      7d01           movw r14, r26
-│       ╎   0x00000768      9191           ld r25, z+
-│       ╎   0x0000076a      9427           eor r25, r20
-│       ╎   0x0000076c      892b           or r24, r25
-│       ╎   0x0000076e      a217           cp r26, r18
-│       ╎   0x00000770      b307           cpc r27, r19
-│       └─< 0x00000772      b9f7           brne 0x762
-│       ┌─< 0x00000774      8111           cpse r24, r1
-│       ──> 0x00000776      ffcf           rjmp 0x776
-│       │   ; CODE XREF from main @ 0x774
-│       └─> 0x00000778      87e5           ldi r24, 0x57
-│           0x0000077a      0e94b902       call sym.output_ch_0
-│           0x0000077e      89e4           ldi r24, 0x49
-│           0x00000780      0e94b902       call sym.output_ch_0
-│           0x00000784      8ee4           ldi r24, 0x4e
-│           0x00000786      0e94b902       call sym.output_ch_0
-└        ─> 0x0000078a      ffcf           rjmp 0x78a
+i.e. the value to put in the register is encoded directly in the instruction
+that is read in the fetching stage during the previous instruction!
+
+With this in mind for now on I assume that the alignment is correct (another
+implicit assumption is that the ``sts`` instruction, that is two-cycles long,
+executes at the last cycle); while
+I'm at it I want to double-proof the _fetching stage_ assumption for ``ldi``
+putting an infinite loop just before it :)
+
+Observe what happens if we flash this code
+
+```
+ 6de:	c0 93 05 06 	sts	0x0605, r28	; 0x800605 <__TEXT_REGION_LENGTH__+0x7de605>
+ 6e2:	00 00       	nop
+ 6e4:	00 00       	nop
+ 6e6:	00 00       	nop
+ 6e8:	00 00       	nop
+ 6ea:	00 00       	nop
+ 6ec:	00 00       	nop
+ 6ee:	00 00       	nop
+ 6f0:	00 00       	nop
+ 6f2:	00 00       	nop
+ 6f4:	00 00       	nop
+ 6f6:	ff cf       	rjmp	.-2      	; 0x6f6 <main+0x56>
+ 6f8:	00 e0       	ldi	r16, <value>
 ```
 
-With our model we can now look for correlation between traces and the SBox-es
-output: I'm going to use the following function to calculate it
+![](/images/side-channels/ldi-hamming.png)
 
-```python
-def correlation_trace_sbox_for_byte_at(key_guess, traces, texts, bnum, trace_avg, trace_stddev):
-    """Correlation between trace values and hamming value
-    for the bnum-th byte and key "key_guess"."""
-    hws = np.array([[HW[aes_internal(textin[bnum], key_guess)] for textin in texts]]).transpose()
-    hws_avg = mean(hws)
-    
-    return cov(traces, trace_avg, hws, hws_avg)/trace_stddev/std_dev(hws, hws_avg)
-```
+it's clearly visible a repeated pattern, look at this zoom
 
-Plotting the correlation associated with the greatest value I obtain a very good
-looking image of the internal of the algorithm:
+![](/images/side-channels/ldi-hamming-zoom.png)
 
-![](/images/side-channels/correlation-sbox.png)
+and the repeation in the correlation
 
-It's easy to distinguish between the various blocks of the first round of the key.
+![](/images/side-channels/ldi-hamming-scatterplot.png)
 
-To check that what we are seeing makes sense, look at the code in ``simpleserial-aes`` that we flashed:
-here there is the code that triggers the capture from the chipwhisperer
+Compare what you have seen with the same concept applied to the ``adc``
 
+![](/images/side-channels/adc-loop-over-hamming.png)
+
+No correlation at all! I mean, this would have been obvious from the start but
+it's always better to double check unexpected results :)
+
+Now to improve on my experiment I decided to change strategy: until now I
+flashed a different code every time I wanted to read a particular value for
+``ldi`` but this involves overwriting the flash so I decided to write some code
+to build a **jump table**; with this code a character is read from the serial,
+converted to an integer and used as an index to jump to a specific block where
+the ``ldi r16, <value>`` is waiting to execute (I have a specific [post](link://slug/reversing-avr-code) about
+reversing ``AVR`` assembly if you want to understand what is happening).
+
+![](/images/side-channels/ldi-jump-table-hamming.png)
+
+and also in this case it's pretty amazing how the instructions align perfectly
+(by the way, an [old AVR instruction set manual indicated contradicting values for
+the number of cycles for the ``ldd`` instruction](https://www.reddit.com/r/avr/comments/s3p2yl/contradictory_information_about_cycles_for_the/) so I used this captures as a
+evidence for the correct number).
+
+There is only one thing that bothers me, there is apparently a "tail" after the
+instruction that shouldn't be there, my educated guess is that the ``ADC``
+frontend, being ``AC`` coupled causes this anomaly since the capacitor in front
+of the measuring device has a change oscillating with the flow of current.
+
+On order to test this I tried to capture the power consumption using my trusty
+Siglent using some python code that I wrote, but this is argument of the section
+a little below. For now a little reasoning about statistics.
+
+## Statistical distribution of inputs
+
+I want to add a little reasoning about the statistical distribution of the
+inputs used in my experiments: from the start the point was to study the
+relation between Hamming weight and the resulting power traces but you have to
+take in mind that not all the weights are "equal" in terms of distribution: this
+is a table indicating how many elements with a given weight are possible disposing
+of 8bits
+
+| Hamming Weight | # elements |
+|----------------|------------|
+| 0 | 1 |
+| 1 | 8 |
+| 2 | 28 |
+| 3 | 56 |
+| 4 | 70 |
+| 5 | 56 |
+| 6 | 28 |
+| 7 | 8 |
+| 8 | 1 |
+
+All this table can be summarized by the formula
+
+$$
+\\#\hbox{elements with Hamming weight } w = {8\choose w}
+$$
+
+(it's a pretty standard exercise of statistics: you "extract" 8 "balls"
+without replacement where \\(w\\) are "white").
+
+The problem is that the elements of weight 8 and 0 are under-represented if we
+chose to extract randomly an element from the set of 8bits input, so at first I
+was tempted to use as input-generating-algorithm one that selects at random
+first the hamming weight and then shuffles the bits position. This generates a
+**uniform distribution with respect to the Hamming weights**.
+
+This is ok if you are looking only at the hamming weight but take into account
+that a very common operation to perform in order to understand bit transition is
+the **xor** operation: this is a table
+
+| A | B | A \\(\oplus\\) B |
+|---|---|-----------------|
+| 0 | 0 | 0 |
+| 0 | 1 | 1 |
+| 1 | 0 | 1 |
+| 1 | 1 | 0 |
+
+it's pretty simple to observe that we can use the ``xor`` operation as a
+flipping-bits device: if we have an input \\(i\in I\\) and a key \\(k\in K\\)
+where \\(h_i\\) is the Hamming weight of the input and \\(h_k\\) the Hamming weight of
+the key, we have that the key is flipping \\(h_k\\) bits of the input, possibly
+modifying the Hamming weight between a range of 
+
+$$
+A\oplus B = B \oplus A
+$$
+
+$$
+\eqalign{
+S \oplus F &= D \cr
+S \oplus F \oplus F &= D \oplus F \cr
+S &= D \oplus F \cr
+}
+$$
+
+Since the **Hamming distance** is defined as [^HD]
+
+$$
+HD(S, D) = HW(S\oplus D)
+$$
+
+
+[^HD]: Hacker's delight pg95 and pg343
+
+suppose \\(h_i \leq h_k\\) we can rearrange the order of the bits so that the input
+has all the set bits on one "side" so we can flip all the one bits and \\(h_k - h_1\\)
+zero bits as a least HW obtainaible and we can 
+
+**no, key is not continuous**
+
+Let be \\(C(h_i, h_k, a, b)\\) the number of combinations that cause the input to
+flip \\(a\\) 1bits and \\(b\\) 0bits
+
+
+
+However this is also problematic because this operation doesn't
+preserve the _uniformity_ of the statistical distribution of the Hamming weight as I build it.
+Let me explain.
+
+When you apply the ``xor`` operation to an input you have some bit flips, if
+they happen where the input had a bit set the Hamming weight decrements by one,
+otherwise the opposite happens.
+
+Let \\(i\in I\\) be the input byte, \\(h_{I}\\) the Hamming weight associated to it,
+i.e., \\(h_I\\) bits are set. Let be \\(k\in K\\) the element we are xoring the input with,
+having \\(h_k\\) as Hamming weight. The average of the Hamming weight is given
+by (we are averaging over the input space)
+
+$$
+\begin{align}
+\langle\hbox{HW}(I\oplus k)\rangle &= \sum_{i\in I} p(i) \hbox{HW}(i\oplus k) \cr
+&= \sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i) \hbox{HW}(i\oplus k) \cr
+&= \sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i) \left(\hbox{HW}(k) + \Delta\hbox{HW}_k(i)\right) \cr
+\end{align}
+$$
+
+$$
+\begin{align}
+&= \sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i) \hbox{HW}(k) + \sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i) \Delta\hbox{HW}_k(i) \cr
+&= \hbox{HW}(k)\sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i)  + \sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i) \Delta\hbox{HW}_k(i) \cr
+&= \hbox{HW}(k) + \sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i) \Delta\hbox{HW}_k(i) \cr
+\end{align}
+$$
+
+Note how is important in the equation the probability distribution \\(p(i)\\) of
+the input bytes; in the case of the uniform distribution with respect to the
+bytes we have \\(p(i) = 1/256\\), meanwhile in the case of uniform Hamming
+weight distribution we have \\({1\over p(i)} = 9{8\choose h_i}\\).
+
+Note how a permutation of the bits order doesn't change the Hamming weight, so the
+iteration over the space of the inputs with given Hamming weight is the same as
+the iteration over the space of the key with the same Hamming weight of the
+starting key maintaining fixed the input.
+
+This means that for a constant \\(p(i)\\) we have
+
+$$
+\langle\hbox{HW}\[I\oplus k]\rangle =\langle\hbox{HW}\[i\oplus K]\rangle
+$$
+
+If we have an key with HW equal to \\(h_k\\) and we want to calculate the sum
+over all the inputs with a given HW \\(h_i\\) fixed we have
+
+\\(\overline{h}_i = 8-h_i\\)
+
+This is the number of xoring with \\(u\\) transitions \\(0\rightarrow 1\\)
+and \\(d\\) transitions \\(1\rightarrow0\\) of \\(i\\)
+
+$$
+C(h_i, h_k, u, d) = {h_i\choose u}{8 - h_i\choose d}\;\hbox{where}\;
+\cases{
+    u + d = h_k &\cr
+    u\in\\{h_i - \overline h_k, \dots,h_i\\}&if $h_i\geq\overline h_k$ \cr
+    u\in\\{0, \dots,h_i\\} & if $h_i\leq\overline h_k$ and $h_i\leq h_k$ \cr
+    u\in\\{0, \dots,h_k\\} & if $h_i\leq\overline h_k$ and $h_i\geq h_k$ \cr
+}
+$$
+
+## A more realistic case
+
+Now I want to try to apply to the simplest difficult problem, i.e., trying
+to break a constant time password comparison; the code is the following
 
 ```c
-/* This is the function that takes our input */
-uint8_t get_pt(uint8_t* pt)
+#define PASSWORD "kebab"
+#define SIZE_INPUT 32
+
+int main(void)
 {
-    aes_indep_enc_pretrigger(pt);
-    
-	trigger_high();
 
-	aes_indep_enc(pt); /* encrypting the data block */
-	trigger_low();
-    
-    aes_indep_enc_posttrigger(pt);
-    
-	simpleserial_put('r', 16, pt);
-	return 0x00;
-}
-```
+    char password[] = PASSWORD;
 
-and here the outer most routines
+    platform_init();
+    init_uart();
+    trigger_setup();
 
-```c
-void aes_indep_enc(uint8_t * pt)
-{
-	AES128_ECB_indp_crypto(pt);
-}
+    /* banner requesting the password */
+    putch('p');
+    putch('a');
+    putch('s');
+    putch('s');
+    putch('w');
+    putch('o');
+    putch('r');
+    putch('d');
+    putch(':');
+    putch(' ');
 
-void AES128_ECB_indp_crypto(uint8_t* input)
-{
-  state = (state_t*)input;
-  BlockCopy(input_save, input);
-  Cipher();
-}
-```
+    /* taking the password, waiting for a newline or for SIZE_INPUT characters */
+    char c;
+    char input[SIZE_INPUT];
+    unsigned int input_index = 0;
 
-``Cipher`` is what triggers the encryption, and its first operation is to
-initialize the first round key
+    do {
+        c = getch();
+        input[input_index++] = c;
+    } while(c != '\n' && input_index < SIZE_INPUT);
 
-```c
-// Cipher is the main function that encrypts the PlainText.
-static void Cipher(void)
-{
-    uint8_t round = 0;
+    trigger_high();
 
-    // Add the First round key to the state before starting the rounds.
-    AddRoundKey(0); 
+    unsigned char result = 0;
 
-  // There will be Nr rounds.
-  // The first Nr-1 rounds are identical.
-  // These Nr-1 rounds are executed in the loop below.
-  for(round = 1; round < Nr; ++round)
-  {
-    SubBytes();
-    ...
-}
-// This function adds the round key to state.
-// The round key is added to the state by an XOR function.
-static void AddRoundKey(uint8_t round)
-{
-  uint8_t i,j;
-  for(i=0;i<4;++i)
-  {
-    for(j = 0; j < 4; ++j)
-    {
-      (*state)[i][j] ^= RoundKey[round * Nb * 4 + i * Nb + j];
+    for (uint8_t index = 0 ; index < strlen(PASSWORD) ; index++) {
+        result |= input[index] ^ password[index];
     }
-  }
-}
 
-// The SubBytes Function Substitutes the values in the
-// state matrix with values in an S-box.
-static void SubBytes(void)
-{
-  uint8_t i, j;
-  for(i = 0; i < 4; ++i)
-  {
-    for(j = 0; j < 4; ++j)
-    {
-      (*state)[j][i] = getSBoxValue((*state)[j][i]);
-    }
-  }
+    if (result)
+        while(1);
+
+    putch('W');
+    putch('I');
+    putch('N');
+
+    while(1);
 }
 ```
 
-To have an idea of the actual clock cycles we need to look at the assembly code
-produced from the compiler
-
-```text
-[0x0000082a]> pdf @ sym.SubBytes 
-            ; CALL XREFS from sym.Cipher @ 0x94e, 0x9c6
-┌ 46: sym.SubBytes ();
-│           0x00000848      20912223       lds r18, 0x2322
-│           0x0000084c      30912323       lds r19, 0x2323
-│           0x00000850      94e0           ldi r25, 0x04
-│           ; CODE XREF from sym.SubBytes @ 0x872
-│       ┌─> 0x00000852      d901           movw r26, r18  (1)
-│       ╎   0x00000854      80e0           ldi r24, 0x00  (1)
-│       ╎   ; CODE XREF from sym.SubBytes @ 0x868
-│      ┌──> 0x00000856      ec91           ld r30, x      (2)
-│      ╎╎   0x00000858      f0e0           ldi r31, 0x00  (1)
-│      ╎╎   0x0000085a      e55f           subi r30, 0xf5 (1)
-│      ╎╎   0x0000085c      fe4d           sbci r31, 0xde (1)
-│      ╎╎   0x0000085e      4081           ld r20, z      (2)
-│      ╎╎   0x00000860      4c93           st x, r20      (2)
-│      ╎╎   0x00000862      8f5f           subi r24, 0xff (1)
-│      ╎╎   0x00000864      1496           adiw r26, 0x04 (1)
-│      ╎╎   0x00000866      8430           cpi r24, 0x04  (1)
-│      └──< 0x00000868      b1f7           brne 0x856     (1/2)
-│       ╎   0x0000086a      9150           subi r25, 0x01 (1)
-│       ╎   0x0000086c      2f5f           subi r18, 0xff (1)
-│       ╎   0x0000086e      3f4f           sbci r19, 0xff (1)
-│      ┌──< 0x00000870      9111           cpse r25, r1   (1/2/3)
-│      │└─< 0x00000872      efcf           rjmp 0x852     (2)
-│      │    ; CODE XREF from sym.SubBytes @ 0x870
-└      └──> 0x00000874      0895           ret
-```
-
-**Note:** look for the [Atmel AVR Instruction Set Manual](http://ww1.microchip.com/downloads/en/devicedoc/atmel-0856-avr-instruction-set-manual.pdf) to have a detailed
-explanation of instructions and clock cycles.
-
-If I plot all the traces above together and manually zoom for the actual time intervals
-
-![](/images/side-channels/correlation-input-zoom.png)
-
-I obtain the following values (the first row contains the time value of the most
-correlated peak, the second row the difference between the adjacent ones)
+and this is the generated assembly (I advice always to check generated code
+because the compiler sometimes does magic)
 
 ```
-1938  1994  2050  2106  2190  2246  2302  2358  2442  2498  2554  2610  2694  2750  2806  2862
-    56    56    56    84    56    56    56    84    56    56    56    84    56    56    56
+000006c6 <main>:
+ 6c6:   cf 93           push    r28
+ 6c8:   df 93           push    r29
+ 6ca:   cd b7           in      r28, 0x3d       ; 61
+ 6cc:   de b7           in      r29, 0x3e       ; 62
+ 6ce:   a6 97           sbiw    r28, 0x26       ; 38 <--- allocate 38 byte on the stack (32 for the input, 6 for the hardcoded password (that includes the null byte))
+ 6d0:   cd bf           out     0x3d, r28       ; 61
+ 6d2:   de bf           out     0x3e, r29       ; 62
+ 6d4:   86 e0           ldi     r24, 0x06       ; 6  <--- set the counter to six
+ 6d6:   e0 e1           ldi     r30, 0x10       ; 16
+ 6d8:   f0 e2           ldi     r31, 0x20       ; 32 <--- set the source Z to the password
+ 6da:   de 01           movw    r26, r28             <--- set dest to X (on the stack)
+ 6dc:   91 96           adiw    r26, 0x21       ; 33 <--- with a starting offset of 33
+ 6de:   01 90           ld      r0, Z+               <---- loop starts here with r0 = *Z++
+ 6e0:   0d 92           st      X+, r0               <---- *(X++) = r0
+ 6e2:   8a 95           dec     r24                  <---- decrement counter
+ 6e4:   e1 f7           brne    .-8                  <---- jump if not zero -------
+ 6e6:   0e 94 4d 03     call    0x69a   ; 0x69a <platform_init>
+ 6ea:   0e 94 7c 02     call    0x4f8   ; 0x4f8 <init_uart0>
+ 6ee:   81 e0           ldi     r24, 0x01       ; 1
+ 6f0:   80 93 01 06     sts     0x0601, r24     ; 0x800601 <__TEXT_REGION_LENGTH__+0x7de601>
+ 6f4:   80 e7           ldi     r24, 0x70       ; 112
+ 6f6:   0e 94 b9 02     call    0x572   ; 0x572 <output_ch_0>
+ 6fa:   81 e6           ldi     r24, 0x61       ; 97
+ 6fc:   0e 94 b9 02     call    0x572   ; 0x572 <output_ch_0>
+ 700:   83 e7           ldi     r24, 0x73       ; 115
+ 702:   0e 94 b9 02     call    0x572   ; 0x572 <output_ch_0>
+ 706:   83 e7           ldi     r24, 0x73       ; 115
+ 708:   0e 94 b9 02     call    0x572   ; 0x572 <output_ch_0>
+ 70c:   87 e7           ldi     r24, 0x77       ; 119
+ 70e:   0e 94 b9 02     call    0x572   ; 0x572 <output_ch_0>
+ 712:   8f e6           ldi     r24, 0x6F       ; 111
+ 714:   0e 94 b9 02     call    0x572   ; 0x572 <output_ch_0>
+ 718:   82 e7           ldi     r24, 0x72       ; 114
+ 71a:   0e 94 b9 02     call    0x572   ; 0x572 <output_ch_0>
+ 71e:   84 e6           ldi     r24, 0x64       ; 100
+ 720:   0e 94 b9 02     call    0x572   ; 0x572 <output_ch_0>
+ 724:   8a e3           ldi     r24, 0x3A       ; 58
+ 726:   0e 94 b9 02     call    0x572   ; 0x572 <output_ch_0>
+ 72a:   80 e2           ldi     r24, 0x20       ; 32
+ 72c:   0e 94 b9 02     call    0x572   ; 0x572 <output_ch_0>
+ 730:   ce 01           movw    r24, r28
+ 732:   01 96           adiw    r24, 0x01       ; 1
+ 734:   7c 01           movw    r14, r24
+ 736:   8e 01           movw    r16, r28
+ 738:   0f 5d           subi    r16, 0xDF       ; 223 <--- r16 = fp - 32
+ 73a:   1f 4f           sbci    r17, 0xFF       ; 255
+ 73c:   6c 01           movw    r12, r24
+ 73e:   0e 94 b2 02     call    0x564   ; 0x564 <input_ch_0>
+ 742:   d6 01           movw    r26, r12
+ 744:   8d 93           st      X+, r24
+ 746:   6d 01           movw    r12, r26
+ 748:   8a 30           cpi     r24, 0x0A       ; 10
+ 74a:   19 f0           breq    .+6             ; 0x752 <main+0x8c>
+ 74c:   a0 17           cp      r26, r16
+ 74e:   b1 07           cpc     r27, r17
+ 750:   b1 f7           brne    .-20
+ 752:   81 e0           ldi     r24, 0x01       ; 1
+ 754:   80 93 05 06     sts     0x0605, r24
+ 758:   f8 01           movw    r30, r16        <--- Z points to password
+ 75a:   9e 01           movw    r18, r28
+ 75c:   2a 5f           subi    r18, 0xFA       ; 250
+ 75e:   3f 4f           sbci    r19, 0xFF       ; 255
+ 760:   80 e0           ldi     r24, 0x00       ; 0
+ 762:   d7 01           movw    r26, r14        <--- loop starts here
+ 764:   4d 91           ld      r20, X+
+ 766:   7d 01           movw    r14, r26
+ 768:   91 91           ld      r25, Z+
+ 76a:   94 27           eor     r25, r20
+ 76c:   89 2b           or      r24, r25
+ 76e:   a2 17           cp      r26, r18
+ 770:   b3 07           cpc     r27, r19
+ 772:   b9 f7           brne    .-18            ; 0x762 <main+0x9c>
+ 774:   81 11           cpse    r24, r1
+ 776:   ff cf           rjmp    .-2             ; 0x776 <main+0xb0>
+ 778:   87 e5           ldi     r24, 0x57       ; 87
+ 77a:   0e 94 b9 02     call    0x572   ; 0x572 <output_ch_0>
+ 77e:   89 e4           ldi     r24, 0x49       ; 73
+ 780:   0e 94 b9 02     call    0x572   ; 0x572 <output_ch_0>
+ 784:   8e e4           ldi     r24, 0x4E       ; 78
+ 786:   0e 94 b9 02     call    0x572   ; 0x572 <output_ch_0>
+ 78a:   ff cf           rjmp    .-2             ; 0x78a <main+0xc4>
 ```
 
-(I took the highest peaks as "markers"); since the ``ADC`` is capturing 4 times
-the actual device's clock, we have the 14 and 21 clock cycles between the
-operations. **This is what we have found looking at the assembly!**
+Let see a single capture
 
-But wait a moment: for sure there is also some instructions that interact with
-the input bytes and we can do the same reasoning about correlation: using the
-following function
+![](/images/side-channels/constant-time-trace.png)
 
-```python
-def correlation_trace_input_for_byte_at(traces, texts, bnum, trace_avg, trace_stddev):
-    """Correlation between trace values and hamming value for the bnum-th byte of input."""
-    hws = np.array([[HW[textin[bnum]] for textin in texts]]).transpose()
-    hws_avg = mean(hws)
-    
-    return cov(traces, trace_avg, hws, hws_avg)/trace_stddev/std_dev(hws, hws_avg)
-```
+it's possible to deduce that there are five iterations happening before the
+infinite loop (five is the number of characters in the password).
 
-the following is obtained
+Now if we perform the experiment we obtain, studying only the power consumption
+in relation to the 0th byte of input, as follow: it's possible to see "something
+happening" only in the first iteration of the loop (actually there is something
+going on also at the start of the second iteration, but "less").
 
-![](/images/side-channels/correlation-input.png)
+![](/images/side-channels/constant-time-0th-hamming.png)
 
-```c
-static void BlockCopy(uint8_t* output, const uint8_t* input)
-{
-  uint8_t i;
-  for (i=0;i<KEYLEN;++i)
-  {
-    output[i] = input[i];
-  }
+here the zoom
+
+![](/images/side-channels/constant-time-0th-hamming-zoom.png)
+
+Now I want to try something new: remember the stuff above about the ``xor``? in
+this case I want to try to find for each sample the element which xor creates
+the most correlated relation. And something interesting come out: obviously the
+majority of samples have no correlation with nothing, in a couple of points
+there is correlation with the input bytes but specific samples (corresponding
+to the instruction ``ld r25, Z+``, i.e. the instruction loading the hardcoded
+password into a register) correlate to the password!
+
+Here the results where each entry is the best correlation between the i-th input
+byte (row) and the j-th iteration of the instruction (column):
+
+<style type="text/css">
+#T_7eb3e_row0_col0 {
+  background-color: #289049;
+  color: #f1f1f1;
 }
+#T_7eb3e_row0_col1, #T_7eb3e_row0_col2, #T_7eb3e_row0_col3, #T_7eb3e_row0_col4, #T_7eb3e_row0_col5, #T_7eb3e_row1_col0, #T_7eb3e_row1_col2, #T_7eb3e_row1_col3, #T_7eb3e_row1_col4, #T_7eb3e_row1_col5, #T_7eb3e_row2_col0, #T_7eb3e_row2_col1, #T_7eb3e_row2_col3, #T_7eb3e_row2_col4, #T_7eb3e_row2_col5, #T_7eb3e_row3_col0, #T_7eb3e_row3_col1, #T_7eb3e_row3_col2, #T_7eb3e_row3_col4, #T_7eb3e_row3_col5, #T_7eb3e_row4_col0, #T_7eb3e_row4_col1, #T_7eb3e_row4_col2, #T_7eb3e_row4_col3, #T_7eb3e_row4_col5 {
+  background-color: #f7fcf5;
+  color: #000000;
+}
+#T_7eb3e_row1_col1 {
+  background-color: #0a7633;
+  color: #f1f1f1;
+}
+#T_7eb3e_row2_col2 {
+  background-color: #006529;
+  color: #f1f1f1;
+}
+#T_7eb3e_row3_col3 {
+  background-color: #004e1f;
+  color: #f1f1f1;
+}
+#T_7eb3e_row4_col4 {
+  background-color: #00441b;
+  color: #f1f1f1;
+}
+</style>
+<table id="T_7eb3e_">
+  <thead>
+    <tr>
+      <th class="blank level0" >&nbsp;</th>
+      <th class="col_heading level0 col0" >0</th>
+      <th class="col_heading level0 col1" >1</th>
+      <th class="col_heading level0 col2" >2</th>
+      <th class="col_heading level0 col3" >3</th>
+      <th class="col_heading level0 col4" >4</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th id="T_7eb3e_level0_row0" class="row_heading level0 row0" >0</th>
+      <td id="T_7eb3e_row0_col0" class="data row0 col0" >b'k':0.73</td>
+      <td id="T_7eb3e_row0_col1" class="data row0 col1" >b'\xeb':0.26</td>
+      <td id="T_7eb3e_row0_col2" class="data row0 col2" >b'\xd4':0.06</td>
+      <td id="T_7eb3e_row0_col3" class="data row0 col3" >b'\xfe':0.05</td>
+      <td id="T_7eb3e_row0_col4" class="data row0 col4" >b'\xd6':0.04</td>
+    </tr>
+    <tr>
+      <th id="T_7eb3e_level0_row1" class="row_heading level0 row1" >1</th>
+      <td id="T_7eb3e_row1_col0" class="data row1 col0" >b'F':0.02</td>
+      <td id="T_7eb3e_row1_col1" class="data row1 col1" >b'e':0.76</td>
+      <td id="T_7eb3e_row1_col2" class="data row1 col2" >b'\xe5':0.25</td>
+      <td id="T_7eb3e_row1_col3" class="data row1 col3" >b'\xde':0.07</td>
+      <td id="T_7eb3e_row1_col4" class="data row1 col4" >b'\xda':0.06</td>
+    </tr>
+    <tr>
+      <th id="T_7eb3e_level0_row2" class="row_heading level0 row2" >2</th>
+      <td id="T_7eb3e_row2_col0" class="data row2 col0" >b'\xbb':0.02</td>
+      <td id="T_7eb3e_row2_col1" class="data row2 col1" >b'z':0.01</td>
+      <td id="T_7eb3e_row2_col2" class="data row2 col2" >b'b':0.78</td>
+      <td id="T_7eb3e_row2_col3" class="data row2 col3" >b'\xe2':0.25</td>
+      <td id="T_7eb3e_row2_col4" class="data row2 col4" >b'\xbd':0.06</td>
+    </tr>
+    <tr>
+      <th id="T_7eb3e_level0_row3" class="row_heading level0 row3" >3</th>
+      <td id="T_7eb3e_row3_col0" class="data row3 col0" >b'\xbf':0.11</td>
+      <td id="T_7eb3e_row3_col1" class="data row3 col1" >b'\x9f':0.10</td>
+      <td id="T_7eb3e_row3_col2" class="data row3 col2" >b'\xbf':0.06</td>
+      <td id="T_7eb3e_row3_col3" class="data row3 col3" >b'a':0.80</td>
+      <td id="T_7eb3e_row3_col4" class="data row3 col4" >b'\xe1':0.20</td>
+    </tr>
+    <tr>
+      <th id="T_7eb3e_level0_row4" class="row_heading level0 row4" >4</th>
+      <td id="T_7eb3e_row4_col0" class="data row4 col0" >b']':0.02</td>
+      <td id="T_7eb3e_row4_col1" class="data row4 col1" >b'\xf7':0.01</td>
+      <td id="T_7eb3e_row4_col2" class="data row4 col2" >b'v':0.01</td>
+      <td id="T_7eb3e_row4_col3" class="data row4 col3" >b'\xdf':0.02</td>
+      <td id="T_7eb3e_row4_col4" class="data row4 col4" >b'b':0.81</td>
+    </tr>
+  </tbody>
+</table>
+
+
+and the diagonal contains the password (the floating point number is the value
+of the correlation). For completness here the table with the iterations along the
+rows and the (eight) samples related to the instruction along the columns
+
+
+| sample index | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+|--------------|---|---|---|---|---|---|---|---|
+| 44           |b'\x00'	0.56 |b'+'	0.68 |b'+'	0.73 |b'k'	0.72 |b'k'	0.71 |b'+'	0.60 | b'+'	0.61 |b'+'	0.58 |
+| 92           |b'\x80'	0.20 |b'e'	0.67 |b'e'	0.76 |b'e'	0.76 |b'e'	0.74 |b'e'	0.42 |b'e'	0.40 |b'e'	0.39 | 
+| 140          |b'A'	0.18 |b'b'	0.72 |b'b'	0.78 |b'b'	0.78 |b'b'	0.76 |b'b'	0.43 |b'b'	0.41 |b'b'	0.39 |
+| 188          |b'\x88'	0.13 |b'a'	0.73 |b'a'	0.80 |b'a'	0.80 |b'a'	0.78 |b'a'	0.45 |b'a'	0.44 |b'a'	0.42 |
+| 236          |b'@'	0.21 |b'b'	0.76 |b'b'	0.82 |b'b'	0.81 |b'b'	0.80 |b'b'	0.45 |b'b'	0.43 |b'b'	0.41 |
+
+Now with this discovery I would expect to see a symmetric relation with the
+``ldd r20, X+`` instruction: if we have correlation between the input byte
+(``ldd r20, X+``) and the password byte (``ldd r25, Z+``) in a given iteration I would expect to see a
+similar correlation between the password byte and the following iteration input byte but this doesn't happen;
+if you look at the table with the most correlated bytes you see that there are
+interesting correlation with **two** previous iteration (sample 129, 177, 225)
+
+| sample index | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+|--------------|---|---|---|---|---|---|---|---|
+| 32           |b'\xb1' 0.01 |b'\x03'	0.82 |b'\x03'	0.87 |b'\x03'	0.86 |b'\x03'	0.83 |b'\x00'	0.90 |b'\x00'	0.91 |b'\x00'	0.90 |
+| 80           |b'm'	0.01 |b'\xa1'	0.82 |b'\xa1'	0.88 |b'\xa1'	0.87 |b'\xa1'	0.85 |b'\x80'	0.64 |b'\x80'	0.67 |b'\x80'	0.66 |
+| 128          |b'\x15'	0.01 |b'k'	0.78 |b'k'	0.85 |b'k'	0.83 |b'k'	0.81 |b'\x00'	0.44 |b'\x80'	0.49 |b'\x80'	0.49 |
+| 176          |b'\x9f'	0.09 |b'e'	0.82 |b'e'	0.88 |b'e'	0.87 |b'e'	0.85 |b'\x00'	0.50 |b'\x00'	0.55 |b'\x80'	0.54 |
+| 224          |b'\xf7'	0.01 |b'b'	0.79 |b'b'	0.86 |b'b'	0.84 |b'b'	0.82 |b'\x00'	0.52 |b'\x80'	0.55 |b'\x80'	0.55 |
+
+```
+movw    r26, r14
+ld      r20, X+
+movw    r14, r26
+ld      r25, Z+
+eor     r25, r20
+or      r24, r25
+cp      r26, r18
+cpc     r27, r19
+brne    .-18
 ```
 
-what in reality we want is the assembly code
+![](/images/side-channels/constant-time-cross-corr.png)
 
-```text
-000009ea <BlockCopy>:
- 9ea:   9b 01           movw    r18, r22  (1)
- 9ec:   20 5f           subi    r18, 0xF0 (1)
- 9ee:   3f 4f           sbci    r19, 0xFF (1)
- 9f0:   fb 01           movw    r30, r22  (1)
- 9f2:   41 91           ld      r20, Z+   (1)
- 9f4:   bf 01           movw    r22, r30  (1)
- 9f6:   fc 01           movw    r30, r24  (1)
- 9f8:   41 93           st      Z+, r20   (1)
- 9fa:   cf 01           movw    r24, r30  (1)
- 9fc:   62 17           cp      r22, r18  (1)
- 9fe:   73 07           cpc     r23, r19  (1)
- a00:   b9 f7           brne    .-18      (1/2)
- a02:   08 95           ret               (4/5)
+At this point manually crafted assembly comes to the rescue: with the following
+code (and with a different password set to "armedilzo")
+
+```
+ 75a:	80 93 05 06 	sts	0x0605, r24	; 0x800605 <__TEXT_REGION_LENGTH__+0x7de605>
+ 75e:	00 e0       	ldi	r16, 0x00	; 0
+ 760:	d9 a0       	ldd	r13, Y+33	; 0x21
+ 762:	fa a0       	ldd	r15, Y+34	; 0x22
+ 764:	1b a1       	ldd	r17, Y+35	; 0x23
+ 766:	ac a1       	ldd	r26, Y+36	; 0x24
+ 768:	ed a1       	ldd	r30, Y+37	; 0x25
+ 76a:	6e a1       	ldd	r22, Y+38	; 0x26
+ 76c:	4f a1       	ldd	r20, Y+39	; 0x27
+ 76e:	28 a5       	ldd	r18, Y+40	; 0x28
+ 770:	89 a5       	ldd	r24, Y+41	; 0x29
+ 772:	e9 80       	ldd	r14, Y+1	; 0x01
+ 774:	de 24       	eor	r13, r14
+ 776:	0d 29       	or	r16, r13
+ 778:	ea 80       	ldd	r14, Y+2	; 0x02
+ 77a:	fe 24       	eor	r15, r14
+ 77c:	0f 29       	or	r16, r15
+ 77e:	eb 80       	ldd	r14, Y+3	; 0x03
+ 780:	1e 25       	eor	r17, r14
+ 782:	01 2b       	or	r16, r17
+ 784:	ec 80       	ldd	r14, Y+4	; 0x04
+ 786:	ae 25       	eor	r26, r14
+ 788:	0a 2b       	or	r16, r26
+ 78a:	ed 80       	ldd	r14, Y+5	; 0x05
+ 78c:	ee 25       	eor	r30, r14
+ 78e:	0e 2b       	or	r16, r30
+ 790:	ee 80       	ldd	r14, Y+6	; 0x06
+ 792:	6e 25       	eor	r22, r14
+ 794:	06 2b       	or	r16, r22
+ 796:	ef 80       	ldd	r14, Y+7	; 0x07
+ 798:	4e 25       	eor	r20, r14
+ 79a:	04 2b       	or	r16, r20
+ 79c:	e8 84       	ldd	r14, Y+8	; 0x08
+ 79e:	2e 25       	eor	r18, r14
+ 7a0:	02 2b       	or	r16, r18
+ 7a2:	e9 84       	ldd	r14, Y+9	; 0x09
+ 7a4:	8e 25       	eor	r24, r14
+ 7a6:	08 2b       	or	r16, r24
+ 7a8:	01 11       	cpse	r16, r1
+ 7aa:	ff cf       	rjmp	.-2      	; 0x7aa <main+0xe4>
 ```
 
+
+![](/images/side-channels/constant-time-unroll-manual-cross-corr.png)
+
+In this implementation is lost the correlation with the actual password's bytes
+since they are loaded separately at the start of the code
+
+
+## Improve the sampling frequency
+
+As I said at some point above, the tail present after the instruction bothered
+me so I decided to try an experiment (I really like to double check stuff) and
+to use my Siglent to try to capture a better sampled signal so to be able to
+have a more precise signal.
+
+Fortunately this scope exposes an API via USB using the ``pyvisa`` library, the
+programming manual is not very clear but enough to obtain the same functionality
+of the ``ADC`` on the chipwhisperer.
+
+The chipwhisperer with the target running at 8MHz it's capable of 32Msamples at
+for second with 10bits resolution, the other scope instead is capable of 1Gsamples for second but with 8bit
+resolution. Another problem is that the chipwhisperer has each capture perfectly
+aligned since the clock of target and ``ADC`` are in synch meanwhile for the
+oscilloscope this is not true meaning that a process of alignment is needed
+after the capture, reducing the quality of the end result.
+
+If you are interested about the synchronization issue there is this [paper](https://eprint.iacr.org/2013/294.pdf)
+named "Synchronous Sampling and Clock Recovery of Internal Oscillators for Side Channel Analysis and Fault Injection".
+
+[A Case Study of Side-Channel Analysis using Decoupling Capacitor Power Measurement with the OpenADC](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.299.6185&rep=rep1&type=pdf)
+
+[Coherent Sampling and Filtering to Improve SNR and THD](https://www.youtube.com/watch?v=LOJbztS-wFY&list=PLISmVLHAZbTTw_FuEdfRA2pl_SWzjGkUG&index=2)
+
+If you encounter a problem like
+
+    FAILED: XMEGA Command 20 failed: err=1, timeout=1
+
+with the target of the CW-lite, this happened to me when I connected the
+"measure" port of the chipwhisperer to the oscilloscope; in practice the board
+refused to flash something. The workaround I found was to connect the "glitch"
+port of the target to the "measure" port of the chipwhisperer: probably the
+capacitor present in the frontend of the ``ADC`` helps to stabilize the voltage
+allowing the target to start correctly.
+
+https://stats.stackexchange.com/questions/64676/statistical-meaning-of-pearsonr-output-in-python
 
 ## Glitching
 
@@ -906,9 +949,29 @@ little more in detail: a flip-flop-like device has some specific parameters
  - **propagation time** \\(t_p\\): the time after which the output is expected
    to be stable after the clock transition
 
-![](/images/side-channels/data-clock-timing.png)
+{{% wavedrom %}}
+{ "signal": [
+	{ "node": "...A..BC.." },
+	{ "name": "D",   "wave": "x..2...x..", "data": ["data must be stable"] },
+	{ "name": "CLK", "wave": "0.....1..." },
+	{ "node": "...G..HI.." },
+	{ "node": "...D..EF.." }
+  ], "edge": [
+	"A|D",
+	"B|E",
+	"C|F",
+	"G<->H ts",
+	"H<->I th"
+], "config": { "hscale": 2 }}
+{{% /wavedrom %}}
 
-the maximum usable clock frequency of a processor is determined by the maximum delay among its elements
+the maximum usable clock frequency of a processor is determined by the maximum delay among its elements,
+in the sense that, if the operating frequency is so high that doesn't give enough time
+to the signals to pass through all the logic gates to accomplish all its functions.
+
+And this is one of the mechanisms that we are going to explit :) the other is the stability
+of the voltage provided to the device: if there is not enough charge to switch the state of
+an internal transistor, the final state is wrong.
 
 ## Code
 

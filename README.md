@@ -21,13 +21,22 @@ indicating this state.
 ![]({{ site.baseurl }}/public/images/certificates/certificates-wizard.png)
 ```
 
+### Footnotes
+
+```
+Generally NMOS are faster than PMOS [^1]
+
+[^1]: p26-27 nanometer CMOS ICs
+```
+
 ### Video
 
     {% include video.html video_url="https://www.video.com" %}
 
 ### Link to another post
 
-    {% post_url file-name-wo-md-extension %}
+You can use the syntax ``link://<kind>/<name>``, like
+``link://slug/slug-of-your-post``. More information [here](https://getnikola.com/path-handlers.html).
 
 ### Mathematics
 

@@ -94,7 +94,7 @@ d += elm.Line().right().at(O2.out).length(1).label('$v_{out}$', loc='rgt')
 d.draw()
 {{% /pyplots %}}
 
-or the following code
+or the following code (using [wavedrom](https://wavedrom.com/))
 
 ```python
 {{% raw %}}{{% wavedrom %}}
@@ -119,3 +119,5 @@ generates instead this
  { "name": "DQ",   "wave": "z.........5555z.", "data": "D0 D1 D2 D3" }
 ]}
 {{% /wavedrom %}}
+
+[This](https://github.com/wavedrom/wavedrom/wiki/WaveJSON) is the specification.

@@ -1,8 +1,8 @@
 <!--
 .. title: How Linux handle memory
 .. slug: linux-mmu
-.. date: 2021-06-01 00:00:00
-.. tags: WIP, low level, linux, mmu
+.. date: 2021-11-01 00:00:00
+.. tags: WIP, low level, Linux, mmu
 .. status: draft
 .. category: 
 .. link: 
@@ -12,6 +12,8 @@
 
  - https://blog.twitter.com/engineering/en_us/topics/open-source/2021/dropping-cache-didnt-drop-cache.html
  - https://drgn.readthedocs.io/
+ - [A Clarification on Linux Addressing](https://users.nccs.gov/~fwang2/linux/lk_addressing.txt)
+ - [Memory mapping](https://linux-kernel-labs.github.io/refs/heads/master/labs/memory_mapping.html)
 
 A very important aspect in an operating system is the way the memory is handled,
 both as a developer, security researcher; it's important to understand how the
@@ -33,6 +35,7 @@ This is accomplished via the ``MMU``, i.e. the **M**emory **M**anagement
 **physical address**.
 
 https://wiki.osdev.org/MMU
+https://wiki.osdev.org/Paging
 
 A synonimous to MMU is the ``TLB`` **T**ranslation **L**ookaside **B**uffer
 
@@ -95,7 +98,7 @@ It's important to note that in case of a context switch the kernel address space
 doesn't need updating since it's fixed for all the processes; not
 all operating systems behave in the same way, Linux itself could be configured
 in a different way(?), and a complete split could be proficient from a security
-point of view but obviously there are performance aspects the play a role here.
+point of view but obviously there are performance aspects that play a role here.
 
 The bootloader loads the kernel binary at the **physical address** pointed by
 ``PHYSICAL_START``; this value depends from the specifics of the device you are
@@ -184,7 +187,7 @@ the core of the memory management is inside ``switch_mm_irqs_off()``
 #### x86
 
 For the x86 architecture, the most documented if you are looking for operating
-systems stuff, use the special register ``C3``
+systems stuff, the special register ``C3`` is used
 
 ```c
 // arch/x86/mm/tlb.c
@@ -297,7 +300,8 @@ ENTRY(cpu_arm922_switch_mm)
 #endif
 	ret	lr
 ```
-
+ - [ARM32 Page Tables](https://people.kernel.org/linusw/arm32-page-tables)
+ - [Linux memory management: ARM Memory Layout and mmu configuration](https://programmer.help/blogs/linux-memory-management-arm-memory-layout-and-mmu-configuration.html)
  - [About the MMU for the ARM926EJ-S](https://developer.arm.com/documentation/ddi0198/e/memory-management-unit/about-the-mmu)
  - [ARM32 TTBR](https://developer.arm.com/documentation/ddi0198/e/programmer-s-model/register-descriptions/translation-table-base-register-c2?lang=en)
  - [Aarch64 Configuring and enabling the MMU](https://developer.arm.com/documentation/den0024/a/The-Memory-Management-Unit/Translating-a-Virtual-Address-to-a-Physical-Address/Configuring-and-enabling-the-MMU)

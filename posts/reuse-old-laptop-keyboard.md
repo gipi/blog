@@ -282,7 +282,7 @@ Since my intention is to use the ATMega32U4 (the main advantage is the builtin
 USB and my experience with it) I need to find a way to minimize pins usage: 24 pins are not available in
 this chip so I decideded to use 8 pins for the inputs, in particular the bank
 identified with ``PORTD`` so to access them with a single register (in this chip
-only ``PORTB`` and ``PORTB`` are "complete" and ``PORTB`` will be used for the
+only ``PORTD`` and ``PORTB`` are "complete" and ``PORTB`` will be used for the
 ``SPI`` communication); the remaining 16, the output pins, will be handled
 via two daisy-chained shift registers (the [74HC165](https://www.sparkfun.com/datasheets/Components/General/sn74hc165.pdf))
 communicating via ``SPI`` protocol.

@@ -14,7 +14,7 @@
 A thing that is often overlooked is the way arithmetic operations work in a computer
 and specifically in the processing unit: not having a clear idea of how
 the operations are performed and their limitations can cause very important
-bug to happen and also help in case you want to reverse unknown code.
+bugs to happen and also help in case you want to reverse unknown code.
 
 In this I will explore how operation on integers (floating point will be
 treated in a specific, future, post).
@@ -28,7 +28,7 @@ the arithmetic inside a CPU is done on registers via the ``ALU`` and
 since the registers are size limited, all the
 arithmetic operations are intended modulo the size of the registers:
 so if \\(N\\) is the number of bits of the registers we can
-only represent (directly) unsigned values between \\(0\\) and \\(2^N - 1\\).
+only represent (directly) **unsigned** values between \\(0\\) and \\(2^N - 1\\).
 
 **Note:** there is a tricky part about the representation of numbers, i.e.
 
@@ -109,6 +109,8 @@ $$
 
 Remember that a value into a register is not signed or unsigned by itself,
 it depends on how is used in the code.
+
+In two's complement representation ``INT_MIN`` is less than ``-INT_MAX``.
 
 ## Operations
 
