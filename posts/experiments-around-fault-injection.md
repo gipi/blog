@@ -1,9 +1,8 @@
 <!--
 .. title: side channels: power analysis
 .. slug: experiments-around-side-channels
-.. date: 2021-10-01 00:00:00
-.. tags: fault injection,hardware, WIP
-.. status: draft
+.. date: 2022-03-19 00:00:00
+.. tags: fault injection,hardware
 .. category: 
 .. link: 
 .. description: 
@@ -13,7 +12,7 @@
 
 <!-- TEASER_END -->
 
-This is a post in a series regarding side channels, from the theoretical and
+This is a post in a serie regarding side channels, from the theoretical and
 pratical point of view; the posts are
 
  - introduction on the model of computing devices (to be finished)
@@ -21,14 +20,14 @@ pratical point of view; the posts are
  - power analysis (this post)
  - glitching (to be finished)
 
-## Side channels experimentations
+All the graphs in this post are generated using my own libray named [power_analys](https://github.com/gipi/power-analysis/),
+this is alpha-quality software without documentation (for now); also a notebook
+with all the code that generated the graphs will be available as soon as I take
+the time to clean up it.
 
-### Power analysis
+## Physical interface
 
-Let's start with something interesting: leak information about the computation
-observing the power consumption of a device.
-
-As I said in the introduction about the model, the "calculations" inside a
+As I said in the (to-be-completed) post about the model of a processing unit, the "calculations" inside a
 device are done, roughly speaking, switching on and off groups of transistors to
 perform the needed operations; since the transistors are physical entities, they
 interact with the physical world and need **energy** to move electrons around,
@@ -37,7 +36,7 @@ the internal state of the processor[^Nano].
 
 [^Nano]: For an extensive explanation you can use the book "Nanometer CMOS ICs, From Basics to ASICs" pg 161
 
-The standard configuration for measurements like these is the following: a shunt resistor between the
+To measure the power consumption, tipically you have a shunt resistor between the
 power line and the ``VCC`` pin of the target with an ``ADC`` measuring the voltage as indicated in the
 drawing below
 
@@ -70,15 +69,24 @@ d.draw()
 
 {{% /pyplots %}}
 
-In my experiments I'm going to use the cwlite, it has the
+this works because thanks to Ohm's law, the voltage difference at the sides of
+the resistor is proportional to the current drawn from the device.
+
+In general it's possible that multiple pins are responsible for providing power
+to the digital device and maybe each pin serves different subsystems
+(peripherals, core, etc...), so in real settings the configuration can be more
+complex.
+
+In my experiments I'm going to use the ChipWhisperer-lite, it has the
 [AD8331](https://www.analog.com/media/en/technical-documentation/data-sheets/AD8331_8332_8334.pdf)
 chip (a **variable gain amplifier**, ``VGA``) and the
 [AD9215](https://www.analog.com/media/en/technical-documentation/data-sheets/AD9215.pdf)
-(an **ADC**).
+(an **ADC**). The target's clock and ``ADC`` are synchronized, only the latter
+has a sample rate four times of the former (this ratio can be configured).
 
 The configuration of the ``VGA`` is such that the input impedance is 50 ohm
 (see table 7 at page 30 of the datasheet) and
-``AC``-coupled (so you don't have ``DC`` component); this explains why, since
+``AC``-coupled (so you don't have ``DC`` component, at least theoretically); this explains why, since
 the input is connected to the low side of the shunt resistor on the board, you
 have negative readings: the high side is **ideally** constant (at the power
 supply voltage) so, without ``AC``-coupling you would obtain something like
@@ -116,12 +124,261 @@ P &= V\cdot I \cr
 $$
 
 that works fine as long as \\({V_{AC}\over V_{DC}}\\) is negligible. So at the
-end the amplitude measured is really, up to a constant, the power 
+end the amplitude measured is really, up to a constant, the power consumption.
 
-#### Different instructions
+Since we are not going to do real physics, for now this is enough to continue.
 
-First of all I need to see if different instructions have different
-"energy-footprint", I try to show the power consumption of the target executing
+## Maths&Statistics
+
+To understand a little better what we are going to see in the following
+we need to have an overview of what we mean by **correlation**: what follows is an introduction
+of the statistical formalism needed to explain **correlation power
+analysis**[^Optimal].
+
+[^Optimal]: Optimal statistical power analysis; E. Brier, C. Clavier, F. Olivier ([link to the paper](https://eprint.iacr.org/2003/152.pdf))
+
+First of all, we need a model to describe the relationship between power
+consumption and the _digital world_: the simplest one with usefulness is the
+model using the **Hamming weight** or **Hamming distance**.
+
+The **Hamming weight** is a quantity defined over a number using its base 2 representation: if \\(d\\) is
+a number such that
+
+$$
+d = \sum_{i=0}^{N - 1} d_i 2^i\hbox{ with }d_i\in \\{0,1\\}
+$$
+
+we define the hamming weight as
+
+$$
+HW(d) = \sum_{i=0}^{N - 1} d_i
+$$
+
+Although the Hamming weight  is not linear with  respect to its argument, if we
+see \\(d\\) as a uniformly independent random variable we can safely assume for
+the mean and variance for the Hamming weight
+
+$$
+\mu_H = {N\over 2}\qquad\sigma^2_H = {N\over4}
+$$
+
+What does it mean? simply that when we are going to capture traces, we are going
+to feed as input random bytes (in statistical terms are random variables), since
+the HW _inherits_ randomness from them, it's also treated as a random
+variable, allowing to use statistical tools to analyze the results.
+
+Another important quantity related to the Hamming weight is the **Hamming
+distance** that measure the number of bit flip between two numbers (represented
+in base 2); this quantity as a very simple definition [^HD]
+
+$$
+HD(S, D) = HW(S\oplus D)
+$$
+
+[^HD]: Hacker's delight pg95 and pg343
+
+where \\(\oplus\\) is the ``xor`` (exclusive or) operation defined via this
+truth table
+
+| A | B | A \\(\oplus\\) B |
+|---|---|-----------------|
+| 0 | 0 | 0 |
+| 0 | 1 | 1 |
+| 1 | 0 | 1 |
+| 1 | 1 | 0 |
+
+An interesting property is its simmetry
+
+$$
+A\oplus B = B \oplus A
+$$
+
+and interestingly, if we fix one operand and make the other a uniformly random
+independent variable, the Hamming distance has the same mean and variance as the
+Hamming weight. We will see later how this can be useful.
+
+What we want to achieve is the "measure" of the correlation between our model's
+parameters and the power consumption and to do that we need to use the
+**Pearson's correlation factor**: its definition is given by
+
+$$
+\rho(A,B) = {Cov(A, B)\over\sigma_A\sigma_B}
+$$
+
+where \\(A\\) and \\(B\\) are random variables; the value of \\(\rho(A, B)\\) is
+comprised between \\(-1\\) and \\(1\\), when two variables are independent
+\\(\rho\\) has a value of zero.
+
+In the following experiments I'm going to use (implicitely) a model where the power consumption
+\\(W\\) is related to the Hamming weight of some input \\(D\\) (as a random
+variable) by the following relation
+
+$$
+W = aH(D) + b
+$$
+
+where \\(b\\) is a **noise term**, all the contributions for the power
+consumption of the device not involved with the computation directly.
+
+From this model is possible to obtain the following statistical relations:
+
+$$
+\eqalign{
+    \sigma^2_W &= a^2\sigma^2_H + \sigma^2_b\cr
+    \rho(W, H) &= {Cov(W, H)\over\sigma_W\sigma_H}\cr
+               &= {Cov(aH+b, H)\over\sqrt{a^2\sigma^2_H + \sigma^2_b}\sigma_H}\cr
+               &= {aCov(H, H)\over\sqrt{a^2\sigma^2_H + \sigma^2_b}\sigma_H}\cr
+               &= {a\sigma_H^2\over\sqrt{a^2\sigma^2_H + \sigma^2_b}\sigma_H}\cr
+               &= {a\sigma_H\over\sqrt{a^2\sigma^2_H + \sigma^2_b}}\cr
+               &= {a\sqrt{N/4}\over\sqrt{a^2{N/4} + \sigma^2_b}}\cr
+               &= \hbox{sign}(a){\sqrt{N}\over\sqrt{N + 4\sigma^2_b}}\cr
+}
+$$
+
+so the absolute value of the correlation tends to the limit of 1 when the noise
+term is negligible, where the sign is given only by the sign of the coefficient \\(a\\).
+
+Another useful fact for later, related to the Hamming distance, is that if you
+want to maximise the correlation of this with respect to a fixed "background",
+this maximum is unique[^Optimal].
+
+<!--
+### Statistical distribution of inputs
+
+I want to add a little reasoning about the statistical distribution of the
+inputs used in my experiments: from the start the point was to study the
+relation between Hamming weight and the resulting power traces but you have to
+take in mind that not all the weights are "equal" in terms of distribution: this
+is a table indicating how many elements with a given weight are possible disposing
+of 8bits
+
+| Hamming Weight | # elements |
+|----------------|------------|
+| 0 | 1 |
+| 1 | 8 |
+| 2 | 28 |
+| 3 | 56 |
+| 4 | 70 |
+| 5 | 56 |
+| 6 | 28 |
+| 7 | 8 |
+| 8 | 1 |
+
+All this table can be summarized by the formula
+
+$$
+\\#\hbox{elements with Hamming weight } w = {8\choose w}
+$$
+
+(it's a pretty standard exercise of statistics: you "extract" 8 "balls"
+without replacement where \\(w\\) are "white").
+
+The problem is that the elements of weight 8 and 0 are under-represented if we
+chose to extract randomly an element from the set of 8bits input, so at first I
+was tempted to use as input-generating-algorithm one that selects at random
+first the hamming weight and then shuffles the bits position. This generates a
+**uniform distribution with respect to the Hamming weights**.
+
+This is ok if you are looking only at the hamming weight but take into account
+that a very common operation to perform in order to understand bit transition is
+the **xor** operation: this is a table
+
+
+it's pretty simple to observe that we can use the ``xor`` operation as a
+flipping-bits device: if we have an input \\(i\in I\\) and a key \\(k\in K\\)
+where \\(h_i\\) is the Hamming weight of the input and \\(h_k\\) the Hamming weight of
+the key, we have that the key is flipping \\(h_k\\) bits of the input, possibly
+modifying the Hamming weight between a range of 
+
+$$
+A\oplus B = B \oplus A
+$$
+
+$$
+\eqalign{
+S \oplus F &= D \cr
+S \oplus F \oplus F &= D \oplus F \cr
+S &= D \oplus F \cr
+}
+$$
+
+suppose \\(h_i \leq h_k\\) we can rearrange the order of the bits so that the input
+has all the set bits on one "side" so we can flip all the one bits and \\(h_k - h_1\\)
+zero bits as a least HW obtainaible and we can 
+
+**no, key is not continuous**
+
+Let be \\(C(h_i, h_k, a, b)\\) the number of combinations that cause the input to
+flip \\(a\\) 1bits and \\(b\\) 0bits
+
+
+
+However this is also problematic because this operation doesn't
+preserve the _uniformity_ of the statistical distribution of the Hamming weight as I build it.
+Let me explain.
+
+When you apply the ``xor`` operation to an input you have some bit flips, if
+they happen where the input had a bit set the Hamming weight decrements by one,
+otherwise the opposite happens.
+
+Let \\(i\in I\\) be the input byte, \\(h_{I}\\) the Hamming weight associated to it,
+i.e., \\(h_I\\) bits are set. Let be \\(k\in K\\) the element we are xoring the input with,
+having \\(h_k\\) as Hamming weight. The average of the Hamming weight is given
+by (we are averaging over the input space)
+
+$$
+\begin{align}
+\langle\hbox{HW}(I\oplus k)\rangle &= \sum_{i\in I} p(i) \hbox{HW}(i\oplus k)\cr
+&= \sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i) \hbox{HW}(i\oplus k) \cr
+&= \sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i) \left(\hbox{HW}(k) + \Delta\hbox{HW}\_{k}(i)\right) \cr
+&= \sum\_{h_I = 0}^8 \sum_{i \in I_{h_I} } p(i) \hbox{HW}(k) + \sum_{h_I = 0}^8 \sum_{i \in I_{h_I} } p(i) \Delta\hbox{HW}\_{k}(i) \cr
+&= \sum\_{h_I = 0}^8 \sum_{i \in I_{h_I} } p(i) \hbox{HW}(k) + \sum_{h_I = 0}^8 \sum_{i \in I_{h_I} } p(i) \Delta\hbox{HW}\_{k}(i) \cr
+&= \hbox{HW}(k)\sum\_{h_I = 0}^8 \sum\_{i \in I_{h_I} } p(i)  + \sum\_{h_I = 0}^8 \sum\_{i \in I_{h_I} } p(i) \Delta\hbox{HW}\_k(i) \cr
+&= \hbox{HW}(k) + \sum_{h_I = 0}^8 \sum_{i \in I_{h_I} } p(i) \Delta\hbox{HW}\_k(i) \cr
+\end{align}
+$$
+
+Note how is important in the equation the probability distribution \\(p(i)\\) of
+the input bytes; in the case of the uniform distribution with respect to the
+bytes we have \\(p(i) = 1/256\\), meanwhile in the case of uniform Hamming
+weight distribution we have \\({1\over p(i)} = 9{8\choose h_i}\\).
+
+Note how a permutation of the bits order doesn't change the Hamming weight, so the
+iteration over the space of the inputs with given Hamming weight is the same as
+the iteration over the space of the key with the same Hamming weight of the
+starting key maintaining fixed the input.
+
+This means that for a constant \\(p(i)\\) we have
+
+$$
+\langle\hbox{HW}\[I\oplus k]\rangle =\langle\hbox{HW}\[i\oplus K]\rangle
+$$
+
+If we have an key with HW equal to \\(h_k\\) and we want to calculate the sum
+over all the inputs with a given HW \\(h_i\\) fixed we have
+
+\\(\overline{h}_i = 8-h_i\\)
+
+This is the number of xoring with \\(u\\) transitions \\(0\rightarrow 1\\)
+and \\(d\\) transitions \\(1\rightarrow0\\) of \\(i\\)
+
+$$
+C(h_i, h_k, u, d) = {h_i\choose u}{8 - h_i\choose d}\;\hbox{where}\;
+\cases{
+    u + d = h_k &\cr
+    u\in\\{h_i - \overline h_k, \dots,h_i\\}&if $h_i\geq\overline h_k$ \cr
+    u\in\\{0, \dots,h_i\\} & if $h_i\leq\overline h_k$ and $h_i\leq h_k$ \cr
+    u\in\\{0, \dots,h_k\\} & if $h_i\leq\overline h_k$ and $h_i\geq h_k$ \cr
+}
+$$
+
+-->
+
+## Measuring different instructions
+
+Before starting crunching numbers, a very simple overview of how different
+instructions have different
+"energy-footprint": let's try to show the power consumption of the target executing
 
  - 10 ``nop``s
  - 10 ``mul``s
@@ -130,8 +387,7 @@ First of all I need to see if different instructions have different
 
 ![](/images/side-channels/comparison-instructions.png)
 
-the assembly code is the following for the last case (the other ones are simply subsection
-of this)
+the assembly code is the following (each column is a different capture)
 
 ```text
 nop             mul	r0, r1     mul	r0, r1     mul	r0, r1
@@ -173,11 +429,11 @@ the ``GPIO`` used to trigger the capture.
 
 The first thing that you can notice is that ten ``nop``s are taking 40 cycles to
 complete (i.e. 10 target's clock cycles) meanwhile ten ``mul``s needs double
-that number. Moreover by sight I have the feeling that the traces generated by
-different instructions are different but in the next section I try to come up
-with something more useful.
+that number. This matches with the actual number of cycles needed by these
+instructions: ``nop`` executes in one cycle, meanwhile ``mul`` takes two cycles
+and each cycle the ``ADC`` samples four times.
 
-### Correlation
+## Correlation
 
 In the last section I showed that different instructions have different
 "footprints", probably the easiest possible way to use that is by timing
@@ -185,6 +441,15 @@ analysis: for example if we had a piece of code that checks
 for a password and exits at the first wrong character, we could capture the power traces for
 every possible (first char) input and
 we should see only one having a different pattern.
+
+What follows is an example with the firmware provided by the Chipwhisperer
+(``basic-passwdcheck``) where the ``h`` character is the first of the secret
+password (I grouped the traces in sets of 16 to make clearer the "outcast")
+
+![](/images/side-channels/basic-passwdcheck-timing.png)
+![](/images/side-channels/basic-passwdcheck-timing1.png)
+![](/images/side-channels/basic-passwdcheck-timing2.png)
+![](/images/side-channels/basic-passwdcheck-timing3.png)
 
 For now I'm not interested in performing specific attacks but to study the
 relationship between instructions and power consumption and to do this I will
@@ -254,6 +519,10 @@ sample 50 the standard deviations are way far from each other, this means that
 also taking noise into consideration the respective sets of traces are
 "separated").
 
+The final graph is the correlation I talked so much about
+
+![](/images/side-channels/ldi-corr.png)
+
 Just with one kind of instruction is not possible to deduce anything valuable
 (althought it's interesting seeing that _something is there_), now I want to try
 a different instruction: ``adc rx, <value>``.
@@ -300,12 +569,13 @@ in particular is interesting to note that there is not in this case a negative
 correlation around the _start_ of the instruction
 
 ![](/images/side-channels/adc-hamming-scatterplot.png)
+![](/images/side-channels/adc-corr.png)
 
-What explanation is available for this behavious? Well, a modern processing unit
-employs some trick to speed-up computation and a prevalent one is the
+What explanation is available for this behaviour? Well, a modern processing unit
+employs some tricks to speed-up computation and a prevalent one is the
 **pipeling**, i.e., splitting the instruction life cycle in different stages and
-when the unit executed a given instruction is also doing other stuff with the
-following instructions; in particular for the XMega we have this quote from the
+when the unit is executing a given instruction is also doing other stuff with the
+instruction that should be executed next; in particular for the XMega we have this quote from the
 manual:
 
     The AVR uses a Harvard architecture - with separate memories and buses for program and
@@ -358,6 +628,7 @@ it's clearly visible a repeated pattern, look at this zoom
 and the repeation in the correlation
 
 ![](/images/side-channels/ldi-hamming-scatterplot.png)
+![](/images/side-channels/ldi-loop-over-corr.png)
 
 Compare what you have seen with the same concept applied to the ``adc``
 
@@ -387,156 +658,8 @@ frontend, being ``AC`` coupled causes this anomaly since the capacitor in front
 of the measuring device has a change oscillating with the flow of current.
 
 On order to test this I tried to capture the power consumption using my trusty
-Siglent using some python code that I wrote, but this is argument of the section
-a little below. For now a little reasoning about statistics.
-
-## Statistical distribution of inputs
-
-I want to add a little reasoning about the statistical distribution of the
-inputs used in my experiments: from the start the point was to study the
-relation between Hamming weight and the resulting power traces but you have to
-take in mind that not all the weights are "equal" in terms of distribution: this
-is a table indicating how many elements with a given weight are possible disposing
-of 8bits
-
-| Hamming Weight | # elements |
-|----------------|------------|
-| 0 | 1 |
-| 1 | 8 |
-| 2 | 28 |
-| 3 | 56 |
-| 4 | 70 |
-| 5 | 56 |
-| 6 | 28 |
-| 7 | 8 |
-| 8 | 1 |
-
-All this table can be summarized by the formula
-
-$$
-\\#\hbox{elements with Hamming weight } w = {8\choose w}
-$$
-
-(it's a pretty standard exercise of statistics: you "extract" 8 "balls"
-without replacement where \\(w\\) are "white").
-
-The problem is that the elements of weight 8 and 0 are under-represented if we
-chose to extract randomly an element from the set of 8bits input, so at first I
-was tempted to use as input-generating-algorithm one that selects at random
-first the hamming weight and then shuffles the bits position. This generates a
-**uniform distribution with respect to the Hamming weights**.
-
-This is ok if you are looking only at the hamming weight but take into account
-that a very common operation to perform in order to understand bit transition is
-the **xor** operation: this is a table
-
-| A | B | A \\(\oplus\\) B |
-|---|---|-----------------|
-| 0 | 0 | 0 |
-| 0 | 1 | 1 |
-| 1 | 0 | 1 |
-| 1 | 1 | 0 |
-
-it's pretty simple to observe that we can use the ``xor`` operation as a
-flipping-bits device: if we have an input \\(i\in I\\) and a key \\(k\in K\\)
-where \\(h_i\\) is the Hamming weight of the input and \\(h_k\\) the Hamming weight of
-the key, we have that the key is flipping \\(h_k\\) bits of the input, possibly
-modifying the Hamming weight between a range of 
-
-$$
-A\oplus B = B \oplus A
-$$
-
-$$
-\eqalign{
-S \oplus F &= D \cr
-S \oplus F \oplus F &= D \oplus F \cr
-S &= D \oplus F \cr
-}
-$$
-
-Since the **Hamming distance** is defined as [^HD]
-
-$$
-HD(S, D) = HW(S\oplus D)
-$$
-
-
-[^HD]: Hacker's delight pg95 and pg343
-
-suppose \\(h_i \leq h_k\\) we can rearrange the order of the bits so that the input
-has all the set bits on one "side" so we can flip all the one bits and \\(h_k - h_1\\)
-zero bits as a least HW obtainaible and we can 
-
-**no, key is not continuous**
-
-Let be \\(C(h_i, h_k, a, b)\\) the number of combinations that cause the input to
-flip \\(a\\) 1bits and \\(b\\) 0bits
-
-
-
-However this is also problematic because this operation doesn't
-preserve the _uniformity_ of the statistical distribution of the Hamming weight as I build it.
-Let me explain.
-
-When you apply the ``xor`` operation to an input you have some bit flips, if
-they happen where the input had a bit set the Hamming weight decrements by one,
-otherwise the opposite happens.
-
-Let \\(i\in I\\) be the input byte, \\(h_{I}\\) the Hamming weight associated to it,
-i.e., \\(h_I\\) bits are set. Let be \\(k\in K\\) the element we are xoring the input with,
-having \\(h_k\\) as Hamming weight. The average of the Hamming weight is given
-by (we are averaging over the input space)
-
-$$
-\begin{align}
-\langle\hbox{HW}(I\oplus k)\rangle &= \sum_{i\in I} p(i) \hbox{HW}(i\oplus k) \cr
-&= \sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i) \hbox{HW}(i\oplus k) \cr
-&= \sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i) \left(\hbox{HW}(k) + \Delta\hbox{HW}_k(i)\right) \cr
-\end{align}
-$$
-
-$$
-\begin{align}
-&= \sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i) \hbox{HW}(k) + \sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i) \Delta\hbox{HW}_k(i) \cr
-&= \hbox{HW}(k)\sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i)  + \sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i) \Delta\hbox{HW}_k(i) \cr
-&= \hbox{HW}(k) + \sum_{h_I = 0}^8 \sum_{i \in I_{h_I}} p(i) \Delta\hbox{HW}_k(i) \cr
-\end{align}
-$$
-
-Note how is important in the equation the probability distribution \\(p(i)\\) of
-the input bytes; in the case of the uniform distribution with respect to the
-bytes we have \\(p(i) = 1/256\\), meanwhile in the case of uniform Hamming
-weight distribution we have \\({1\over p(i)} = 9{8\choose h_i}\\).
-
-Note how a permutation of the bits order doesn't change the Hamming weight, so the
-iteration over the space of the inputs with given Hamming weight is the same as
-the iteration over the space of the key with the same Hamming weight of the
-starting key maintaining fixed the input.
-
-This means that for a constant \\(p(i)\\) we have
-
-$$
-\langle\hbox{HW}\[I\oplus k]\rangle =\langle\hbox{HW}\[i\oplus K]\rangle
-$$
-
-If we have an key with HW equal to \\(h_k\\) and we want to calculate the sum
-over all the inputs with a given HW \\(h_i\\) fixed we have
-
-\\(\overline{h}_i = 8-h_i\\)
-
-This is the number of xoring with \\(u\\) transitions \\(0\rightarrow 1\\)
-and \\(d\\) transitions \\(1\rightarrow0\\) of \\(i\\)
-
-$$
-C(h_i, h_k, u, d) = {h_i\choose u}{8 - h_i\choose d}\;\hbox{where}\;
-\cases{
-    u + d = h_k &\cr
-    u\in\\{h_i - \overline h_k, \dots,h_i\\}&if $h_i\geq\overline h_k$ \cr
-    u\in\\{0, \dots,h_i\\} & if $h_i\leq\overline h_k$ and $h_i\leq h_k$ \cr
-    u\in\\{0, \dots,h_k\\} & if $h_i\leq\overline h_k$ and $h_i\geq h_k$ \cr
-}
-$$
+Siglent using some python code that I wrote, but this is argument of a future
+post.
 
 ## A more realistic case
 
@@ -692,8 +815,19 @@ Let see a single capture
 it's possible to deduce that there are five iterations happening before the
 infinite loop (five is the number of characters in the password).
 
-Now if we perform the experiment we obtain, studying only the power consumption
-in relation to the 0th byte of input, as follow: it's possible to see "something
+**Note:** this could seem boring but for me it's very important: thanks to power
+analysis you have some sort of **oracle** that gives you information otherwise
+unavailable! Imagine you have a device that presents some sort of password
+prompt and you, via tinkering from the terminal can asses that accepts up to 32
+characters; this means you have \\(\left(2^8\right)^{32} = 2^{256}\\) possible passwords,
+a key space huge, without hope to be bruteforced.
+
+**But** from power analysis you have now reduced the key space to \\(\left(2^8\right)^{5} = 2^{40}\\)
+more feasible (an encryption algorithm with such "strength" would be considered broken).
+Obviously a 32 characters password doesn't have this problem :)
+
+Now if we study only the power consumption
+in relation to the 0th byte of input it's possible to see "something
 happening" only in the first iteration of the loop (actually there is something
 going on also at the start of the second iteration, but "less").
 
@@ -703,9 +837,18 @@ here the zoom
 
 ![](/images/side-channels/constant-time-0th-hamming-zoom.png)
 
-Now I want to try something new: remember the stuff above about the ``xor``? in
+This is interesting: we have a way to see **when** our input is used in the
+computation; in the graph above I overlayed the instructions but obviously in
+general this is not possible, however this temporal information instead is available
+via power analysis. This is akin to **taint analysis** done in security research
+were the software is analyzed to find how the user input can "propagate" and
+impact execution, take a look at [libdft](https://www.cs.columbia.edu/~vpk/research/libdft/)
+for example. But this out of scope (for now :P).
+
+Now I want to try something new: remember the stuff above about the Hamming distance
+and the ``xor`` operation? in
 this case I want to try to find for each sample the element which xor creates
-the most correlated relation. And something interesting come out: obviously the
+the most correlated relation with respect to the input. And something interesting come out: obviously the
 majority of samples have no correlation with nothing, in a couple of points
 there is correlation with the input bytes but specific samples (corresponding
 to the instruction ``ld r25, Z+``, i.e. the instruction loading the hardcoded
@@ -824,22 +967,22 @@ interesting correlation with **two** previous iteration (sample 129, 177, 225)
 | 176          |b'\x9f'	0.09 |b'e'	0.82 |b'e'	0.88 |b'e'	0.87 |b'e'	0.85 |b'\x00'	0.50 |b'\x00'	0.55 |b'\x80'	0.54 |
 | 224          |b'\xf7'	0.01 |b'b'	0.79 |b'b'	0.86 |b'b'	0.84 |b'b'	0.82 |b'\x00'	0.52 |b'\x80'	0.55 |b'\x80'	0.55 |
 
-```
-movw    r26, r14
-ld      r20, X+
-movw    r14, r26
-ld      r25, Z+
-eor     r25, r20
-or      r24, r25
-cp      r26, r18
-cpc     r27, r19
-brne    .-18
-```
+To summarize the relationship between power consumption and input bytes I'm
+using the following diagram where in the entry \\(\left(i, j\right)\\) of the
+"matrix" you have the correlation with \\(I[i]\otimes I[j]\\), with \\(I[\alpha]\\)
+indicating the \\(\alpha\\)-th input byte. In the diagonal \\(\left(a, a\right)\\)
+instead I placed the direct correlation with the input byte \\(I[a]\\)
 
 ![](/images/side-channels/constant-time-cross-corr.png)
 
-At this point manually crafted assembly comes to the rescue: with the following
-code (and with a different password set to "armedilzo")
+It's possible to see a correlation between two adjacent ``ld``s from memory.
+
+Improving the experiment a  little, it's possible to manually craft some assembly
+to unroll the loop in a way that the loadings of the password and the input bytes
+are not more one after the other, but instead the password is loaded into some
+registers at the start of the routine
+(this time I used a different password: "armedilzo", so I don't have repeated
+characters and is longer)
 
 ```
  75a:	80 93 05 06 	sts	0x0605, r24	; 0x800605 <__TEXT_REGION_LENGTH__+0x7de605>
@@ -884,207 +1027,26 @@ code (and with a different password set to "armedilzo")
  7aa:	ff cf       	rjmp	.-2      	; 0x7aa <main+0xe4>
 ```
 
+this time the correlation between two-``ld``s-apart is more apparent.
 
 ![](/images/side-channels/constant-time-unroll-manual-cross-corr.png)
 
-In this implementation is lost the correlation with the actual password's bytes
-since they are loaded separately at the start of the code
+probably the branch instruction interferes with the ``ld``s in some obscure way.
 
+This breaks my method of recovering the password but maybe something can be done
+for this and if something interesting come up I will tell you in future.
 
-## Improve the sampling frequency
+## Conclusion
 
-As I said at some point above, the tail present after the instruction bothered
-me so I decided to try an experiment (I really like to double check stuff) and
-to use my Siglent to try to capture a better sampled signal so to be able to
-have a more precise signal.
+In this post I gave you an overview of what is possible to "see" via power analysis and
+some of the tools available for it. Maybe I uncovered a new "primitive" to steal
+secret in chips of the AVR family. Probably there will be a future post about
+some "advanced" experiments, like capturing traces via an oscilloscope, align
+them via fourier transform and more.
 
-Fortunately this scope exposes an API via USB using the ``pyvisa`` library, the
-programming manual is not very clear but enough to obtain the same functionality
-of the ``ADC`` on the chipwhisperer.
-
-The chipwhisperer with the target running at 8MHz it's capable of 32Msamples at
-for second with 10bits resolution, the other scope instead is capable of 1Gsamples for second but with 8bit
-resolution. Another problem is that the chipwhisperer has each capture perfectly
-aligned since the clock of target and ``ADC`` are in synch meanwhile for the
-oscilloscope this is not true meaning that a process of alignment is needed
-after the capture, reducing the quality of the end result.
-
-If you are interested about the synchronization issue there is this [paper](https://eprint.iacr.org/2013/294.pdf)
-named "Synchronous Sampling and Clock Recovery of Internal Oscillators for Side Channel Analysis and Fault Injection".
-
-[A Case Study of Side-Channel Analysis using Decoupling Capacitor Power Measurement with the OpenADC](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.299.6185&rep=rep1&type=pdf)
-
-[Coherent Sampling and Filtering to Improve SNR and THD](https://www.youtube.com/watch?v=LOJbztS-wFY&list=PLISmVLHAZbTTw_FuEdfRA2pl_SWzjGkUG&index=2)
-
-If you encounter a problem like
-
-    FAILED: XMEGA Command 20 failed: err=1, timeout=1
-
-with the target of the CW-lite, this happened to me when I connected the
-"measure" port of the chipwhisperer to the oscilloscope; in practice the board
-refused to flash something. The workaround I found was to connect the "glitch"
-port of the target to the "measure" port of the chipwhisperer: probably the
-capacitor present in the frontend of the ``ADC`` helps to stabilize the voltage
-allowing the target to start correctly.
-
-https://stats.stackexchange.com/questions/64676/statistical-meaning-of-pearsonr-output-in-python
-
-## Glitching
-
-Until now I observed the specimen under the microscope provided by the ADC of
-the chipwhisperer, but what if I would poke and perturbe its behaviour?
-
-The model of the processor is fine and good but obviously is a model, its
-**correct** behaviour is dependent of the voltage and clock "quality" that I'm
-providing to it: a latch needs some margins both for clock and voltage
-parameters to work in the way is intended.
-
-It's not used specifically in the attacks that follow but doesn't hurt to know a
-little more in detail: a flip-flop-like device has some specific parameters
-
- - **setup time** \\(t_s\\): input **must** be present and stable for at least
-   this time before the clock transition
- - **hold time** \\(t_h\\): input **must** be present and stable for at least this time
-   after the clock transition
- - **propagation time** \\(t_p\\): the time after which the output is expected
-   to be stable after the clock transition
-
-{{% wavedrom %}}
-{ "signal": [
-	{ "node": "...A..BC.." },
-	{ "name": "D",   "wave": "x..2...x..", "data": ["data must be stable"] },
-	{ "name": "CLK", "wave": "0.....1..." },
-	{ "node": "...G..HI.." },
-	{ "node": "...D..EF.." }
-  ], "edge": [
-	"A|D",
-	"B|E",
-	"C|F",
-	"G<->H ts",
-	"H<->I th"
-], "config": { "hscale": 2 }}
-{{% /wavedrom %}}
-
-the maximum usable clock frequency of a processor is determined by the maximum delay among its elements,
-in the sense that, if the operating frequency is so high that doesn't give enough time
-to the signals to pass through all the logic gates to accomplish all its functions.
-
-And this is one of the mechanisms that we are going to explit :) the other is the stability
-of the voltage provided to the device: if there is not enough charge to switch the state of
-an internal transistor, the final state is wrong.
-
-## Code
-
-[Application note AVR1307](http://ww1.microchip.com/downloads/en/AppNotes/doc8049.pdf)
-
-First of all, create all the one-bit-away instructions from the original one
-
-```
-$ public/code/fi/flip.py > public/code/fi/code.bin
-$ avr-objdump -b binary -m avr:5 -D public/code/fi/code.bin
-
-public/code/fi/code.bin:     formato del file binary
-
-
-Disassemblamento della sezione .data:
-
-00000000 <.data>:
-   0:   00 2c           mov     r0, r0
-   2:   01 2c           mov     r0, r1
-   4:   02 2c           mov     r0, r2
-   6:   04 2c           mov     r0, r4
-   8:   08 2c           mov     r0, r8
-   a:   10 2c           mov     r1, r0
-   c:   20 2c           mov     r2, r0
-   e:   40 2c           mov     r4, r0
-  10:   80 2c           mov     r8, r0
-  12:   00 2d           mov     r16, r0
-  14:   00 2e           mov     r0, r16
-  16:   00 28           or      r0, r0
-  18:   00 24           eor     r0, r0
-  1a:   00 3c           cpi     r16, 0xC0       ; 192
-  1c:   00 0c           add     r0, r0
-  1e:   00 6c           ori     r16, 0xC0       ; 192
-  20:   00 ac           ldd     r0, Z+56        ; 0x38
-```
-
-the first line is the original instruction, I choosen this as a alias
-for ``nop``, and then follow the 16 one-bit-distant instructions; lucky
-us they aren't flow related. The original instruction executes in 1 cycle.
-
-Now I need some instruction to actual printing out of the UART some data from
-which I can deduce the effects of glitching: from the actual code of the
-firmware
-
-```c
-#define USART USARTC0
-
-	while(!USART_IsTXDataRegisterEmpty(&USART));
-	USART_PutChar(&USART, 'A');
-```
-
-results in this code
-
-```text
-.-> 74a:   80 91 a1 08     lds     r24, 0x08A1 (2)
-|   74e:   85 ff           sbrs    r24, 5      (1/2/3)
-'-- 750:   fc cf           rjmp    .-8         (2)
-    752:   81 e4           ldi     r24, 0x41   (1)
-    754:   80 93 a0 08     sts     0x08A0, r24 (2)
-    758:   80 e0           ldi     r24, 0x00   (1)
-    75a:   90 e0           ldi     r25, 0x00   (1)
-    75c:   08 95           ret                 (4/5)
-```
-
-note that this is the "slower" part of the code since the target uses a baud
-rate of 38400 baud, this means the in one second can send 38400 bits or 4800
-bytes.
-
-If the target run at speed of 8MHz (as indicated by the value in
-``scope.clock.clkgen_freq``) we have each cycle takes 1667 cycle for each bytes
-so, since we are printing the string "hello" we have a total of around 8.3k cycles
-
-Thsi is the macro to set a register with a predefined value:
-
-```c
-/* nice: ldi can be used only with registers r16-r31 */
-#define set_r(r,value) __asm__( \
-    "ldi r31, " #value "\n\  (1)
-     mov r" #r ", r31 "   \  (1)
-    )
-```
-
-it executes in two clock cycles, since there are 32 of them, we have 64 clock
-cycles
-
-To summarise: we have three part in our firmware:
-
- 1. the setup part where we initialize the hardware and print out "hello"
- 2. the setup of the registers with predefined value ~ 64 clock cycles
- 3. a nop sled with 1 clock cycle for entry
- 4. print out the content of the registers
-
-```
-$ ./chipw.py hardware/victims/firmware/simpleserial-experiments/simpleserial-experiments-CW303.hex 
-Serial baud rate = 38400
-XMEGA Programming flash...
-XMEGA Reading flash...
-Verified flash OK, 2459 bytes
-'\x00hello\x80\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f'
-```
-
-## Glitching
-
-[Chipwisperer documentation about glitch module](https://chipwhisperer.readthedocs.io/en/latest/api.html#chipwhisperer.scopes.OpenADC.glitch)
-
-
-## Links
+## Linkography
 
  - [AVR instruction set manual](http://ww1.microchip.com/downloads/en/devicedoc/atmel-0856-avr-instruction-set-manual.pdf)
- - https://pbpython.com/interactive-dashboards.html
- - https://jakevdp.github.io/PythonDataScienceHandbook/04.08-multiple-subplots.html
- - https://towardsdatascience.com/subplots-in-matplotlib-a-guide-and-tool-for-planning-your-plots-7d63fa632857
- - [Optimal statistical power analysis](https://eprint.iacr.org/2003/152.pdf)
  - [Statistics and Secret Leakage](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.59.3849&rep=rep1&type=pdf)
  - [Power Analysis, What Is Now Possible...](https://link.springer.com/content/pdf/10.1007/3-540-44448-3_38.pdf), paper from ``ASIACRYPT2000``
  - [Investigations of Power Analysis Attacks on Smartcards](https://www.usenix.org/legacy/events/smartcard99/full_papers/messerges/messerges.pdf)
@@ -1094,19 +1056,10 @@ Verified flash OK, 2459 bytes
  - [Understanding Power Trace](https://forum.newae.com/t/understanding-power-trace/1905), post from NewAE forum explaining the meaning of the power traces
  - [CHIP.FAIL – GLITCHING THE SILICON OF THE CONNECTED WORLD](https://sector.ca/sessions/chip-fail-glitching-the-silicon-of-the-connected-world/)
  - [Fault diagnosis and tolerance in cryptography (FDTC) 2014](https://fdtc.deib.polimi.it/FDTC14/slides.html) with some slides:
-   - https://fdtc.deib.polimi.it/FDTC11/shared/FDTC-2011-session-4-3.pdf
-   - https://fdtc.deib.polimi.it/FDTC11/shared/FDTC-2011-session-2-1.pdf
-   - https://fdtc.deib.polimi.it/FDTC14/shared/FDTC-2014-session_1_1.pdf
+    - https://fdtc.deib.polimi.it/FDTC11/shared/FDTC-2011-session-4-3.pdf
+    - https://fdtc.deib.polimi.it/FDTC11/shared/FDTC-2011-session-2-1.pdf
+    - https://fdtc.deib.polimi.it/FDTC14/shared/FDTC-2014-session_1_1.pdf
  - [POWER ANALYSIS BASED SOFTWARE REVERSE ENGINEERING ASSISTED BY FUZZING II](https://www.schutzwerk.com/en/43/posts/poweranalysis_2/)
  - [Power Analysis For Cheapskates](https://media.blackhat.com/us-13/US-13-OFlynn-Power-Analysis-Attacks-for-Cheapskates-WP.pdf)
  - [Side-channel Attacks Using the Chipwhisperer](https://www.robopenguins.com/chip-whisperer/)
- - [Evaluation of the Masked Logic Style MDPL on a Prototype Chip](https://www.iacr.org/archive/ches2007/47270081/47270081.pdf)
- - [CMOS fabrication processs](https://bjpcjp.github.io/pdfs/cmos_layout_sim/ch07-fabrication.pdf)
- - [Reverse-Engineering Custom Logic (Part 1)](https://web.archive.org/web/20130331010506/http://www.flylogic.net/blog/?p=32)
- - [An Introduction to the MAGIC VLSI Design Layout System](http://terpconnect.umd.edu/~newcomb/vlsi/magic_tut/Magic_x3.pdf)
- - [EE-612: CMOS Circuit Essentials](https://web.archive.org/web/20150509004607/http://nanohub.org/resources/5929/download/2008.11.20-ece612-l22.pdf)
- - [Latches inside: Reverse-engineering the Intel 8086's instruction register](http://www.righto.com/2020/08/latches-inside-reverse-engineering.html)
- - [Reverse-engineering the 8085's ALU and its hidden registers](http://www.righto.com/2013/07/reverse-engineering-8085s-alu-and-its.html)
- - [Silicon reverse engineering: The 8085's undocumented flags](http://www.righto.com/2013/02/looking-at-silicon-to-understanding.html)
- - [8085 die shots](http://visual6502.org/images/pages/8085_die_shots.html)
  - [Pearson's correlation](https://www.statlect.com/fundamentals-of-probability/linear-correlation)

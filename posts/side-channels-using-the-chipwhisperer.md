@@ -14,7 +14,7 @@ pratical point of view; the posts are
 
  - introduction on the model of computing devices (to be finished)
  - using the Chipwhisperer (this post)
- - power analysis (to be finished)
+ - power analysis ([here](``link://slug/experiments-around-side-channels``))
  - glitching (to be finished)
 
 <!-- TEASER_END -->

@@ -345,3 +345,15 @@ For now this should be enough to understand the primitive building block of a
 processing device, later I will elaborate a little more where the model just
 described interacts with the physical world what can tell us and what we can do
 to poke it :P
+
+## Linkography
+
+ - [Evaluation of the Masked Logic Style MDPL on a Prototype Chip](https://www.iacr.org/archive/ches2007/47270081/47270081.pdf)
+ - [CMOS fabrication processs](https://bjpcjp.github.io/pdfs/cmos_layout_sim/ch07-fabrication.pdf)
+ - [Reverse-Engineering Custom Logic (Part 1)](https://web.archive.org/web/20130331010506/http://www.flylogic.net/blog/?p=32)
+ - [An Introduction to the MAGIC VLSI Design Layout System](http://terpconnect.umd.edu/~newcomb/vlsi/magic_tut/Magic_x3.pdf)
+ - [EE-612: CMOS Circuit Essentials](https://web.archive.org/web/20150509004607/http://nanohub.org/resources/5929/download/2008.11.20-ece612-l22.pdf)
+ - [Latches inside: Reverse-engineering the Intel 8086's instruction register](http://www.righto.com/2020/08/latches-inside-reverse-engineering.html)
+ - [Reverse-engineering the 8085's ALU and its hidden registers](http://www.righto.com/2013/07/reverse-engineering-8085s-alu-and-its.html)
+ - [Silicon reverse engineering: The 8085's undocumented flags](http://www.righto.com/2013/02/looking-at-silicon-to-understanding.html)
+ - [8085 die shots](http://visual6502.org/images/pages/8085_die_shots.html)
