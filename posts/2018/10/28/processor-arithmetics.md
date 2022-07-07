@@ -111,6 +111,7 @@ Remember that a value into a register is not signed or unsigned by itself,
 it depends on how is used in the code.
 
 In two's complement representation ``INT_MIN`` is less than ``-INT_MAX``.
+Negation may overflow for signed arithmetic
 
 ## Operations
 
@@ -187,11 +188,13 @@ this means that the quotient cannot be greater than the dividend, so a register 
 the possible results; moreover, usually another register is used to store the remainder of the
 operation (that can be seen as the result of the \\(\mod \hbox{divisor}\\) operation).
 
-Note the to use division, the following condition MUST apply ([source](https://blog.regehr.org/archives/213))
+Note that to use division, the following condition MUST apply ([source](https://blog.regehr.org/archives/213))
 
 ```c
 (b != 0) && (!((a == INT32_MIN) && (b == -1)))
 ```
+
+in particular, on ``x86`` this leads to the raising of a ``SIGFPE`` signal.
 
 ### Sign extension
 
@@ -385,8 +388,74 @@ to do the operation, otherwise we need to take into consideration some factors
  - **same sign, different rank:** the narrower type is converted to the wider
  - **rank(unsigned) >= rank(signed):** convert to unsigned type
  - **rank(unsigned)  < rank(signed):** there are two cases
-   - **value preserving:** convert both to the signed type
-   - **value changing:** convert both to the corresponding signed type of the unsigned operand
+    - **value preserving:** convert both to the signed type
+    - **value changing:** convert both to the corresponding signed type of the unsigned operand
+
+{{% pyplots %}}
+import matplotlib
+matplotlib.use('Agg')
+
+import schemdraw
+from schemdraw import flow
+
+with schemdraw.Drawing() as d:
+    d += flow.Start().label('START')
+    d += flow.Arrow().down(d.unit/3)
+    d += (floating := flow.Decision(w=5.5, h=4, E='YES').label(
+        'One of the operands\nis floating point?'))
+    d += flow.Arrow().down(d.unit/4)
+    d += (rank := flow.Decision(w=5.5, h=4, S='YES', E='NO').label('one has rank < int'))
+    d += flow.Arrow().down(d.unit/2)
+    d += (promotion := flow.Box(w=5, h=2).label('integer promotion\n(signed)'))
+    d += flow.Arrow().down(d.unit/2)
+    d += (same_type := flow.Decision(w=7, h=5, S='NO', E='YES').label(
+            'same type?'))
+    d += flow.Arrow().down(d.unit/2)
+    d += (same_sign := flow.Decision(w=7, h=5, S='NO', E='YES').label(
+            'same sign?'))
+    d += flow.Arrow().down(d.unit/2)
+    d += (width_1 := flow.Decision(w=7, h=5, S='NO', E='YES').label(
+            'rank(unsigned type)\n>=\nrank(signed)'))
+    d += flow.Arrow().down(d.unit/2)
+    d += (preserving := flow.Decision(w=5, h=4, S='NO', E='YES').label(
+            'value\npreserving\nconversion'))
+    d += flow.Arrow().down(d.unit/2)
+    d += (lowest_box := flow.Box(w=5, h=2).label('convert both\nto signed type\nof unsigned'))
+
+    # RIGHT ARROWS
+    d += flow.Arrow().at(floating.E).right(d.unit)
+    d += flow.Box(w=6, h=2).label(
+        'convert to all operands\nto the floating point\n type of the\nhighest precision operand')
+
+    d += flow.Line().at(rank.E).right(d.unit)
+    d += flow.Line().down(
+        (rank.E.y  - promotion.S.y) + (promotion.S.y - same_type.N.y)/2
+    )
+    d += flow.Arrow().to((promotion.S.x, promotion.S.y + (same_type.N.y - promotion.S.y)/2))
+
+    d += flow.Arrow().at(same_type.E).right(d.unit)
+    d += flow.Box(w=5, h=2).label(
+        'you are finished')
+
+    d += flow.Arrow().at(same_sign.E).right(d.unit)
+    d += flow.Box(w=9, h=2).label(
+        '''convert the operand
+with the lower integer conversion rank
+to the type of the operand
+of the highest integer conversion rank''')
+
+    d += flow.Arrow().at(width_1.E).right(d.unit)
+    d += flow.Box(w=5, h=2).label('convert to unsigned')
+
+    d += flow.Arrow().at(preserving.E).right(d.unit)
+    d += flow.Box(w=5, h=2).label('convert to signed')
+
+    d += (arch_dependent := flow.Box(w=5, h=2).at(
+            (lowest_box.S.x, lowest_box.S.y - 2 * d.unit)
+        ).label('implementation\ndependent'))
+
+{{% /pyplots %}}
+
 
 ### Literal declaration
 

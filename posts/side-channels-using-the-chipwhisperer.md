@@ -33,7 +33,20 @@ experiment with.
 ## Installation steps
 
 This part is primarly for me in order to remember what I did to getting started,
-you can see a more precise (an up to date) procedure in the [documentation](https://chipwhisperer.readthedocs.io/en/latest/installing.html).
+you can see a more precise (and up to date) procedure in the [documentation](https://chipwhisperer.readthedocs.io/en/latest/installing.html).
+
+First of all you need to have the board accessible by the user
+
+```
+# bash -c 'printf "SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"2b3e\", ATTRS{idProduct}==\"*\", TAG+=\"uaccess\"\\n" >> /etc/udev/rules.d/50-newae.rules'
+# bash -c 'printf "SUBSYSTEM==\"tty\", ATTRS{idVendor}==\"2b3e\",ATTRS{idProduct}==\"*\", TAG+=\"uaccess\", SYMLINK+=\"cw_serial%n\"\\n" >> /etc/udev/rules.d/50-newae.rules'
+# bash -c 'printf "SUBSYSTEM==\"tty\", ATTRS{idVendor}==\"03eb\",ATTRS{idProduct}==\"6124\", TAG+=\"uaccess\", SYMLINK += \"cw_bootloader%n\"\\n" >> /etc/udev/rules.d/50-newae.rules'
+# udevadm control --reload-rules
+# usermod -a -G dialout $USER
+```
+
+(these steps above must be done only once system-wide); then you can install the
+library
 
 ```
 $ git clone https://github.com/newaetech/chipwhisperer.git && cd chipwhisperer

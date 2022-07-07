@@ -2,6 +2,7 @@
 .. title: side channels: glitching
 .. slug: side-channels-glitching
 .. date: 2022-03-02 08:43:26 UTC
+.. has_math: true
 .. status: draft
 .. tags: 
 .. category: 
@@ -52,6 +53,32 @@ to the signals to pass through all the logic gates to accomplish all its functio
 And this is one of the mechanisms that we are going to explit :) the other is the stability
 of the voltage provided to the device: if there is not enough charge to switch the state of
 an internal transistor, the final state is wrong.
+
+## How to
+
+This is the code for manual triggering the glitch
+
+```python
+scope.io.glitch_lp = True            # low power mosfet
+
+scope.glitch.clk_src = 'clkgen'      # 
+scope.glitch.output = 'enable_only'  # this doesn't take the clock into account
+scope.glitch.repeat = 10             #
+scope.glitch.width = 20              #
+scope.glitch.trigger_src = 'manual'  # we are not using external triggering
+```
+
+```
+scope.glitch.manual_trigger()
+```
+
+## A realt target
+
+[USB packets](https://www.usbmadesimple.co.uk/ums_3.htm)
+
+[MAX3421E Programming Guide](https://pdfserv.maximintegrated.com/en/an/AN3785.pdf)
+
+[MAX3421E datasheet](https://www.sparkfun.com/datasheets/DevTools/Arduino/MAX3421E.pdf)
 
 ## Code
 

@@ -98,7 +98,10 @@ $$
 but removing the constant voltage, what you see from the traces is
 
 $$
-AC(V_{L}) = AC(V_H) + AC(-I\times R_\hbox{shunt}) = AC(-I\times R_\hbox{shunt})
+\eqalign{
+AC(V_{L}) &= AC(V_H) + AC(-I\times R_\hbox{shunt}) \cr
+&= AC(-I\times R_\hbox{shunt})\cr
+}
 $$
 
 The actual value that you'll find in the traces are also affected by the
