@@ -217,6 +217,10 @@ method belongs to a class or if it's static unless are constructors (i.e. named 
 so be aware to
 this fact when you see analyze code involving imported functions.
 
+**Note:** usually ``ghidra`` automatically "translate" to the correct name for a
+function, but you have to indicate the right compiler spec at import time; how
+do you know which is the correct one? you have to guess my friend.
+
 **Note:** this is a general advise regarding reversing functions: read about the
 calling convention and parameters passing convention of the architecture you are
 working with, because when you see something non-sensical probably ``ghidra``
@@ -333,6 +337,11 @@ An alternative is the online code viewer [Woboq](https://code.woboq.org/qt5/),
 you don't have to do anything and it's ready to navigate but you don't have the
 visual cues about attributes and methods that you have with ``sourcetrail``.
 
+### Other ways
+
+ - [Easily getting type information of a common ELF library into Ghidra](https://reversing.technology/2021/06/16/ghidra_DWARF_gdt.html)
+ - [gdt](https://github.com/0x6d696368/ghidra-data/blob/master/typeinfo/README.md)
+
 <a name="qt-datatype"/>
 ## A little overview of Qt datatypes
 
@@ -385,6 +394,29 @@ the information to dereference the data contained into it:
  - ``capacityReserved`` I don't know
  - ``offset`` is where the actual data is located with respect to the start of
    the struct
+
+**Note:** ``QArrayData`` is an example of packing and alignment of ``struct``s.
+
+```
+(gdb) ptype /o QArrayData
+/* offset    |  size */  type = struct QArrayData {
+/*    0      |     4 */    class QtPrivate::RefCount {
+                             public:
+/*    0      |     4 */        QBasicAtomicInt atomic;
+                               /* total size (bytes):    4 */
+                           } ref;
+/*    4      |     4 */    int size;
+/*    8: 0   |     4 */    uint alloc : 31;
+/*   11: 7   |     4 */    uint capacityReserved : 1;
+/* XXX  4-byte hole  */
+/*   16      |     8 */    qptrdiff offset;
+                           static const QArrayData shared_null[2];
+
+                           /* total size (bytes):   24 */
+                         }
+```
+
+Read more here: "[The Lost Art of Structure Packing](http://www.catb.org/esr/structure-packing/)".
 
 The interesting thing is that when you initialize an empty ``QString``, the ``d``
 attribute is built from ``shared_null``
@@ -1291,7 +1323,43 @@ def get_bytes_from_binary(address, length):
 <a name="data"/>
 ### Datatypes
 
-A part from reading bytes, you can define more complex types from simpler ones,
+You can query the datatypes with ``getDataTypes()`` that returns a list with
+data types with a given name, but something overlooked is the fact that data
+types are organized under "categories", that are the folders you see in the "Data
+Type manager" panel, if you want to query with respect to the category you can
+use ``currentProgram.getDataTypeManager().getDataType(<category>)`` taking in
+mind that categories use an explicit path structure
+
+```
+>>> list(getDataTypes("QArrayData"))
+[/QArrayData
+pack(disabled)
+Structure QArrayData {
+   0   int   4   ref   ""
+   4   int   4   size   ""
+}
+Size = 8   Actual Alignment = 1
+, /Demangler/QArrayData
+pack(disabled)
+Structure QArrayData {
+}
+Size = 1   Actual Alignment = 1
+]
+>>> currentProgram.getDataTypeManager().getDataType("/QArrayData")
+/QArrayData
+pack(disabled)
+Structure QArrayData {
+   0   int   4   ref   ""
+   4   int   4   size   ""
+}
+Size = 8   Actual Alignment = 1
+```
+
+A little note here: to obtain the actual **value** (i.e. an integer, an address
+etc...) you have to call ``getValue()`` (yes, it seems obvious but you have to
+explore the documentation to notice that ^_^).
+
+A part from the data types you already start with, you can define more complex types from simpler ones,
 the most common use case is the definition of a ``struct`` via the ``StructureDataType``
 
 ```
@@ -1327,6 +1395,55 @@ without questions asked, otherwise you could end up with ``conflict`` datatypes.
 
 Obviously is possible to associate an address to some data type via
 ``createData()`` or retrieve the data via ``getDataAt()``.
+
+If you want to create data types directly from ``C``
+
+```
+# from <https://github.com/NationalSecurityAgency/ghidra/issues/1986>
+def createDataTypeFromC(declaration):
+    from ghidra.app.util.cparser.C import CParser
+    from ghidra.program.model.data import DataTypeConflictHandler
+    dtm = currentProgram.getDataTypeManager()
+    parser = CParser(dtm)
+    new_dt = parser.parse(declaration)
+    transaction = dtm.startTransaction("Adding new data")
+    dtm.addDataType(new_dt, None)
+    dtm.endTransaction(transaction, True)
+
+```
+
+**Note:** the data type must be requeried after this call.
+
+**Note2:** bad enough it doesn't work for data types that are not "primitive"
+since it's not capable of using already defined types in other archives,
+moreover it fucks up packing! so unless you have very basic declaration I advise
+to defined data types programmatically.
+
+Since a lot of data types depend on the actual architecture you are on (I'm
+looking at you pointers) you can query ``ghidra`` and ask for the size of
+certain data types, for example the integers
+
+```
+>>> currentProgram.getCompilerSpec().getDataOrganization().getIntegerSize()
+4
+```
+
+
+If you want to set some field to big-endian
+
+```
+>>> from ghidra.program.model.data import EndianSettingsDefinition
+>>> datatype = getDataType("mystruct")
+>>> field1 = datatype.components[0]
+>>> field1_settings = field1.getDefaultSettings()
+>>> field1_settings.setLong('endian', EndianSettingsDefinition.BIG)
+```
+
+**Note:** it seems that you **must** save it and then edit the endianess and
+then requery it.
+
+**Note:** in the struct editor it seems impossible to edit this setting
+manually.
 
 <a name="references"/>
 ### References
@@ -2393,3 +2510,5 @@ function.
  - https://docs.microsoft.com/en-us/shows/c9-lectures-stephan-t-lavavej-standard-template-library-stl-/c9-lectures-introduction-to-stl-stephan-t-lavavej
  - https://caxapa.ru/thumbs/656023/IHI0042F_aapcs.pdf
  - [Ghidra: Version Tracking](https://www.youtube.com/watch?v=K83T7iVla5s)
+ - [Resolving ARM Syscalls in Ghidra](https://syscall7.com/resolving-arm-syscalls-in-ghidra/)
+ - [Automated Struct Identification with Ghidra](https://blog.grimm-co.com/2020/11/automated-struct-identification-with.html)
