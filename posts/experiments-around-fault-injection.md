@@ -10,7 +10,6 @@
 .. has_math: true
 -->
 
-<!-- TEASER_END -->
 
 This is a post in a serie regarding side channels, from the theoretical and
 pratical point of view; the posts are
@@ -19,6 +18,8 @@ pratical point of view; the posts are
  - using the Chipwhisperer ([here](``link://slug/side-channels-using-the-chipwhisperer``))
  - power analysis (this post)
  - glitching (to be finished)
+
+<!-- TEASER_END -->
 
 All the graphs in this post are generated using my own libray named [power_analys](https://github.com/gipi/power-analysis/),
 this is alpha-quality software without documentation (for now); also a notebook
