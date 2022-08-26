@@ -1,5 +1,5 @@
 matplotlib==3.5.1
 nikola[extras]==8.2.3
 wavedrom==2.0.3.post3
-schemdraw[svgmath]==0.14
-ziamath==0.5
+schemdraw[svgmath]==0.15
+ziamath==0.6
