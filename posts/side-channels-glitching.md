@@ -32,17 +32,17 @@ little more in detail: a flip-flop-like device has some specific parameters
 
 {{% wavedrom %}}
 { "signal": [
-	{ "node": "...A..BC.." },
-	{ "name": "D",   "wave": "x..2...x..", "data": ["data must be stable"] },
-	{ "name": "CLK", "wave": "0.....1..." },
-	{ "node": "...G..HI.." },
-	{ "node": "...D..EF.." }
+    { "node": "...A..BC.." },
+    { "name": "D",   "wave": "x..2...x..", "data": ["data must be stable"] },
+    { "name": "CLK", "wave": "0.....1..." },
+    { "node": "...G..HI.." },
+    { "node": "...D..EF.." }
   ], "edge": [
-	"A|D",
-	"B|E",
-	"C|F",
-	"G<->H ts",
-	"H<->I th"
+      "A|D",
+      "B|E",
+      "C|F",
+      "G<->H ts",
+      "H<->I th"
 ], "config": { "hscale": 2 }}
 {{% /wavedrom %}}
 
