@@ -1,0 +1,3 @@
+blog_revision: master
+nikola_build_archive_path: "/tmp/blog_{{ blog_revision }}.tar.gz"
+nikola_build_relative_path: output/

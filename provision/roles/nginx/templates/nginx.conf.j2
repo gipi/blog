@@ -18,8 +18,8 @@ server {
 
         # this below are certificates to be substituted
 {% if snakeoil %}
-        #ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
-        #ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+        ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
+        ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
 {% else %}
         ssl_certificate /etc/letsencrypt/live/{{ site_domain }}/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/{{ site_domain }}/privkey.pem;

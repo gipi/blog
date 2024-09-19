@@ -1,0 +1,89 @@
+# this role has two main parts:
+#  1. checkout a specific revision, build the site and create an archive
+#  2. copy such archive, create a versioned directory to host it and unpack into it
+- name: Generate blog snapshot
+  block:
+  - name: Create temporary directory with clean repo state
+    ansible.builtin.tempfile:
+      state: directory
+      suffix: blog_checkout
+    register: nikola_checkout_path
+
+  - name: Create temporary directory to store build
+    ansible.builtin.tempfile:
+      state: directory
+      suffix: blog_build
+    register: nikola_build_path
+
+  - name: Checkout specific revision '{{ blog_revision }}'
+    ansible.builtin.shell:
+      git --work-tree={{ nikola_checkout_path.path }} checkout -f {{ blog_revision }}
+
+  - name: Retrieve detailed hash revision
+    ansible.builtin.shell:
+      git describe --always
+    register: blog_git_hash
+
+  - name: Build blog
+    ansible.builtin.shell:
+      cmd: nikola build -a
+      chdir: "{{ nikola_checkout_path.path }}"
+    register: nikola_build_log
+
+  - name: Log
+    ansible.builtin.debug:
+      msg: "{{ nikola_build_log.stderr }}"
+
+  - name: Display information snapshot
+    ansible.builtin.debug:
+      msg: |
+        Created build of snapshot at '{{ nikola_checkout_path.path }}/{{ nikola_build_relative_path }}'
+
+  - name: Create archive with release
+    ansible.builtin.archive:
+      path: "{{ nikola_checkout_path.path }}/{{ nikola_build_relative_path }}"
+      dest: "{{ nikola_build_archive_path }}"
+  delegate_to: localhost
+
+- name: Deploy snapshot
+  block:
+    - name: Create revision specific app directory
+      ansible.builtin.file:
+        path: "{{ blog_app_versioned_dir }}"
+        state: directory
+        owner: "{{ nikola_user }}"
+    - name: Extract archive inside {{ blog_app_versioned_dir }}
+      ansible.builtin.unarchive:
+        src: "{{ nikola_build_archive_path }}"
+        dest: "{{ blog_app_versioned_dir }}"
+    - name: Obtain current setup
+      ansible.builtin.shell:
+        ls -al {{ nikola_dest_dir }}
+      register: blog_current_state
+    - name: Display current state
+      ansible.builtin.debug:
+        msg: "{{ blog_current_state.stdout }}"
+    - name: Switch served app to {{ blog_app_versioned_dir }}
+      ansible.builtin.file:
+        src: "{{ blog_app_versioned_dir }}"
+        dest: "{{ blog_app_dir }}"
+        # this is probably atomic???
+        state: link
+    # get the list with the latest (just deployed) as last entry
+    - name: Obtain deployed versions
+      ansible.builtin.shell:
+        ls -d -t --reverse {{ nikola_dest_dir }}/app-*
+      register: blog_time_ordered_versions
+    # only the latest and the previous one are maintained
+    - name: Remove obsolete deployments
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop: "{{ blog_time_ordered_versions.stdout_lines[:-2] }}"
+      when: blog_time_ordered_versions.stdout_lines|length > 2
+  vars:
+    temporary_archive_path: "/tmp/archive.tar.gz"
+    blog_app_dir: "{{ nikola_dest_dir }}/app"
+    blog_app_versioned_dir: "{{ nikola_dest_dir }}/app-{{ blog_git_hash.stdout }}"
+
+

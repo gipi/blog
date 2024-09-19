@@ -11,16 +11,37 @@
     - nginx-common
     - ssl-cert
 
+- name: Install Let's encrypt configuration
+  ansible.builtin.copy:
+    src: letsencryptauth.conf
+    dest: /etc/nginx/snippets/
+
 - name: create nginx configuration file
-  template:
-    src=nginx.conf.j2
-    dest=/etc/nginx/sites-available/{{ site_name }}
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: "/etc/nginx/sites-available/{{ site_name }}"
   notify:
     - restart nginx
 
 - name: enable site
-  file: src=/etc/nginx/sites-available/{{ site_name}} dest=/etc/nginx/sites-enabled/{{ site_name }} state=link force=yes
+  ansible.builtin.file:
+    src: "/etc/nginx/sites-available/{{ site_name }}"
+    dest: "/etc/nginx/sites-enabled/{{ site_name }}"
+    state: link
+    force: yes
 
-- name: start nginx
-  service: name=nginx state=started
+- name: Ensure nginx is running
+  block:
+    - name: Start nginx
+      ansible.builtin.service:
+        name: nginx
+        state: started
+  rescue:
+    - name: Obtain log information
+      ansible.builtin.shell:
+        journalctl -u nginx 
+      register: nginx_journactl_log
+    - name: Display log
+      ansible.builtin.fail:
+        msg: "{{ nginx_journactl_log.stdout }}"
 

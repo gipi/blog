@@ -2,8 +2,11 @@
 ---
 # Create user and its home directory
 - name: check mandatory parameters
-  fail: msg="site_web_root, webapp_username and webapp_public_key parameters are not defined"
-  when: site_web_root is not defined or webapp_username is not defined or webapp_public_key is not defined
+  ansible.builtin.assert:
+    that:
+      - site_web_root is defined
+      - webapp_username is defined
+      - webapp_public_key is defined
 
 - name: Creates webroot
   file: path={{ site_web_root }} state=directory

@@ -14,7 +14,6 @@ PROVISION_DIR="${PROGDIR}/../"
 
 INVENTORY_FILE="${PROVISION_DIR}ansible_vagrant_inventory"
 VARIABLES_FILE="${PROVISION_DIR}ansible_vagrant_variables"
-PLAYBOOK="${PROVISION_DIR}playbook.yml"
 
 
 ANSIBLE_EXTRA_ARGS=""
@@ -67,6 +66,10 @@ cmdline() {
 
 cmdline "$@"
 
+# jump all the options (getopts reorder so that the remaining arguments are at the end)
+shift $((OPTIND-1))
+
+PLAYBOOK="$(readlink -f ${1})"
 # we change cwd so that the vagrant key is correctly found
 cd $PROVISION_DIR
 
