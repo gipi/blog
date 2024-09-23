@@ -119,6 +119,7 @@ deterministic without changing
 
 ![](/images/redefining-key-space-with-enc-deterministic.png)
 
+{{% raw %}}
 $$
 \eqalign{
 \hbox{Pr}^\prime\left[C = c\,|\, M = m \right] &= \hbox{Pr}\left[\hbox{Enc}^\prime_k(m = c)\right] \cr
@@ -130,6 +131,7 @@ $$
   &= \hbox{Pr}\left[C = c\,|\, M = m \right] \cr
 }
 $$
+{{% /raw %}}
 
 Expanding the relation \\(k^\prime=(k, r)\\) we obtain
 
