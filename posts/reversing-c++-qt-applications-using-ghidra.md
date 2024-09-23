@@ -2,7 +2,7 @@
 .. title: Reversing C++, Qt based applications using Ghidra
 .. slug: reversing-c++-qt-applications-using-ghidra
 .. date: 2022-05-27 12:27:43 UTC
-.. tags: reversing, Qt, ghidra, C++
+.. tags: reversing, Qt, ghidra, C++, binary analysis
 .. category: 
 .. link: 
 .. description: 
@@ -2016,10 +2016,101 @@ It's the same problem described in [this post](https://buaq.net/go-112637.html) 
 strings.
 
 **Note:** the ``Pcode`` from the listing panel and from the decompiler are
-related but are not 1-to-1, probably the decompiler is "synthetizing" the
-former.
+related but are not 1-to-1 because the decompiler is "synthetizing" the
+former; let me open a parentesis to explain a little better: take this code
+as an example
 
-However we can try to extract the fucking information that is present in the
+```c
+int constant() {
+    int x = 27;
+
+    char y = getchar();
+
+    int z = 2 * x + y;
+
+    if (x < 0) {
+        y = z - 3;
+    } else {
+        y = 12;
+    }
+
+    return y;
+}
+```
+
+(this is from the book "Static program analysis"), compile it with ``-O0``
+to avoid the optimization (``x`` is a constant and the compiler rightly
+removes all the code and return the value ``12``); ``ghidra`` shows you
+simply this piece of code in the decompiler
+
+```c
+/* WARNING: Removing unreachable block (ram,0x0010002c) */
+
+undefined4 constant(void)
+
+{
+  getchar();
+  return 0xc;
+}
+```
+
+but the instructions in the listing are all there. A simple class to handle the
+different type of "instructions" is the following
+
+```python
+class BasicBlock:
+    """Wrap the ghidra's basic block representation."""
+    def __init__(self, pcodeblock):
+        self.start = pcodeblock.getStart()
+        self.end = pcodeblock.getStop()
+        self._block = pcodeblock
+    def instructions(self):
+        inst = getInstructionAt(self.start)
+        while inst and inst.getAddress() <= self.end:
+            yield inst
+            inst = inst.getNext()
+    def _raw_pcodes(self):
+        for inst in self.instructions():
+            for op in inst.getPcode():
+                yield op
+    def _pcodes(self):
+        it = self._block.getIterator()
+        for op in it:
+            yield op
+```
+
+the wrap a basic block resulting from the decompilation and provides with the
+methods to obtain the right data:
+
+```
+>>> bb = BasicBlock(high_func.getBasicBlocks()[0])
+>>> list(bb.instructions())
+[PUSH RBP, MOV RBP,RSP, MOV qword ptr [RBP + -0x18],RDI, MOV qword ptr [RBP + -0x20],RSI, MOV qword ptr [RBP + -0x8],0x1, JMP 0x001011f3]
+>>> list(bb._pcodes())
+[(stack, 0xfffffffffffffff0, 8) COPY (const, 0x1, 8),  ---  BRANCH (ram, 0x1011f3, 1)]
+>>> list(bb._raw_pcodes())
+[
+  (unique, 0xea00, 8) COPY (register, 0x28, 8),
+  (register, 0x20, 8) INT_SUB (register, 0x20, 8) , (const, 0x8, 8),
+   ---  STORE (const, 0x1b1, 8) , (register, 0x20, 8) , (unique, 0xea00, 8),
+  (register, 0x28, 8) COPY (register, 0x20, 8),
+  (unique, 0x3100, 8) INT_ADD (register, 0x28, 8) , (const, 0xffffffffffffffe8, 8),
+  (unique, 0xc000, 8) COPY (register, 0x38, 8),
+   --- STORE (const, 0x1b1, 4) , (unique, 0x3100, 8) , (unique, 0xc000, 8),
+  (unique, 0x3100, 8) INT_ADD (register, 0x28, 8) , (const, 0xffffffffffffffe0, 8),
+  (unique, 0xc000, 8) COPY (register, 0x30, 8),
+   ---  STORE (const, 0x1b1, 4) , (unique, 0x3100, 8) , (unique, 0xc000, 8),
+  (unique, 0x3100, 8) INT_ADD (register, 0x28, 8) , (const, 0xfffffffffffffff8, 8),
+  (unique, 0xc080, 8) COPY (const, 0x1, 8),
+   ---  STORE (const, 0x1b1, 4) , (unique, 0x3100, 8) , (unique, 0xc080, 8),
+   ---  BRANCH (ram, 0x1011f3, 8)
+]
+```
+
+If you want to traverse all the function you have to implement a path traversal
+algorithm that avoids infinite loop.
+
+Now, to return to our initial endevour, we can try to extract the fucking information that is present in the
 listing panel
 
 ```
@@ -2079,6 +2170,8 @@ But it exists an alternative way of obtaining the flow
 
 ```
 >>> from ghidra.util.task import TaskMonitor
+>>> from ghidra.program.model.block import SimpleBlockModel
+>>> bm = SimpleBlockModel(currentProgram)
 >>> bm.getCodeBlocksContaining(currentAddress, TaskMonitor.DUMMY)
 >>> [bm.getCodeBlocksContaining(_, TaskMonitor.DUMMY) for _ in table.getCases()]
 [array(ghidra.program.model.block.CodeBlock, [caseD_0  src:[0015a33c] dst:[0015a43c]]), array(ghidra.program.model.block.CodeBlock, [caseD_1 src:[0015a33c]  dst:[0015a4a0]]), array(ghidra.program.model.block.CodeBlock, [caseD_2  src:[0015a33c]  dst:[0015a44c]]),
@@ -2512,3 +2605,4 @@ function.
  - [Ghidra: Version Tracking](https://www.youtube.com/watch?v=K83T7iVla5s)
  - [Resolving ARM Syscalls in Ghidra](https://syscall7.com/resolving-arm-syscalls-in-ghidra/)
  - [Automated Struct Identification with Ghidra](https://blog.grimm-co.com/2020/11/automated-struct-identification-with.html)
+ - [diommsantos/QtREAnalyzer](https://github.com/diommsantos/QtREAnalyzer/) tool inspired by this post
