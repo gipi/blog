@@ -3,7 +3,15 @@
 
 name: Python application
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    # Example cron expressions:
+    # - '0 0 * * *'   # Run every day at midnight UTC
+    # - '15 3 * * *'  # Run every day at 3:15 AM UTC
+    # - '0 */6 * * *' # Run every 6 hours
+    - cron: '0 0 * * *'  # Run every day at midnight UTC
 permissions:
   contents: read
 
