@@ -1,6 +1,6 @@
 [Core]
 Name = wavedrom
-Module = wavedrom
+Module = _wavedrom
 
 [Nikola]
 PluginCategory = Shortcode
